@@ -168,3 +168,9 @@ INSERT INTO public.services (name, description, duration_minutes, price_cents) V
 ('Massage Therapy', 'Relaxing full-body massage therapy session', 90, 12000),
 ('Eyebrow Shaping', 'Professional eyebrow shaping and tinting', 30, 4500),
 ('Makeup Application', 'Professional makeup for special events', 45, 8000);
+
+-- MOCK ADMIN USER (for testing, ensure a matching user exists in auth.users with this UUID)
+INSERT INTO public.profiles (id, email, full_name, role)
+VALUES ('00000000-0000-0000-0000-000000000001', 'admin@example.com', 'Administrador', 'admin')
+ON CONFLICT (id) DO NOTHING;
+-- To fully enable login, create a user in auth.users with the same id and email.
