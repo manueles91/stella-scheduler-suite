@@ -16,16 +16,16 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: Calendar },
-    { id: 'bookings', label: 'My Bookings', icon: Calendar },
+    { id: 'overview', label: 'Resumen', icon: Calendar },
+    { id: 'bookings', label: 'Mis reservas', icon: Calendar },
     ...(profile?.role === 'employee' || profile?.role === 'admin' ? [
-      { id: 'schedule', label: 'My Schedule', icon: Clock },
-      { id: 'time-tracking', label: 'Time Tracking', icon: Clock },
+      { id: 'schedule', label: 'Mi agenda', icon: Clock },
+      { id: 'time-tracking', label: 'Control de tiempo', icon: Clock },
     ] : []),
     ...(profile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'All Bookings', icon: Calendar },
-      { id: 'admin-services', label: 'Services', icon: Settings },
-      { id: 'admin-staff', label: 'Staff', icon: Users },
+      { id: 'admin-bookings', label: 'Todas las reservas', icon: Calendar },
+      { id: 'admin-services', label: 'Servicios', icon: Settings },
+      { id: 'admin-staff', label: 'Personal', icon: Users },
     ] : []),
   ];
 
