@@ -69,15 +69,15 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
-      <Card className="w-full max-w-md shadow-luxury">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-2 sm:p-4">
+      <Card className="w-full max-w-xs sm:max-w-md shadow-luxury">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-serif text-center">Stella Studio</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-serif text-center">Stella Studio</CardTitle>
           <CardDescription className="text-center">
             Your luxury beauty experience awaits
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>

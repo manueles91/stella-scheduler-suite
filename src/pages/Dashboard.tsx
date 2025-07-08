@@ -12,10 +12,10 @@ const Dashboard = () => {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-serif font-bold">Welcome back, {profile?.full_name}!</h2>
+          <div className="space-y-4 sm:space-y-6">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold">Welcome back, {profile?.full_name}!</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Upcoming Appointments</CardTitle>
@@ -55,7 +55,7 @@ const Dashboard = () => {
       case 'schedule':
         return (
           <div>
-            <h2 className="text-3xl font-serif font-bold mb-6">My Schedule</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">My Schedule</h2>
             <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">Employee schedule view coming soon...</p>
@@ -67,7 +67,7 @@ const Dashboard = () => {
       case 'time-tracking':
         return (
           <div>
-            <h2 className="text-3xl font-serif font-bold mb-6">Time Tracking</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Time Tracking</h2>
             <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">Time tracking features coming soon...</p>
@@ -79,7 +79,7 @@ const Dashboard = () => {
       case 'admin-bookings':
         return (
           <div>
-            <h2 className="text-3xl font-serif font-bold mb-6">All Bookings</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">All Bookings</h2>
             <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">Admin booking management coming soon...</p>
@@ -91,7 +91,7 @@ const Dashboard = () => {
       case 'admin-services':
         return (
           <div>
-            <h2 className="text-3xl font-serif font-bold mb-6">Manage Services</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Manage Services</h2>
             <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">Service management coming soon...</p>
@@ -103,7 +103,7 @@ const Dashboard = () => {
       case 'admin-staff':
         return (
           <div>
-            <h2 className="text-3xl font-serif font-bold mb-6">Manage Staff</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Manage Staff</h2>
             <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">Staff management coming soon...</p>
