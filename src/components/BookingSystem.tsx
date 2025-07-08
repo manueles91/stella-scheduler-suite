@@ -138,15 +138,15 @@ export const BookingSystem = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-serif font-bold">Book Your Appointment</h1>
-        <p className="text-lg text-muted-foreground">Choose your service and preferred time</p>
+        <h1 className="text-4xl font-serif font-bold">Reserva tu cita</h1>
+        <p className="text-lg text-muted-foreground">Elige tu servicio y horario preferido</p>
       </div>
 
       {/* Service Selection */}
       <Card>
         <CardHeader>
-          <CardTitle>Select a Service</CardTitle>
-          <CardDescription>Choose from our luxury treatments</CardDescription>
+          <CardTitle>Selecciona un servicio</CardTitle>
+          <CardDescription>Elige entre nuestros tratamientos de lujo</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -179,8 +179,8 @@ export const BookingSystem = () => {
           {/* Date Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>Select Date</CardTitle>
-              <CardDescription>Choose your preferred appointment date</CardDescription>
+              <CardTitle>Selecciona la fecha</CardTitle>
+              <CardDescription>Elige la fecha de tu cita</CardDescription>
             </CardHeader>
             <CardContent>
               <Calendar
@@ -196,7 +196,7 @@ export const BookingSystem = () => {
           {/* Time Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>Available Times</CardTitle>
+              <CardTitle>Horarios disponibles</CardTitle>
               <CardDescription>
                 {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
               </CardDescription>
@@ -225,8 +225,8 @@ export const BookingSystem = () => {
       {selectedService && selectedDate && selectedSlot && (
         <Card>
           <CardHeader>
-            <CardTitle>Booking Summary</CardTitle>
-            <CardDescription>Review your appointment details</CardDescription>
+            <CardTitle>Resumen de la reserva</CardTitle>
+            <CardDescription>Revisa los detalles de tu cita</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
@@ -248,10 +248,10 @@ export const BookingSystem = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes (Optional)</Label>
+              <Label htmlFor="notes">Notas adicionales (opcional)</Label>
               <Textarea
                 id="notes"
-                placeholder="Any special requests or preferences..."
+                placeholder="¿Alguna petición o preferencia especial?"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -263,7 +263,7 @@ export const BookingSystem = () => {
               className="w-full"
               size="lg"
             >
-              {loading ? "Booking..." : "Confirm Booking"}
+              {loading ? "Reservando..." : "Confirmar reserva"}
             </Button>
           </CardContent>
         </Card>

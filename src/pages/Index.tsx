@@ -20,7 +20,7 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-serif">Loading...</h2>
+          <h2 className="text-xl font-serif">Cargando...</h2>
         </div>
       </div>
     );
@@ -36,17 +36,17 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-hero opacity-80"></div>
         <div className="relative z-10 text-center text-white px-2 sm:px-4 max-w-full sm:max-w-4xl mx-auto">
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold mb-4 sm:mb-6">
-            Stella Studio
+            ¡Bienvenido a Stella Studio!
           </h1>
           <p className="text-base sm:text-xl md:text-2xl mb-4 sm:mb-8 text-white/90">
-            Your luxury beauty experience awaits. Book premium services with our expert team.
+            Disfruta de nuestros tratamientos exclusivos y reserva tu cita hoy mismo.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
             <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6" onClick={() => navigate('/auth')}>
-              Book Now
+              Iniciar sesión / Registrarse
             </Button>
             <Button variant="outline" size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white/10 border-white text-white hover:bg-white hover:text-foreground">
-              View Services
+              Más información
             </Button>
           </div>
         </div>
@@ -56,8 +56,8 @@ const Index = () => {
       <section className="py-10 sm:py-20 px-2 sm:px-4">
         <div className="max-w-full sm:max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4">Our Services</h2>
-            <p className="text-base sm:text-xl text-muted-foreground">Indulge in our signature treatments</p>
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4">Nuestros servicios</h2>
+            <p className="text-base sm:text-xl text-muted-foreground">Déjate consentir con nuestros tratamientos exclusivos</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
@@ -89,9 +89,9 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-10 sm:py-20 bg-gradient-primary text-white">
         <div className="max-w-full sm:max-w-4xl mx-auto text-center px-2 sm:px-4">
-          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 sm:mb-6">Ready for Your Transformation?</h2>
+          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 sm:mb-6">¿Listo para tu transformación?</h2>
           <p className="text-base sm:text-xl mb-4 sm:mb-8 text-white/90">
-            Join thousands of satisfied clients who trust Stella Studio for their beauty needs.
+            Reserva tu cita y vive la experiencia Stella Studio.
           </p>
           <Button 
             size="lg" 
@@ -99,7 +99,7 @@ const Index = () => {
             className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white text-primary hover:bg-white/90"
             onClick={() => navigate('/auth')}
           >
-            Book Your Appointment
+            Reservar ahora
           </Button>
         </div>
       </section>
