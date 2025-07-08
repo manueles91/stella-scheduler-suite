@@ -34,18 +34,18 @@ const Index = () => {
         style={{ backgroundImage: `url(${heroImage})` }}
       >
         <div className="absolute inset-0 bg-gradient-hero opacity-80"></div>
-        <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6">
+        <div className="relative z-10 text-center text-white px-2 sm:px-4 max-w-full sm:max-w-4xl mx-auto">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold mb-4 sm:mb-6">
             Stella Studio
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-white/90">
+          <p className="text-base sm:text-xl md:text-2xl mb-4 sm:mb-8 text-white/90">
             Your luxury beauty experience awaits. Book premium services with our expert team.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8 py-6" onClick={() => navigate('/auth')}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
+            <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6" onClick={() => navigate('/auth')}>
               Book Now
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-white/10 border-white text-white hover:bg-white hover:text-foreground">
+            <Button variant="outline" size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white/10 border-white text-white hover:bg-white hover:text-foreground">
               View Services
             </Button>
           </div>
@@ -53,14 +53,14 @@ const Index = () => {
       </section>
 
       {/* Services Preview */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-serif font-bold mb-4">Our Services</h2>
-            <p className="text-xl text-muted-foreground">Indulge in our signature treatments</p>
+      <section className="py-10 sm:py-20 px-2 sm:px-4">
+        <div className="max-w-full sm:max-w-6xl mx-auto">
+          <div className="text-center mb-8 sm:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4">Our Services</h2>
+            <p className="text-base sm:text-xl text-muted-foreground">Indulge in our signature treatments</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {[
               { name: "Signature Facial", duration: "90 min", price: "$150", description: "Premium anti-aging treatment" },
               { name: "Hair Cut & Style", duration: "60 min", price: "$85", description: "Professional styling service" },
@@ -87,16 +87,16 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-primary text-white">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-4xl font-serif font-bold mb-6">Ready for Your Transformation?</h2>
-          <p className="text-xl mb-8 text-white/90">
+      <section className="py-10 sm:py-20 bg-gradient-primary text-white">
+        <div className="max-w-full sm:max-w-4xl mx-auto text-center px-2 sm:px-4">
+          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 sm:mb-6">Ready for Your Transformation?</h2>
+          <p className="text-base sm:text-xl mb-4 sm:mb-8 text-white/90">
             Join thousands of satisfied clients who trust Stella Studio for their beauty needs.
           </p>
           <Button 
             size="lg" 
             variant="outline" 
-            className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90"
+            className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white text-primary hover:bg-white/90"
             onClick={() => navigate('/auth')}
           >
             Book Your Appointment
