@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { BookingSystem } from "@/components/BookingSystem";
+import { EnhancedBookingSystem } from "@/components/EnhancedBookingSystem";
+import { AdminReservations } from "@/components/admin/AdminReservations";
+import { AdminServices } from "@/components/admin/AdminServices";
+import { AdminStaff } from "@/components/admin/AdminStaff";
+import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
+import { TimeTracking } from "@/components/employee/TimeTracking";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,67 +89,22 @@ const Dashboard = () => {
         );
         
       case 'bookings':
-        return <BookingSystem />;
+        return <EnhancedBookingSystem />;
         
       case 'schedule':
-        return (
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Mi agenda</h2>
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Vista de agenda para empleados próximamente...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <EmployeeSchedule />;
         
       case 'time-tracking':
-        return (
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Control de tiempo</h2>
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Funcionalidad de control de tiempo próximamente...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <TimeTracking />;
         
       case 'admin-bookings':
-        return (
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Todas las reservas</h2>
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Gestión de reservas para administradores próximamente...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <AdminReservations />;
         
       case 'admin-services':
-        return (
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Gestionar servicios</h2>
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Gestión de servicios próximamente...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <AdminServices />;
         
       case 'admin-staff':
-        return (
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4 sm:mb-6">Gestionar personal</h2>
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Gestión de personal próximamente...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <AdminStaff />;
         
       default:
         return null;
