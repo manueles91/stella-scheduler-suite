@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +22,20 @@ interface Service {
   image_url?: string;
   is_active: boolean;
   created_at: string;
+}
+
+interface Employee {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface EmployeeService {
+  employee_id: string;
+  service_id: string;
+  profiles: {
+    full_name: string;
+  };
 }
 
 const DURATION_OPTIONS = [
@@ -37,6 +52,9 @@ const DURATION_OPTIONS = [
 
 export const AdminServices = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeServices, setEmployeeServices] = useState<EmployeeService[]>([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -54,11 +72,16 @@ export const AdminServices = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchServices();
+    fetchData();
   }, []);
 
-  const fetchServices = async () => {
+  const fetchData = async () => {
     setLoading(true);
+    await Promise.all([fetchServices(), fetchEmployees(), fetchEmployeeServices()]);
+    setLoading(false);
+  };
+
+  const fetchServices = async () => {
     const { data, error } = await supabase
       .from('services')
       .select('*')
@@ -73,7 +96,36 @@ export const AdminServices = () => {
     } else {
       setServices(data || []);
     }
-    setLoading(false);
+  };
+
+  const fetchEmployees = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('role', 'employee')
+      .order('full_name');
+
+    if (error) {
+      console.error('Error fetching employees:', error);
+    } else {
+      setEmployees(data || []);
+    }
+  };
+
+  const fetchEmployeeServices = async () => {
+    const { data, error } = await supabase
+      .from('employee_services')
+      .select(`
+        employee_id,
+        service_id,
+        profiles(full_name)
+      `);
+
+    if (error) {
+      console.error('Error fetching employee services:', error);
+    } else {
+      setEmployeeServices(data || []);
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +225,8 @@ export const AdminServices = () => {
         price_cents: Math.round(formData.price_cents * 100), // Convert to cents
       };
 
+      let serviceId: string;
+
       if (editingService) {
         const { error } = await supabase
           .from('services')
@@ -180,17 +234,21 @@ export const AdminServices = () => {
           .eq('id', editingService.id);
 
         if (error) throw error;
+        serviceId = editingService.id;
         
         toast({
           title: "Éxito",
           description: "Servicio actualizado correctamente",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('services')
-          .insert([serviceData]);
+          .insert([serviceData])
+          .select()
+          .single();
 
         if (error) throw error;
+        serviceId = data.id;
         
         toast({
           title: "Éxito",
@@ -198,15 +256,45 @@ export const AdminServices = () => {
         });
       }
 
+      // Update employee-service assignments
+      await updateEmployeeServices(serviceId);
+
       setDialogOpen(false);
       resetForm();
-      fetchServices();
+      fetchData();
     } catch (error) {
       toast({
         title: "Error",
         description: "Error al guardar el servicio",
         variant: "destructive",
       });
+    }
+  };
+
+  const updateEmployeeServices = async (serviceId: string) => {
+    try {
+      // First, delete existing employee services for this service
+      await supabase
+        .from('employee_services')
+        .delete()
+        .eq('service_id', serviceId);
+
+      // Then, insert new ones
+      if (selectedEmployeeIds.length > 0) {
+        const insertData = selectedEmployeeIds.map(employeeId => ({
+          employee_id: employeeId,
+          service_id: serviceId,
+        }));
+
+        const { error } = await supabase
+          .from('employee_services')
+          .insert(insertData);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error updating employee services:', error);
+      throw error;
     }
   };
 
@@ -221,6 +309,13 @@ export const AdminServices = () => {
       is_active: service.is_active,
     });
     setImagePreview(service.image_url || null);
+    
+    // Load current employee assignments for this service
+    const currentEmployees = employeeServices
+      .filter(es => es.service_id === service.id)
+      .map(es => es.employee_id);
+    setSelectedEmployeeIds(currentEmployees);
+    
     setDialogOpen(true);
   };
 
@@ -243,7 +338,7 @@ export const AdminServices = () => {
         title: "Éxito",
         description: "Servicio eliminado correctamente",
       });
-      fetchServices();
+      fetchData();
     }
   };
 
@@ -259,6 +354,21 @@ export const AdminServices = () => {
     setEditingService(null);
     setImageFile(null);
     setImagePreview(null);
+    setSelectedEmployeeIds([]);
+  };
+
+  const toggleEmployeeSelection = (employeeId: string) => {
+    setSelectedEmployeeIds(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const getServiceEmployees = (serviceId: string) => {
+    return employeeServices
+      .filter(es => es.service_id === serviceId)
+      .map(es => es.profiles.full_name);
   };
 
   const removeImage = () => {
@@ -299,7 +409,7 @@ export const AdminServices = () => {
               Nuevo Servicio
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingService ? "Editar Servicio" : "Nuevo Servicio"}
@@ -370,51 +480,92 @@ export const AdminServices = () => {
                 </div>
               </div>
 
-              {/* Image Upload Section */}
+              {/* Simplified Image Upload Section */}
               <div>
                 <Label htmlFor="image">Imagen del servicio</Label>
                 <div className="space-y-4">
-                  {imagePreview && (
+                  {(uploadingImage || imagePreview) && (
                     <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Vista previa"
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={removeImage}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      {uploadingImage ? (
+                        <div className="w-full h-48 bg-gray-100 rounded-lg border flex items-center justify-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <span className="text-sm text-gray-500">Subiendo imagen...</span>
+                          </div>
+                        </div>
+                      ) : imagePreview ? (
+                        <>
+                          <img
+                            src={imagePreview}
+                            alt="Vista previa"
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={removeImage}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : null}
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-4">
-                    <Input
-                      id="image"
+                  <div className="flex justify-center">
+                    <input
+                      id="image-input"
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="flex-1"
+                      className="hidden"
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-shrink-0"
-                      onClick={() => document.getElementById('image')?.click()}
+                      onClick={() => document.getElementById('image-input')?.click()}
+                      disabled={uploadingImage}
+                      className="w-full"
                     >
                       <Upload className="h-4 w-4 mr-2" />
-                      Subir imagen
+                      {imagePreview ? 'Cambiar imagen' : 'Subir imagen'}
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground text-center">
                     Formatos soportados: JPG, PNG, WebP. Tamaño máximo: 5MB
                   </p>
                 </div>
+              </div>
+
+              {/* Personnel Selection */}
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Personal capacitado para este servicio
+                </Label>
+                <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
+                  {employees.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay empleados disponibles</p>
+                  ) : (
+                    employees.map((employee) => (
+                      <div key={employee.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`employee-${employee.id}`}
+                          checked={selectedEmployeeIds.includes(employee.id)}
+                          onCheckedChange={() => toggleEmployeeSelection(employee.id)}
+                        />
+                        <Label htmlFor={`employee-${employee.id}`} className="text-sm font-normal">
+                          {employee.full_name}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selecciona los empleados que pueden realizar este servicio
+                </p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -489,6 +640,25 @@ export const AdminServices = () => {
                 </div>
                 <div className="font-semibold text-lg">
                   {formatPrice(service.price_cents)}
+                </div>
+              </div>
+              
+              {/* Assigned Personnel */}
+              <div>
+                <div className="flex items-center gap-1 text-sm font-medium mb-1">
+                  <Users className="h-3 w-3" />
+                  Personal asignado:
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {getServiceEmployees(service.id).length > 0 ? (
+                    getServiceEmployees(service.id).map((employeeName, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {employeeName}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Sin personal asignado</span>
+                  )}
                 </div>
               </div>
               
