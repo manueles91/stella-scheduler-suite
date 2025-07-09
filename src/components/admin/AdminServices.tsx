@@ -274,7 +274,7 @@ export const AdminServices = () => {
         if (error.message.includes('bucket') && error.message.includes('not found')) {
           errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador para configurar el almacenamiento de imágenes.";
         } else if (error.message.includes('row-level security')) {
-          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador.";
+          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador o empleado.";
         } else if (error.message.includes('file size')) {
           errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
         }
