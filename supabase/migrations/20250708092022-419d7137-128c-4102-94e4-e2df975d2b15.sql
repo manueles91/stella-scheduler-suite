@@ -19,6 +19,7 @@ CREATE TABLE public.services (
   description TEXT,
   duration_minutes INTEGER NOT NULL,
   price_cents INTEGER NOT NULL,
+  image_url TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
