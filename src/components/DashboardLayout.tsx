@@ -1,9 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Clock, Users, Settings, LogOut } from "lucide-react";
+import { Calendar, Clock, Users, Settings, LogOut, Eye, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,18 +13,68 @@ interface DashboardLayoutProps {
   onTabChange: (tab: string) => void;
 }
 
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  role: 'client' | 'employee' | 'admin';
+}
+
 export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardLayoutProps) => {
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const effectiveProfile = impersonatedUser || profile;
+  const isImpersonating = impersonatedUser !== null;
+
+  // Fetch available users for impersonation (admin only)
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      fetchAvailableUsers();
+    }
+  }, [profile]);
+
+  const fetchAvailableUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .neq('id', profile?.id) // Exclude current admin
+        .order('full_name');
+
+      if (!error && data) {
+        setAvailableUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const startImpersonation = (userId: string) => {
+    const user = availableUsers.find(u => u.id === userId);
+    if (user) {
+      setImpersonatedUser(user);
+    }
+  };
+
+  const stopImpersonation = () => {
+    setImpersonatedUser(null);
+  };
 
   const menuItems = [
     { id: 'overview', label: 'Resumen', icon: Calendar },
     { id: 'bookings', label: 'Mis reservas', icon: Calendar },
-    ...(profile?.role === 'employee' || profile?.role === 'admin' ? [
+    ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'schedule', label: 'Mi agenda', icon: Clock },
       { id: 'time-tracking', label: 'Agenda y horarios', icon: Clock },
     ] : []),
-    ...(profile?.role === 'admin' ? [
+    ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-bookings', label: 'Todas las reservas', icon: Calendar },
       { id: 'admin-services', label: 'Servicios', icon: Settings },
       { id: 'admin-staff', label: 'Personal', icon: Users },
@@ -41,15 +93,24 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
             <h1 className="text-lg sm:text-2xl font-serif font-bold">Stella Studio</h1>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {isImpersonating && (
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-lg border border-amber-300">
+                <Eye className="h-4 w-4" />
+                <span className="text-xs font-medium">Viendo como: {impersonatedUser?.full_name}</span>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <Avatar>
                 <AvatarFallback>
-                  {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                  {effectiveProfile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="text-xs sm:text-sm">
-                <p className="font-medium">{profile?.full_name}</p>
-                <p className="text-muted-foreground capitalize">{profile?.role}</p>
+                <p className="font-medium">{effectiveProfile?.full_name}</p>
+                <p className="text-muted-foreground capitalize">{effectiveProfile?.role}</p>
+                {isImpersonating && (
+                  <p className="text-xs text-amber-600 sm:hidden">Viendo como</p>
+                )}
               </div>
             </div>
           </div>
@@ -60,6 +121,41 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
         {/* Sidebar */}
         <aside className={`fixed sm:static top-0 left-0 z-40 h-full w-64 border-r bg-card p-4 transition-transform duration-200 sm:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} sm:h-[calc(100vh-4rem)] sm:block`}>
           <nav className="space-y-2">
+            {/* View as dropdown for admins */}
+            {profile?.role === 'admin' && (
+              <div className="pb-4 border-b">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground px-2">Ver como</p>
+                  {isImpersonating ? (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={stopImpersonation}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Volver a vista admin
+                    </Button>
+                  ) : (
+                    <Select onValueChange={startImpersonation} disabled={loadingUsers}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={loadingUsers ? "Cargando..." : "Seleccionar usuario"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{user.full_name}</span>
+                              <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            )}
+
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
