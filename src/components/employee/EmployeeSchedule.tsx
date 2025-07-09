@@ -51,23 +51,19 @@ export const EmployeeSchedule = () => {
     if (!profile?.id) return;
     
     setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('employee_schedules')
-        .select('*')
-        .eq('employee_id', profile.id)
-        .order('day_of_week');
+    const { data, error } = await supabase
+      .from('employee_schedules')
+      .select('*')
+      .eq('employee_id', profile.id)
+      .order('day_of_week');
 
-      if (error) {
-        console.error('Error fetching schedules:', error);
-        toast({
-          title: "Error",
-          description: "Error al cargar los horarios",
-          variant: "destructive",
-        });
-        return;
-      }
-
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load schedules",
+        variant: "destructive",
+      });
+    } else {
       // Ensure we have a schedule for each day
       const scheduleByDay = new Map(data?.map(s => [s.day_of_week, s]) || []);
       const fullSchedules = DAYS_OF_WEEK.map(day => 
@@ -79,22 +75,15 @@ export const EmployeeSchedule = () => {
         }
       );
       setSchedules(fullSchedules);
-    } catch (error) {
-      console.error('Unexpected error fetching schedules:', error);
-      toast({
-        title: "Error",
-        description: "Error inesperado al cargar los horarios",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const updateSchedule = async (dayIndex: number, field: keyof Schedule, value: any) => {
     const updatedSchedules = [...schedules];
     updatedSchedules[dayIndex] = { ...updatedSchedules[dayIndex], [field]: value };
-    
+    setSchedules(updatedSchedules);
+
     const schedule = updatedSchedules[dayIndex];
     
     try {
@@ -110,9 +99,6 @@ export const EmployeeSchedule = () => {
           .eq('id', schedule.id);
 
         if (error) throw error;
-        
-        // Update local state only after successful database update
-        setSchedules(updatedSchedules);
       } else if (schedule.is_available) {
         // Create new schedule only if marked as available
         const { data, error } = await supabase
@@ -132,9 +118,6 @@ export const EmployeeSchedule = () => {
         // Update local state with the new ID
         updatedSchedules[dayIndex].id = data.id;
         setSchedules(updatedSchedules);
-      } else {
-        // For newly unchecked schedules that don't have an ID yet, just update local state
-        setSchedules(updatedSchedules);
       }
 
       toast({
@@ -142,13 +125,13 @@ export const EmployeeSchedule = () => {
         description: "Horario actualizado correctamente",
       });
     } catch (error) {
-      console.error('Error updating schedule:', error);
       toast({
         title: "Error",
         description: "Error al actualizar el horario",
         variant: "destructive",
       });
-      // Don't revert the change here, let the user retry if needed
+      // Revert the change
+      fetchSchedules();
     }
   };
 
