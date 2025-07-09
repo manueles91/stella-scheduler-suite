@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 interface Service {
   id: string;
@@ -28,6 +30,7 @@ interface Employee {
   id: string;
   full_name: string;
   email: string;
+  role: string;
 }
 
 const DURATION_OPTIONS = [
@@ -42,6 +45,10 @@ const DURATION_OPTIONS = [
   { value: 240, label: "4 horas" },
 ];
 
+// Increased file size limit to 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
 export const AdminServices = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -51,7 +58,9 @@ export const AdminServices = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [imageValidationError, setImageValidationError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -65,128 +74,204 @@ export const AdminServices = () => {
   useEffect(() => {
     fetchServices();
     fetchEmployees();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchServices = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('name');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching services:', error);
+        toast({
+          title: "Error",
+          description: `Failed to load services: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        setServices(data || []);
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
-        description: "Failed to load services",
+        description: "An unexpected error occurred while loading services",
         variant: "destructive",
       });
-    } else {
-      setServices(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchEmployees = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .eq('role', 'employee')
-      .order('full_name');
+    try {
+      // Fetch both employees and admins
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('role', ['employee', 'admin'])
+        .order('full_name');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching employees:', error);
+        toast({
+          title: "Error",
+          description: `Failed to load staff: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        setEmployees(data || []);
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
-        description: "Failed to load employees",
+        description: "An unexpected error occurred while loading staff",
         variant: "destructive",
       });
-    } else {
-      setEmployees(data || []);
     }
   };
 
   const fetchServiceEmployees = async (serviceId: string) => {
-    const { data, error } = await supabase
-      .from('employee_services')
-      .select('employee_id')
-      .eq('service_id', serviceId);
+    try {
+      const { data, error } = await supabase
+        .from('employee_services')
+        .select('employee_id')
+        .eq('service_id', serviceId);
 
-    if (!error && data) {
-      setSelectedEmployees(data.map(item => item.employee_id));
+      if (error) {
+        console.error('Error fetching service employees:', error);
+        toast({
+          title: "Error",
+          description: `Failed to load service staff: ${error.message}`,
+          variant: "destructive",
+        });
+      } else if (data) {
+        setSelectedEmployees(data.map(item => item.employee_id));
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
     }
   };
 
   const updateServiceEmployees = async (serviceId: string, employeeIds: string[]) => {
-    // First, delete existing relationships
-    await supabase
-      .from('employee_services')
-      .delete()
-      .eq('service_id', serviceId);
-
-    // Then, insert new relationships
-    if (employeeIds.length > 0) {
-      const employeeServices = employeeIds.map(employeeId => ({
-        service_id: serviceId,
-        employee_id: employeeId,
-      }));
-
-      const { error } = await supabase
+    try {
+      // First, delete existing relationships
+      const { error: deleteError } = await supabase
         .from('employee_services')
-        .insert(employeeServices);
+        .delete()
+        .eq('service_id', serviceId);
 
-      if (error) {
-        throw error;
+      if (deleteError) {
+        throw new Error(`Failed to update service staff: ${deleteError.message}`);
       }
+
+      // Then, insert new relationships
+      if (employeeIds.length > 0) {
+        const employeeServices = employeeIds.map(employeeId => ({
+          service_id: serviceId,
+          employee_id: employeeId,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('employee_services')
+          .insert(employeeServices);
+
+        if (insertError) {
+          throw new Error(`Failed to assign staff to service: ${insertError.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating service employees:', error);
+      throw error;
     }
+  };
+
+  const validateImageFile = (file: File): string | null => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)}MB). El tamaño máximo permitido es ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
+    }
+
+    // Check file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return `Tipo de archivo no permitido (${file.type}). Solo se permiten archivos de imagen: JPG, PNG, WebP, GIF.`;
+    }
+
+    // Check if file is actually an image by trying to read it
+    return null;
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: "Error",
-          description: "La imagen debe ser menor a 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error",
-          description: "Solo se permiten archivos de imagen",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setImageFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    setImageValidationError(null);
+    
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
     }
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setImageValidationError(validationError);
+      setImageFile(null);
+      setImagePreview(null);
+      // Clear the input
+      e.target.value = '';
+      return;
+    }
+
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.onerror = () => {
+      setImageValidationError("Error al leer el archivo. Asegúrate de que sea una imagen válida.");
+      setImageFile(null);
+    };
+    reader.readAsDataURL(file);
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true);
+      setUploadProgress(0);
       
       // Generate unique filename
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 80));
+      }, 100);
+
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('service-images')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       if (error) {
         console.error('Upload error:', error);
-        throw error;
+        throw new Error(`Error al subir la imagen: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No se recibió respuesta del servidor al subir la imagen');
       }
 
       // Get public URL
@@ -194,16 +279,23 @@ export const AdminServices = () => {
         .from('service-images')
         .getPublicUrl(fileName);
 
+      if (!publicUrl) {
+        throw new Error('No se pudo obtener la URL pública de la imagen');
+      }
+
       return publicUrl;
     } catch (error) {
+      console.error('Image upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir la imagen';
       toast({
-        title: "Error",
-        description: "Error al subir la imagen",
+        title: "Error de subida",
+        description: errorMessage,
         variant: "destructive",
       });
       return null;
     } finally {
       setUploadingImage(false);
+      setUploadProgress(0);
     }
   };
 
@@ -212,7 +304,7 @@ export const AdminServices = () => {
     
     if (!formData.name.trim()) {
       toast({
-        title: "Error",
+        title: "Error de validación",
         description: "El nombre del servicio es requerido",
         variant: "destructive",
       });
@@ -221,8 +313,17 @@ export const AdminServices = () => {
 
     if (selectedEmployees.length === 0) {
       toast({
-        title: "Error",
-        description: "Selecciona al menos un empleado para este servicio",
+        title: "Error de validación",
+        description: "Selecciona al menos un miembro del personal para este servicio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.price_cents <= 0) {
+      toast({
+        title: "Error de validación",
+        description: "El precio debe ser mayor a 0",
         variant: "destructive",
       });
       return;
@@ -234,9 +335,11 @@ export const AdminServices = () => {
       // Upload new image if selected
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile);
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
+        if (!uploadedUrl) {
+          // Error already shown in uploadImage function
+          return;
         }
+        imageUrl = uploadedUrl;
       }
 
       const serviceData = {
@@ -253,7 +356,11 @@ export const AdminServices = () => {
           .update(serviceData)
           .eq('id', editingService.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Service update error:', error);
+          throw new Error(`Error al actualizar el servicio: ${error.message}`);
+        }
+        
         serviceId = editingService.id;
         
         toast({
@@ -267,7 +374,15 @@ export const AdminServices = () => {
           .select('id')
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Service creation error:', error);
+          throw new Error(`Error al crear el servicio: ${error.message}`);
+        }
+        
+        if (!data) {
+          throw new Error('No se recibió respuesta del servidor al crear el servicio');
+        }
+        
         serviceId = data.id;
         
         toast({
@@ -283,9 +398,11 @@ export const AdminServices = () => {
       resetForm();
       fetchServices();
     } catch (error) {
+      console.error('Service save error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al guardar el servicio';
       toast({
-        title: "Error",
-        description: "Error al guardar el servicio",
+        title: "Error al guardar",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -302,6 +419,8 @@ export const AdminServices = () => {
       is_active: service.is_active,
     });
     setImagePreview(service.image_url || null);
+    setImageFile(null);
+    setImageValidationError(null);
     await fetchServiceEmployees(service.id);
     setDialogOpen(true);
   };
@@ -309,23 +428,30 @@ export const AdminServices = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar este servicio?")) return;
 
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Error al eliminar el servicio",
-        variant: "destructive",
-      });
-    } else {
+      if (error) {
+        console.error('Service deletion error:', error);
+        throw new Error(`Error al eliminar el servicio: ${error.message}`);
+      }
+
       toast({
         title: "Éxito",
         description: "Servicio eliminado correctamente",
       });
       fetchServices();
+    } catch (error) {
+      console.error('Service deletion error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al eliminar el servicio';
+      toast({
+        title: "Error al eliminar",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -341,13 +467,21 @@ export const AdminServices = () => {
     setEditingService(null);
     setImageFile(null);
     setImagePreview(null);
+    setImageValidationError(null);
     setSelectedEmployees([]);
+    setUploadProgress(0);
   };
 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setImageValidationError(null);
     setFormData({ ...formData, image_url: "" });
+    // Clear the file input
+    const fileInput = document.getElementById('image') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const formatPrice = (cents: number) => {
@@ -362,11 +496,22 @@ export const AdminServices = () => {
     return `${hours}h ${remainingMinutes}min`;
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'employee': return 'Empleado';
+      default: return role;
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
         <h2 className="text-3xl font-serif font-bold">Gestión de Servicios</h2>
-        <div className="text-center py-8">Cargando servicios...</div>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span>Cargando servicios...</span>
+        </div>
       </div>
     );
   }
@@ -382,7 +527,7 @@ export const AdminServices = () => {
               Nuevo Servicio
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingService ? "Editar Servicio" : "Nuevo Servicio"}
@@ -453,10 +598,17 @@ export const AdminServices = () => {
                 </div>
               </div>
 
-              {/* Image Upload Section */}
+              {/* Enhanced Image Upload Section */}
               <div>
                 <Label htmlFor="image">Imagen del servicio</Label>
                 <div className="space-y-4">
+                  {imageValidationError && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>{imageValidationError}</AlertDescription>
+                    </Alert>
+                  )}
+                  
                   {imagePreview && (
                     <div className="relative">
                       <img
@@ -470,9 +622,20 @@ export const AdminServices = () => {
                         size="sm"
                         className="absolute top-2 right-2"
                         onClick={removeImage}
+                        disabled={uploadingImage}
                       >
                         <X className="h-4 w-4" />
                       </Button>
+                    </div>
+                  )}
+                  
+                  {uploadingImage && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Subiendo imagen...</span>
+                      </div>
+                      <Progress value={uploadProgress} className="w-full" />
                     </div>
                   )}
                   
@@ -482,25 +645,33 @@ export const AdminServices = () => {
                     accept="image/*"
                     onChange={handleImageChange}
                     className="hidden"
+                    disabled={uploadingImage}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => document.getElementById('image')?.click()}
                     className="w-full"
+                    disabled={uploadingImage}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    {uploadingImage ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
                     {imagePreview ? "Cambiar imagen" : "Subir imagen"}
                   </Button>
-                  <p className="text-sm text-muted-foreground">
-                    Formatos soportados: JPG, PNG, WebP. Tamaño máximo: 5MB
-                  </p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Formatos soportados: JPG, PNG, WebP, GIF</p>
+                    <p>Tamaño máximo: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                    <p>Recomendado: Imágenes de alta calidad, ratio 16:9 o cuadradas</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Employee Selection */}
+              {/* Enhanced Employee Selection */}
               <div>
-                <Label>Empleados que pueden realizar este servicio *</Label>
+                <Label>Personal que puede realizar este servicio *</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto border rounded-lg p-3">
                   {employees.map((employee) => (
                     <div key={employee.id} className="flex items-center space-x-2">
@@ -515,21 +686,40 @@ export const AdminServices = () => {
                           }
                         }}
                       />
-                      <Label htmlFor={employee.id} className="text-sm font-normal cursor-pointer">
-                        {employee.full_name}
+                      <Label htmlFor={employee.id} className="text-sm font-normal cursor-pointer flex-1">
+                        <div className="flex items-center justify-between">
+                          <span>{employee.full_name}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {getRoleLabel(employee.role)}
+                          </Badge>
+                        </div>
                       </Label>
                     </div>
                   ))}
                 </div>
                 {employees.length === 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    No hay empleados disponibles. Asegúrate de crear empleados primero.
-                  </p>
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      No hay personal disponible. Asegúrate de crear empleados o administradores primero.
+                    </AlertDescription>
+                  </Alert>
                 )}
                 {selectedEmployees.length === 0 && employees.length > 0 && (
-                  <p className="text-sm text-amber-600 mt-2">
-                    Selecciona al menos un empleado para este servicio.
-                  </p>
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Selecciona al menos un miembro del personal para este servicio.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {selectedEmployees.length > 0 && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-green-600">
+                      {selectedEmployees.length} miembro{selectedEmployees.length > 1 ? 's' : ''} del personal seleccionado{selectedEmployees.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -544,7 +734,14 @@ export const AdminServices = () => {
 
               <div className="flex gap-2 pt-4">
                 <Button type="submit" className="flex-1" disabled={uploadingImage}>
-                  {uploadingImage ? "Subiendo..." : (editingService ? "Actualizar" : "Crear")} Servicio
+                  {uploadingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Subiendo...
+                    </>
+                  ) : (
+                    editingService ? "Actualizar Servicio" : "Crear Servicio"
+                  )}
                 </Button>
                 <Button 
                   type="button" 
