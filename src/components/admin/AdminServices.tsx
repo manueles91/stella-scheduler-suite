@@ -244,16 +244,43 @@ export const AdminServices = () => {
       setUploadingImage(true);
       setUploadProgress(0);
       
+      console.log('Starting upload for file:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
       // Generate unique filename
       const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      
+      console.log('Generated filename:', fileName);
       
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 80));
       }, 100);
 
+      // Test authentication first
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error(`Authentication failed: ${authError?.message || 'No user found'}`);
+      }
+      console.log('User authenticated:', user.id);
+
+      // Test bucket access
+      const { data: bucketTest, error: bucketError } = await supabase.storage
+        .from('service-images')
+        .list('', { limit: 1 });
+      
+      if (bucketError) {
+        console.error('Bucket access test failed:', bucketError);
+        throw new Error(`Bucket access failed: ${bucketError.message}`);
+      }
+      console.log('Bucket access confirmed');
+
       // Upload to Supabase storage
+      console.log('Starting file upload...');
       const { data, error } = await supabase.storage
         .from('service-images')
         .upload(fileName, file, {
@@ -266,7 +293,11 @@ export const AdminServices = () => {
       setUploadProgress(100);
 
       if (error) {
-        console.error('Upload error:', error);
+        console.error('Upload error details:', {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error
+        });
         
         // Provide specific error messages for common issues
         let errorMessage = `Error al subir la imagen: ${error.message}`;
@@ -277,6 +308,10 @@ export const AdminServices = () => {
           errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador.";
         } else if (error.message.includes('file size')) {
           errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
+        } else if (error.message.includes('policy')) {
+          errorMessage = "Error de permisos. Verifica que tengas rol de administrador o empleado.";
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Error de conexión. Verifica tu conexión a internet y que Supabase esté configurado correctamente.";
         }
         
         throw new Error(errorMessage);
@@ -285,6 +320,8 @@ export const AdminServices = () => {
       if (!data) {
         throw new Error('No se recibió respuesta del servidor al subir la imagen');
       }
+
+      console.log('Upload successful:', data);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -295,7 +332,9 @@ export const AdminServices = () => {
         throw new Error('No se pudo obtener la URL pública de la imagen');
       }
 
+      console.log('Public URL generated:', publicUrl);
       return publicUrl;
+      
     } catch (error) {
       console.error('Image upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir la imagen';
@@ -496,6 +535,50 @@ export const AdminServices = () => {
     }
   };
 
+  // Temporary test function for debugging storage access
+  const testStorageAccess = async () => {
+    try {
+      console.log('Testing storage access...');
+      
+      // Test bucket access
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      console.log('Buckets:', buckets, 'Error:', bucketsError);
+      
+      // Test bucket files listing
+      const { data: files, error: filesError } = await supabase.storage
+        .from('service-images')
+        .list();
+      console.log('Files in bucket:', files, 'Error:', filesError);
+      
+      // Test authentication
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('Current user:', user, 'Error:', userError);
+      
+      // Test profile
+      if (user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        console.log('User profile:', profile, 'Error:', profileError);
+      }
+      
+      toast({
+        title: "Test completed",
+        description: "Check browser console for detailed results",
+      });
+      
+    } catch (error) {
+      console.error('Storage test error:', error);
+      toast({
+        title: "Test failed",
+        description: `Storage test error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
   };
@@ -532,13 +615,18 @@ export const AdminServices = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-serif font-bold">Gestión de Servicios</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Servicio
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={testStorageAccess}>
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Test Storage
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Servicio
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -766,7 +854,8 @@ export const AdminServices = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Services Grid */}
