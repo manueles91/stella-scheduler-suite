@@ -267,7 +267,19 @@ export const AdminServices = () => {
 
       if (error) {
         console.error('Upload error:', error);
-        throw new Error(`Error al subir la imagen: ${error.message}`);
+        
+        // Provide specific error messages for common issues
+        let errorMessage = `Error al subir la imagen: ${error.message}`;
+        
+        if (error.message.includes('bucket') && error.message.includes('not found')) {
+          errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador para configurar el almacenamiento de imágenes.";
+        } else if (error.message.includes('row-level security')) {
+          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador.";
+        } else if (error.message.includes('file size')) {
+          errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data) {
