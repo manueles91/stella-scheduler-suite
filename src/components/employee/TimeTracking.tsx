@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Clock, Plus, Pencil, Trash2, Eye, EyeOff, ChevronLeft, ChevronRight, User, Shield, Grid, List } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Shield } from "lucide-react";
 import { format, isToday, startOfDay, endOfDay, isSameDay, parseISO, addDays, subDays, startOfWeek, addMinutes, differenceInMinutes } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,8 +55,6 @@ export const TimeTracking = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showBlockedTimes, setShowBlockedTimes] = useState(true);
-  // Add view mode state
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [dialogType, setDialogType] = useState<'appointment' | 'block'>('block');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
@@ -84,21 +82,17 @@ export const TimeTracking = () => {
 
   // Update week days when selected date changes
   useEffect(() => {
-    if (viewMode === 'calendar') {
-      updateWeekDays();
-    }
-  }, [selectedDate, viewMode]);
+    updateWeekDays();
+  }, [selectedDate]);
 
   useEffect(() => {
     if (profile?.id) {
       fetchAppointments();
       fetchBlockedTimes();
-      if (viewMode === 'calendar') {
-        fetchServices();
-        fetchClients();
-      }
+      fetchServices();
+      fetchClients();
     }
-  }, [profile?.id, selectedDate, viewMode]);
+  }, [profile?.id, selectedDate]);
 
   const updateWeekDays = () => {
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
@@ -584,332 +578,127 @@ export const TimeTracking = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="h-8 w-8" />
-          <h2 className="text-3xl font-serif font-bold">Agenda y Horarios</h2>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {viewMode === 'list' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBlockedTimes(!showBlockedTimes)}
-              >
-                {showBlockedTimes ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-                {showBlockedTimes ? 'Ocultar' : 'Mostrar'} bloqueados
-              </Button>
-              
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={resetBlockTimeForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Bloquear Tiempo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Bloquear Tiempo</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="date">Fecha</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={blockTimeForm.date}
-                        onChange={(e) => setBlockTimeForm({ ...blockTimeForm, date: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="start_time">Hora de inicio</Label>
-                        <Select
-                          value={blockTimeForm.start_time}
-                          onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, start_time: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TIME_SLOTS.map((time) => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="end_time">Hora de fin</Label>
-                        <Select
-                          value={blockTimeForm.end_time}
-                          onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, end_time: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TIME_SLOTS.map((time) => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="reason">Motivo</Label>
-                      <Textarea
-                        id="reason"
-                        placeholder="Ej: Reunión, descanso, formación..."
-                        value={blockTimeForm.reason}
-                        onChange={(e) => setBlockTimeForm({ ...blockTimeForm, reason: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button onClick={createBlockedTime} className="flex-1">
-                        Bloquear Tiempo
-                      </Button>
-                      <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
-        </div>
+      <div className="flex items-center gap-2">
+        <CalendarIcon className="h-8 w-8" />
+        <h2 className="text-3xl font-serif font-bold">Agenda y Horarios</h2>
       </div>
 
-      {/* Render calendar view or list view */}
-      {viewMode === 'calendar' ? renderCalendarView() : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Calendar */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Calendario</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  className="rounded-md border"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Daily Schedule */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>
-                  Agenda del {format(selectedDate, 'dd/MM/yyyy')}
-                  {isToday(selectedDate) && <Badge className="ml-2">Hoy</Badge>}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Appointments */}
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    Citas programadas ({selectedDateAppointments.length})
-                  </h4>
-                  
-                  {selectedDateAppointments.length === 0 ? (
-                    <p className="text-muted-foreground text-sm bg-gray-50 p-4 rounded-lg">
-                      No hay citas programadas para esta fecha.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedDateAppointments.map((appointment) => (
-                        <div key={appointment.id} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h5 className="font-medium">{appointment.client_name}</h5>
-                              <Badge variant="secondary">{appointment.service_name}</Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {appointment.start_time} - {appointment.end_time}
-                            </div>
-                            {appointment.notes && (
-                              <p className="text-sm text-muted-foreground mt-1">{appointment.notes}</p>
-                            )}
-                          </div>
-                          <Badge className={getStatusColor(appointment.status)}>
-                            {getStatusText(appointment.status)}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Blocked Times */}
-                {showBlockedTimes && (
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Tiempo bloqueado ({selectedDateBlockedTimes.length})
-                    </h4>
-                    
-                    {selectedDateBlockedTimes.length === 0 ? (
-                      <p className="text-muted-foreground text-sm bg-gray-50 p-4 rounded-lg">
-                        No hay tiempo bloqueado para esta fecha.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {selectedDateBlockedTimes.map((blocked) => (
-                          <div key={blocked.id} className="flex items-center justify-between p-3 border rounded-lg bg-red-50">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h5 className="font-medium text-red-700">Tiempo bloqueado</h5>
-                                {blocked.is_recurring && (
-                                  <Badge variant="outline" className="text-xs">Recurrente</Badge>
-                                )}
-                              </div>
-                              <div className="text-sm text-red-600 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {blocked.start_time} - {blocked.end_time}
-                              </div>
-                              {blocked.reason && (
-                                <p className="text-sm text-red-600 mt-1">{blocked.reason}</p>
-                              )}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteBlockedTime(blocked.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <h4 className="font-medium text-sm">Citas de hoy</h4>
-                  <p className="text-2xl font-bold text-primary">
-                    {isToday(selectedDate) ? selectedDateAppointments.length : 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <h4 className="font-medium text-sm">Tiempo bloqueado</h4>
-                  <p className="text-2xl font-bold text-red-600">
-                    {selectedDateBlockedTimes.length}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
+      {/* Render only calendar view (daily view) */}
+      {renderCalendarView()}
 
       {/* Dialog for calendar view */}
-      {viewMode === 'calendar' && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
-                {dialogType === 'appointment' ? 'Nueva Cita' : 'Bloquear Tiempo'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            {dialogType === 'appointment' ? (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="client">Cliente</Label>
-                  <Select
-                    value={appointmentForm.client_id}
-                    onValueChange={(value) => setAppointmentForm({ ...appointmentForm, client_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogType === 'appointment' ? 'Nueva Cita' : 'Bloquear Tiempo'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {dialogType === 'appointment' ? (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="client">Cliente</Label>
+                <Select
+                  value={appointmentForm.client_id}
+                  onValueChange={(value) => setAppointmentForm({ ...appointmentForm, client_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div>
-                  <Label htmlFor="service">Servicio</Label>
-                  <Select
-                    value={appointmentForm.service_id}
-                    onValueChange={(value) => setAppointmentForm({ ...appointmentForm, service_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar servicio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          {service.name} ({service.duration_minutes} min)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="service">Servicio</Label>
+                <Select
+                  value={appointmentForm.service_id}
+                  onValueChange={(value) => setAppointmentForm({ ...appointmentForm, service_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar servicio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.name} ({service.duration_minutes} min)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div>
-                  <Label htmlFor="date">Fecha</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={appointmentForm.date}
-                    onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="date">Fecha</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={appointmentForm.date}
+                  onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
+                />
+              </div>
 
+              <div>
+                <Label htmlFor="start_time">Hora de inicio</Label>
+                <Select
+                  value={appointmentForm.start_time}
+                  onValueChange={(value) => setAppointmentForm({ ...appointmentForm, start_time: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map((time) => (
+                      <SelectItem key={time} value={time}>{time}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Notas adicionales..."
+                  value={appointmentForm.notes}
+                  onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={createAppointment} className="flex-1">
+                  Crear Cita
+                </Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="block_date">Fecha</Label>
+                <Input
+                  id="block_date"
+                  type="date"
+                  value={blockTimeForm.date}
+                  onChange={(e) => setBlockTimeForm({ ...blockTimeForm, date: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start_time">Hora de inicio</Label>
+                  <Label htmlFor="block_start">Hora de inicio</Label>
                   <Select
-                    value={appointmentForm.start_time}
-                    onValueChange={(value) => setAppointmentForm({ ...appointmentForm, start_time: value })}
+                    value={blockTimeForm.start_time}
+                    onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, start_time: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -923,95 +712,45 @@ export const TimeTracking = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Notas</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Notas adicionales..."
-                    value={appointmentForm.notes}
-                    onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={createAppointment} className="flex-1">
-                    Crear Cita
-                  </Button>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
+                  <Label htmlFor="block_end">Hora de fin</Label>
+                  <Select
+                    value={blockTimeForm.end_time}
+                    onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, end_time: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_SLOTS.map((time) => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="block_date">Fecha</Label>
-                  <Input
-                    id="block_date"
-                    type="date"
-                    value={blockTimeForm.date}
-                    onChange={(e) => setBlockTimeForm({ ...blockTimeForm, date: e.target.value })}
-                  />
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="block_start">Hora de inicio</Label>
-                    <Select
-                      value={blockTimeForm.start_time}
-                      onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, start_time: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TIME_SLOTS.map((time) => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="block_end">Hora de fin</Label>
-                    <Select
-                      value={blockTimeForm.end_time}
-                      onValueChange={(value) => setBlockTimeForm({ ...blockTimeForm, end_time: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TIME_SLOTS.map((time) => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="reason">Motivo</Label>
-                  <Textarea
-                    id="reason"
-                    placeholder="Ej: Reunión, descanso, formación..."
-                    value={blockTimeForm.reason}
-                    onChange={(e) => setBlockTimeForm({ ...blockTimeForm, reason: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={createBlockedTime} className="flex-1">
-                    Bloquear Tiempo
-                  </Button>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                </div>
+              <div>
+                <Label htmlFor="reason">Motivo</Label>
+                <Textarea
+                  id="reason"
+                  placeholder="Ej: Reunión, descanso, formación..."
+                  value={blockTimeForm.reason}
+                  onChange={(e) => setBlockTimeForm({ ...blockTimeForm, reason: e.target.value })}
+                />
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
+
+              <div className="flex gap-2">
+                <Button onClick={createBlockedTime} className="flex-1">
+                  Bloquear Tiempo
+                </Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
