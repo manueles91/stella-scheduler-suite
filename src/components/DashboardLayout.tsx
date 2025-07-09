@@ -20,7 +20,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     { id: 'bookings', label: 'Mis reservas', icon: Calendar },
     ...(profile?.role === 'employee' || profile?.role === 'admin' ? [
       { id: 'schedule', label: 'Mi agenda', icon: Clock },
-      { id: 'time-tracking', label: 'Control de tiempo', icon: Clock },
+      { id: 'time-tracking', label: 'Agenda y horarios', icon: Clock },
     ] : []),
     ...(profile?.role === 'admin' ? [
       { id: 'admin-bookings', label: 'Todas las reservas', icon: Calendar },
@@ -52,9 +52,6 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
                 <p className="text-muted-foreground capitalize">{profile?.role}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
@@ -77,6 +74,18 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
                 </Button>
               );
             })}
+            
+            {/* Sign out button at the bottom of the sidebar */}
+            <div className="pt-4 border-t">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={signOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Cerrar sesión
+              </Button>
+            </div>
           </nav>
         </aside>
         {sidebarOpen && <div className="fixed inset-0 bg-black/30 z-30 sm:hidden" onClick={() => setSidebarOpen(false)} />}
