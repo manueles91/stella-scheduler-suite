@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_times: {
+        Row: {
+          created_at: string | null
+          date: string
+          employee_id: string
+          end_time: string
+          id: string
+          is_recurring: boolean | null
+          reason: string | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          employee_id: string
+          end_time: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          employee_id?: string
+          end_time?: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_times_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_schedules: {
         Row: {
           created_at: string | null
