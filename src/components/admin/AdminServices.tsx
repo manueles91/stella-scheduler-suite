@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,12 @@ interface Service {
   image_url?: string;
   is_active: boolean;
   created_at: string;
+}
+
+interface Employee {
+  id: string;
+  full_name: string;
+  email: string;
 }
 
 const DURATION_OPTIONS = [
@@ -37,12 +44,14 @@ const DURATION_OPTIONS = [
 
 export const AdminServices = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -55,6 +64,7 @@ export const AdminServices = () => {
 
   useEffect(() => {
     fetchServices();
+    fetchEmployees();
   }, []);
 
   const fetchServices = async () => {
@@ -74,6 +84,59 @@ export const AdminServices = () => {
       setServices(data || []);
     }
     setLoading(false);
+  };
+
+  const fetchEmployees = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('role', 'employee')
+      .order('full_name');
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load employees",
+        variant: "destructive",
+      });
+    } else {
+      setEmployees(data || []);
+    }
+  };
+
+  const fetchServiceEmployees = async (serviceId: string) => {
+    const { data, error } = await supabase
+      .from('employee_services')
+      .select('employee_id')
+      .eq('service_id', serviceId);
+
+    if (!error && data) {
+      setSelectedEmployees(data.map(item => item.employee_id));
+    }
+  };
+
+  const updateServiceEmployees = async (serviceId: string, employeeIds: string[]) => {
+    // First, delete existing relationships
+    await supabase
+      .from('employee_services')
+      .delete()
+      .eq('service_id', serviceId);
+
+    // Then, insert new relationships
+    if (employeeIds.length > 0) {
+      const employeeServices = employeeIds.map(employeeId => ({
+        service_id: serviceId,
+        employee_id: employeeId,
+      }));
+
+      const { error } = await supabase
+        .from('employee_services')
+        .insert(employeeServices);
+
+      if (error) {
+        throw error;
+      }
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +219,15 @@ export const AdminServices = () => {
       return;
     }
 
+    if (selectedEmployees.length === 0) {
+      toast({
+        title: "Error",
+        description: "Selecciona al menos un empleado para este servicio",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       let imageUrl = formData.image_url;
       
@@ -173,6 +245,8 @@ export const AdminServices = () => {
         price_cents: Math.round(formData.price_cents * 100), // Convert to cents
       };
 
+      let serviceId: string;
+
       if (editingService) {
         const { error } = await supabase
           .from('services')
@@ -180,23 +254,30 @@ export const AdminServices = () => {
           .eq('id', editingService.id);
 
         if (error) throw error;
+        serviceId = editingService.id;
         
         toast({
           title: "Éxito",
           description: "Servicio actualizado correctamente",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('services')
-          .insert([serviceData]);
+          .insert([serviceData])
+          .select('id')
+          .single();
 
         if (error) throw error;
+        serviceId = data.id;
         
         toast({
           title: "Éxito",
           description: "Servicio creado correctamente",
         });
       }
+
+      // Update employee relationships
+      await updateServiceEmployees(serviceId, selectedEmployees);
 
       setDialogOpen(false);
       resetForm();
@@ -210,7 +291,7 @@ export const AdminServices = () => {
     }
   };
 
-  const handleEdit = (service: Service) => {
+  const handleEdit = async (service: Service) => {
     setEditingService(service);
     setFormData({
       name: service.name,
@@ -221,6 +302,7 @@ export const AdminServices = () => {
       is_active: service.is_active,
     });
     setImagePreview(service.image_url || null);
+    await fetchServiceEmployees(service.id);
     setDialogOpen(true);
   };
 
@@ -259,6 +341,7 @@ export const AdminServices = () => {
     setEditingService(null);
     setImageFile(null);
     setImagePreview(null);
+    setSelectedEmployees([]);
   };
 
   const removeImage = () => {
@@ -393,28 +476,61 @@ export const AdminServices = () => {
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-4">
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-shrink-0"
-                      onClick={() => document.getElementById('image')?.click()}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Subir imagen
-                    </Button>
-                  </div>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('image')?.click()}
+                    className="w-full"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {imagePreview ? "Cambiar imagen" : "Subir imagen"}
+                  </Button>
                   <p className="text-sm text-muted-foreground">
                     Formatos soportados: JPG, PNG, WebP. Tamaño máximo: 5MB
                   </p>
                 </div>
+              </div>
+
+              {/* Employee Selection */}
+              <div>
+                <Label>Empleados que pueden realizar este servicio *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto border rounded-lg p-3">
+                  {employees.map((employee) => (
+                    <div key={employee.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={employee.id}
+                        checked={selectedEmployees.includes(employee.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedEmployees([...selectedEmployees, employee.id]);
+                          } else {
+                            setSelectedEmployees(selectedEmployees.filter(id => id !== employee.id));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={employee.id} className="text-sm font-normal cursor-pointer">
+                        {employee.full_name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {employees.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No hay empleados disponibles. Asegúrate de crear empleados primero.
+                  </p>
+                )}
+                {selectedEmployees.length === 0 && employees.length > 0 && (
+                  <p className="text-sm text-amber-600 mt-2">
+                    Selecciona al menos un empleado para este servicio.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
