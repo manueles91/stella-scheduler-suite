@@ -51,32 +51,51 @@ export const EmployeeSchedule = () => {
     if (!profile?.id) return;
     
     setLoading(true);
-    const { data, error } = await supabase
-      .from('employee_schedules')
-      .select('*')
-      .eq('employee_id', profile.id)
-      .order('day_of_week');
+    try {
+      const { data, error } = await supabase
+        .from('employee_schedules')
+        .select('*')
+        .eq('employee_id', profile.id)
+        .order('day_of_week');
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load schedules",
-        variant: "destructive",
-      });
-    } else {
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
       // Ensure we have a schedule for each day
       const scheduleByDay = new Map(data?.map(s => [s.day_of_week, s]) || []);
-      const fullSchedules = DAYS_OF_WEEK.map(day => 
-        scheduleByDay.get(day.value) || {
+      const fullSchedules = DAYS_OF_WEEK.map(day => {
+        const existingSchedule = scheduleByDay.get(day.value);
+        return existingSchedule || {
           day_of_week: day.value,
           start_time: "09:00",
           end_time: "17:00",
           is_available: false,
-        }
-      );
+        };
+      });
+      
       setSchedules(fullSchedules);
+      console.log('Schedules loaded successfully:', fullSchedules);
+    } catch (error: any) {
+      console.error('Error fetching schedules:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar los horarios. Verifique su conexión.",
+        variant: "destructive",
+      });
+      
+      // Set default schedules if fetch fails
+      const defaultSchedules = DAYS_OF_WEEK.map(day => ({
+        day_of_week: day.value,
+        start_time: "09:00",
+        end_time: "17:00",
+        is_available: false,
+      }));
+      setSchedules(defaultSchedules);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateSchedule = async (dayIndex: number, field: keyof Schedule, value: any) => {
@@ -86,19 +105,48 @@ export const EmployeeSchedule = () => {
 
     const schedule = updatedSchedules[dayIndex];
     
+    // Validate times before saving
+    if (field === 'start_time' || field === 'end_time') {
+      if (schedule.start_time >= schedule.end_time) {
+        toast({
+          title: "Error",
+          description: "La hora de inicio debe ser anterior a la hora de fin",
+          variant: "destructive",
+        });
+        // Revert the change
+        fetchSchedules();
+        return;
+      }
+    }
+    
     try {
       if (schedule.id) {
-        // Update existing schedule
-        const { error } = await supabase
-          .from('employee_schedules')
-          .update({
-            start_time: schedule.start_time,
-            end_time: schedule.end_time,
-            is_available: schedule.is_available,
-          })
-          .eq('id', schedule.id);
+        // Existing schedule - handle both availability toggle and time updates
+        if (!schedule.is_available) {
+          // User turned off availability - delete the schedule
+          const { error } = await supabase
+            .from('employee_schedules')
+            .delete()
+            .eq('id', schedule.id);
 
-        if (error) throw error;
+          if (error) throw error;
+          
+          // Update local state to remove ID
+          updatedSchedules[dayIndex].id = undefined;
+          setSchedules(updatedSchedules);
+        } else {
+          // Update existing schedule with new times/availability
+          const { error } = await supabase
+            .from('employee_schedules')
+            .update({
+              start_time: schedule.start_time,
+              end_time: schedule.end_time,
+              is_available: schedule.is_available,
+            })
+            .eq('id', schedule.id);
+
+          if (error) throw error;
+        }
       } else if (schedule.is_available) {
         // Create new schedule only if marked as available
         const { data, error } = await supabase
@@ -124,13 +172,26 @@ export const EmployeeSchedule = () => {
         title: "Éxito",
         description: "Horario actualizado correctamente",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating schedule:', error);
+      
+      // Handle specific database errors
+      let errorMessage = "Error al actualizar el horario";
+      if (error.message?.includes('check_time_order')) {
+        errorMessage = "La hora de inicio debe ser anterior a la hora de fin";
+      } else if (error.message?.includes('unique_employee_day_schedule')) {
+        errorMessage = "Ya existe un horario para este día";
+      } else if (error.message?.includes('validate_schedule_times')) {
+        errorMessage = error.message || "Horario inválido";
+      }
+      
       toast({
         title: "Error",
-        description: "Error al actualizar el horario",
+        description: errorMessage,
         variant: "destructive",
       });
-      // Revert the change
+      
+      // Revert the change by refetching from database
       fetchSchedules();
     }
   };
@@ -182,7 +243,7 @@ export const EmployeeSchedule = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.map((time) => (
+                        {TIME_OPTIONS.filter(time => time < schedule.end_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
@@ -201,7 +262,7 @@ export const EmployeeSchedule = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.map((time) => (
+                        {TIME_OPTIONS.filter(time => time > schedule.start_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
