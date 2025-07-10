@@ -246,43 +246,68 @@ export const AdminServices = () => {
       
       // Generate unique filename
       const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const fileName = `service-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      console.log('Starting image upload:', fileName);
       
       // Simulate upload progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 80));
-      }, 100);
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
 
-      // Upload to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('service-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: file.type
-        });
+      // Upload to Supabase storage with retry logic
+      let uploadAttempts = 0;
+      let uploadResult;
+      
+      while (uploadAttempts < 3) {
+        try {
+          uploadResult = await supabase.storage
+            .from('service-images')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+          
+          if (!uploadResult.error) {
+            break;
+          }
+          
+          uploadAttempts++;
+          if (uploadAttempts < 3) {
+            console.log(`Upload attempt ${uploadAttempts} failed, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (networkError) {
+          uploadAttempts++;
+          console.error(`Upload attempt ${uploadAttempts} failed:`, networkError);
+          if (uploadAttempts >= 3) {
+            throw new Error('Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (error) {
-        console.error('Upload error:', error);
+      if (uploadResult?.error) {
+        console.error('Upload error:', uploadResult.error);
         
         // Provide specific error messages for common issues
-        let errorMessage = `Error al subir la imagen: ${error.message}`;
+        let errorMessage = `Error al subir la imagen: ${uploadResult.error.message}`;
         
-        if (error.message.includes('bucket') && error.message.includes('not found')) {
-          errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador para configurar el almacenamiento de imágenes.";
-        } else if (error.message.includes('row-level security')) {
-          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador.";
-        } else if (error.message.includes('file size')) {
+        if (uploadResult.error.message.includes('bucket') && uploadResult.error.message.includes('not found')) {
+          errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador.";
+        } else if (uploadResult.error.message.includes('row-level security') || uploadResult.error.message.includes('policy')) {
+          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador o empleado.";
+        } else if (uploadResult.error.message.includes('file size')) {
           errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
         }
         
         throw new Error(errorMessage);
       }
 
-      if (!data) {
+      if (!uploadResult?.data) {
         throw new Error('No se recibió respuesta del servidor al subir la imagen');
       }
 
@@ -295,6 +320,7 @@ export const AdminServices = () => {
         throw new Error('No se pudo obtener la URL pública de la imagen');
       }
 
+      console.log('Image uploaded successfully:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Image upload error:', error);
