@@ -86,19 +86,48 @@ export const EmployeeSchedule = () => {
 
     const schedule = updatedSchedules[dayIndex];
     
+    // Validate times before saving
+    if (field === 'start_time' || field === 'end_time') {
+      if (schedule.start_time >= schedule.end_time) {
+        toast({
+          title: "Error",
+          description: "La hora de inicio debe ser anterior a la hora de fin",
+          variant: "destructive",
+        });
+        // Revert the change
+        fetchSchedules();
+        return;
+      }
+    }
+    
     try {
       if (schedule.id) {
-        // Update existing schedule
-        const { error } = await supabase
-          .from('employee_schedules')
-          .update({
-            start_time: schedule.start_time,
-            end_time: schedule.end_time,
-            is_available: schedule.is_available,
-          })
-          .eq('id', schedule.id);
+        // Existing schedule - handle both availability toggle and time updates
+        if (!schedule.is_available) {
+          // User turned off availability - delete the schedule
+          const { error } = await supabase
+            .from('employee_schedules')
+            .delete()
+            .eq('id', schedule.id);
 
-        if (error) throw error;
+          if (error) throw error;
+          
+          // Update local state to remove ID
+          updatedSchedules[dayIndex].id = undefined;
+          setSchedules(updatedSchedules);
+        } else {
+          // Update existing schedule with new times/availability
+          const { error } = await supabase
+            .from('employee_schedules')
+            .update({
+              start_time: schedule.start_time,
+              end_time: schedule.end_time,
+              is_available: schedule.is_available,
+            })
+            .eq('id', schedule.id);
+
+          if (error) throw error;
+        }
       } else if (schedule.is_available) {
         // Create new schedule only if marked as available
         const { data, error } = await supabase
@@ -124,13 +153,26 @@ export const EmployeeSchedule = () => {
         title: "Éxito",
         description: "Horario actualizado correctamente",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating schedule:', error);
+      
+      // Handle specific database errors
+      let errorMessage = "Error al actualizar el horario";
+      if (error.message?.includes('check_time_order')) {
+        errorMessage = "La hora de inicio debe ser anterior a la hora de fin";
+      } else if (error.message?.includes('unique_employee_day_schedule')) {
+        errorMessage = "Ya existe un horario para este día";
+      } else if (error.message?.includes('validate_schedule_times')) {
+        errorMessage = error.message || "Horario inválido";
+      }
+      
       toast({
         title: "Error",
-        description: "Error al actualizar el horario",
+        description: errorMessage,
         variant: "destructive",
       });
-      // Revert the change
+      
+      // Revert the change by refetching from database
       fetchSchedules();
     }
   };
