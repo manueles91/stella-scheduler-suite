@@ -240,10 +240,10 @@ export const EmployeeSchedule = () => {
                       onValueChange={(value) => updateSchedule(index, 'start_time', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Seleccionar hora de inicio" />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.filter(time => time < schedule.end_time).map((time) => (
+                        {TIME_OPTIONS.filter(time => time < schedule.end_time || time === schedule.start_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
@@ -259,10 +259,10 @@ export const EmployeeSchedule = () => {
                       onValueChange={(value) => updateSchedule(index, 'end_time', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Seleccionar hora de fin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.filter(time => time > schedule.start_time).map((time) => (
+                        {TIME_OPTIONS.filter(time => time > schedule.start_time || time === schedule.end_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
