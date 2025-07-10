@@ -462,21 +462,32 @@ export const TimeTracking = () => {
         .order('start_time');
 
       if (error) {
-        // Table might not exist yet, create it
-        console.log('Blocked times table not found, will create when needed');
+        console.error('Blocked times fetch error:', error);
+        // If table doesn't exist or other error, just set empty array
         setBlockedTimes([]);
         return;
       }
 
       setBlockedTimes(data || []);
+      console.log('Blocked times loaded successfully:', data?.length || 0, 'entries');
     } catch (error) {
-      console.log('Error fetching blocked times:', error);
+      console.error('Error fetching blocked times:', error);
       setBlockedTimes([]);
     }
   };
 
   const createBlockedTime = async () => {
     if (!profile?.id) return;
+    
+    // Validate times before saving
+    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+      toast({
+        title: "Error",
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
@@ -486,11 +497,14 @@ export const TimeTracking = () => {
           date: blockTimeForm.date,
           start_time: blockTimeForm.start_time,
           end_time: blockTimeForm.end_time,
-          reason: blockTimeForm.reason,
+          reason: blockTimeForm.reason || 'Tiempo bloqueado',
           is_recurring: blockTimeForm.is_recurring,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating blocked time:', error);
+        throw error;
+      }
 
       toast({
         title: "Éxito",
@@ -498,12 +512,19 @@ export const TimeTracking = () => {
       });
 
       setDialogOpen(false);
-      resetBlockTimeForm();
       fetchBlockedTimes();
-    } catch (error) {
+      resetBlockTimeForm();
+    } catch (error: any) {
+      console.error('Blocked time creation error:', error);
+      
+      let errorMessage = "Error al bloquear el tiempo";
+      if (error.message?.includes('blocked_times')) {
+        errorMessage = "Error en la base de datos. Contacte al administrador.";
+      }
+      
       toast({
         title: "Error",
-        description: "Error al bloquear el tiempo",
+        description: errorMessage,
         variant: "destructive",
       });
     }

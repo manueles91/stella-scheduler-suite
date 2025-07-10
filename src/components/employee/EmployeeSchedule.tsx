@@ -51,32 +51,51 @@ export const EmployeeSchedule = () => {
     if (!profile?.id) return;
     
     setLoading(true);
-    const { data, error } = await supabase
-      .from('employee_schedules')
-      .select('*')
-      .eq('employee_id', profile.id)
-      .order('day_of_week');
+    try {
+      const { data, error } = await supabase
+        .from('employee_schedules')
+        .select('*')
+        .eq('employee_id', profile.id)
+        .order('day_of_week');
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load schedules",
-        variant: "destructive",
-      });
-    } else {
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
       // Ensure we have a schedule for each day
       const scheduleByDay = new Map(data?.map(s => [s.day_of_week, s]) || []);
-      const fullSchedules = DAYS_OF_WEEK.map(day => 
-        scheduleByDay.get(day.value) || {
+      const fullSchedules = DAYS_OF_WEEK.map(day => {
+        const existingSchedule = scheduleByDay.get(day.value);
+        return existingSchedule || {
           day_of_week: day.value,
           start_time: "09:00",
           end_time: "17:00",
           is_available: false,
-        }
-      );
+        };
+      });
+      
       setSchedules(fullSchedules);
+      console.log('Schedules loaded successfully:', fullSchedules);
+    } catch (error: any) {
+      console.error('Error fetching schedules:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar los horarios. Verifique su conexión.",
+        variant: "destructive",
+      });
+      
+      // Set default schedules if fetch fails
+      const defaultSchedules = DAYS_OF_WEEK.map(day => ({
+        day_of_week: day.value,
+        start_time: "09:00",
+        end_time: "17:00",
+        is_available: false,
+      }));
+      setSchedules(defaultSchedules);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateSchedule = async (dayIndex: number, field: keyof Schedule, value: any) => {
@@ -224,7 +243,7 @@ export const EmployeeSchedule = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.map((time) => (
+                        {TIME_OPTIONS.filter(time => time < schedule.end_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
@@ -243,7 +262,7 @@ export const EmployeeSchedule = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_OPTIONS.map((time) => (
+                        {TIME_OPTIONS.filter(time => time > schedule.start_time).map((time) => (
                           <SelectItem key={time} value={time}>
                             {time}
                           </SelectItem>
