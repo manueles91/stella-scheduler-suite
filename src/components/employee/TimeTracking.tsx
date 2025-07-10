@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Appointment {
   id: string;
   client_name: string;
+  employee_name?: string;
   service_name: string;
   appointment_date: string;
   start_time: string;
@@ -271,6 +272,9 @@ export const TimeTracking = () => {
       >
         <div className="text-sm font-medium truncate">{appointment.client_name}</div>
         <div className="text-xs opacity-90 truncate">{appointment.service_name}</div>
+        {profile?.role === 'admin' && appointment.employee_name && (
+          <div className="text-xs opacity-75 truncate">Con: {appointment.employee_name}</div>
+        )}
         <div className="text-xs opacity-75">{appointment.start_time} - {appointment.end_time}</div>
       </div>
     ));
@@ -384,7 +388,8 @@ export const TimeTracking = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Build query - admins see all reservations, employees see only their own
+      let query = supabase
         .from('reservations')
         .select(`
           id,
@@ -393,12 +398,20 @@ export const TimeTracking = () => {
           end_time,
           status,
           notes,
+          employee_id,
           profiles!reservations_client_id_fkey(full_name),
+          employee_profile:profiles!reservations_employee_id_fkey(full_name),
           services(name)
         `)
-        .eq('employee_id', profile.id)
         .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
-        .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
+        .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
+
+      // If not admin, filter by employee_id
+      if (profile.role !== 'admin') {
+        query = query.eq('employee_id', profile.id);
+      }
+
+      const { data, error } = await query
         .order('appointment_date')
         .order('start_time');
 
@@ -407,6 +420,7 @@ export const TimeTracking = () => {
       const formattedAppointments = data?.map(appointment => ({
         id: appointment.id,
         client_name: appointment.profiles?.full_name || 'Cliente',
+        employee_name: appointment.employee_profile?.full_name || 'Empleado',
         service_name: appointment.services?.name || 'Servicio',
         appointment_date: appointment.appointment_date,
         start_time: appointment.start_time,
@@ -431,12 +445,19 @@ export const TimeTracking = () => {
     if (!profile?.id) return;
     
     try {
-      const { data, error } = await supabase
+      // Build query - admins see all blocked times, employees see only their own
+      let query = supabase
         .from('blocked_times')
         .select('*')
-        .eq('employee_id', profile.id)
         .gte('date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
-        .lte('date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
+        .lte('date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
+
+      // If not admin, filter by employee_id
+      if (profile.role !== 'admin') {
+        query = query.eq('employee_id', profile.id);
+      }
+
+      const { data, error } = await query
         .order('date')
         .order('start_time');
 
