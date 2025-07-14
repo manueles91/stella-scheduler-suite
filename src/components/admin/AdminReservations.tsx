@@ -118,6 +118,14 @@ export const AdminReservations = () => {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
+  const formatTime12Hour = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -224,7 +232,7 @@ export const AdminReservations = () => {
                       <strong>Fecha:</strong> {format(new Date(reservation.appointment_date), 'PPP')}
                     </p>
                     <p className="text-sm">
-                      <strong>Hora:</strong> {reservation.start_time} - {reservation.end_time}
+                      <strong>Hora:</strong> {formatTime12Hour(reservation.start_time)} - {formatTime12Hour(reservation.end_time)}
                     </p>
                     <p className="text-sm">
                       <strong>Duración:</strong> {reservation.services.duration_minutes} min
