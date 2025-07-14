@@ -67,7 +67,15 @@ export const EmployeeSchedule = () => {
       const scheduleByDay = new Map(data?.map(s => [s.day_of_week, s]) || []);
       const fullSchedules = DAYS_OF_WEEK.map(day => {
         const existingSchedule = scheduleByDay.get(day.value);
-        return existingSchedule || {
+        if (existingSchedule) {
+          // Normalize time format by removing seconds
+          return {
+            ...existingSchedule,
+            start_time: existingSchedule.start_time.substring(0, 5),
+            end_time: existingSchedule.end_time.substring(0, 5),
+          };
+        }
+        return {
           day_of_week: day.value,
           start_time: "09:00",
           end_time: "17:00",
