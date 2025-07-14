@@ -218,7 +218,7 @@ export const AdminStaff = () => {
 
       toast({
         title: "Éxito",
-        description: "Servicios del empleado actualizados",
+        description: "Servicios actualizados correctamente",
       });
       
       setServicesDialogOpen(false);
@@ -226,7 +226,7 @@ export const AdminStaff = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al actualizar servicios del empleado",
+        description: "Error al actualizar servicios",
         variant: "destructive",
       });
     }
@@ -350,7 +350,7 @@ export const AdminStaff = () => {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Selecciona los servicios que puede realizar este empleado:
+              Selecciona los servicios que puede realizar este miembro del personal:
             </p>
             <div className="space-y-2">
               {services.map((service) => (
@@ -422,7 +422,7 @@ export const AdminStaff = () => {
                 </span>
               </div>
 
-              {profile.role === 'employee' && (
+              {(profile.role === 'employee' || profile.role === 'admin') && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Servicios:</span>
