@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { EnhancedBookingSystem } from "@/components/EnhancedBookingSystem";
@@ -12,9 +13,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { profile } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -31,6 +40,22 @@ const Dashboard = () => {
     };
     fetchAppointments();
   }, [profile?.id]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-serif">Cargando...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!user) {
+    return null;
+  }
 
   const renderContent = () => {
     switch (activeTab) {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 export const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignUp = async (formData: FormData) => {
     setIsLoading(true);
@@ -64,6 +66,8 @@ export const AuthForm = () => {
         title: "Success",
         description: "Welcome back to Stella Studio!",
       });
+      // Redirect to dashboard after successful login
+      navigate('/dashboard');
     }
     setIsLoading(false);
   };
