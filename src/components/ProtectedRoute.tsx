@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { AuthForm } from "@/components/auth/AuthForm";
 
-const Auth = () => {
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate('/dashboard');
+    if (!loading && !user) {
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -23,7 +26,9 @@ const Auth = () => {
     );
   }
 
-  return <AuthForm />;
-};
+  if (!user) {
+    return null; // Will redirect in useEffect
+  }
 
-export default Auth;
+  return <>{children}</>;
+};

@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignUp = async (formData: FormData) => {
     setIsLoading(true);
@@ -21,7 +23,7 @@ export const AuthForm = () => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
           full_name: fullName,
         },
@@ -64,6 +66,8 @@ export const AuthForm = () => {
         title: "Success",
         description: "Welcome back to Stella Studio!",
       });
+      // Redirect to dashboard after successful sign in
+      navigate('/dashboard');
     }
     setIsLoading(false);
   };
