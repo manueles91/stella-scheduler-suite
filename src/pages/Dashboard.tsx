@@ -17,6 +17,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [effectiveProfile, setEffectiveProfile] = useState(profile);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -25,21 +26,51 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
+  // Listen for impersonation changes
+  useEffect(() => {
+    const handleImpersonationChange = () => {
+      const mainElement = document.querySelector('[data-effective-profile]');
+      if (mainElement) {
+        const effectiveProfileData = mainElement.getAttribute('data-effective-profile');
+        if (effectiveProfileData) {
+          try {
+            const parsedProfile = JSON.parse(effectiveProfileData);
+            setEffectiveProfile(parsedProfile);
+          } catch (e) {
+            setEffectiveProfile(profile);
+          }
+        }
+      }
+    };
+
+    // Initial check
+    handleImpersonationChange();
+
+    // Set up observer for changes
+    const observer = new MutationObserver(handleImpersonationChange);
+    const mainElement = document.querySelector('[data-effective-profile]');
+    if (mainElement) {
+      observer.observe(mainElement, { attributes: true, attributeFilter: ['data-effective-profile'] });
+    }
+
+    return () => observer.disconnect();
+  }, [profile]);
+
   useEffect(() => {
     const fetchAppointments = async () => {
-      if (!profile?.id) return;
+      if (!effectiveProfile?.id) return;
       setAppointmentsLoading(true);
       const { data, error } = await supabase
         .from('reservations')
         .select('id, appointment_date, start_time, end_time, status, service_id, services(name)')
-        .eq('client_id', profile.id)
+        .eq('client_id', effectiveProfile.id)
         .order('appointment_date', { ascending: true })
         .order('start_time', { ascending: true });
       if (!error) setAppointments(data || []);
       setAppointmentsLoading(false);
     };
     fetchAppointments();
-  }, [profile?.id]);
+  }, [effectiveProfile?.id]);
 
   // Show loading while checking auth
   if (loading) {
@@ -62,7 +93,7 @@ const Dashboard = () => {
       case 'overview':
         return (
           <div className="space-y-4 sm:space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {profile?.full_name}!</h2>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <Card>
@@ -117,10 +148,10 @@ const Dashboard = () => {
         return <EnhancedBookingSystem />;
         
       case 'schedule':
-        return <EmployeeSchedule />;
+        return <EmployeeSchedule employeeId={effectiveProfile?.id} />;
         
       case 'time-tracking':
-        return <TimeTracking />;
+        return <TimeTracking employeeId={effectiveProfile?.id} />;
         
       case 'admin-bookings':
         return <AdminReservations />;

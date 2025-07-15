@@ -30,6 +30,13 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
   const effectiveProfile = impersonatedUser || profile;
   const isImpersonating = impersonatedUser !== null;
 
+  // Make impersonated user available to child components
+  const contextValue = {
+    effectiveProfile,
+    isImpersonating,
+    originalProfile: profile
+  };
+
   // Fetch available users for impersonation (admin only)
   useEffect(() => {
     if (profile?.role === 'admin') {
@@ -187,7 +194,9 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
         {sidebarOpen && <div className="fixed inset-0 bg-black/30 z-30 sm:hidden" onClick={() => setSidebarOpen(false)} />}
         {/* Main Content */}
         <main className="flex-1 p-2 sm:p-6">
-          {children}
+          <div data-effective-profile={JSON.stringify(effectiveProfile)} data-is-impersonating={isImpersonating}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

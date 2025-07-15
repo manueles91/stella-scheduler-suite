@@ -8,27 +8,33 @@ import { Schedule, DAYS_OF_WEEK } from "./schedule/scheduleTypes";
 import { ScheduleItem } from "./schedule/ScheduleItem";
 import { ScheduleSummary } from "./schedule/ScheduleSummary";
 
-export const EmployeeSchedule = () => {
+interface EmployeeScheduleProps {
+  employeeId?: string;
+}
+
+export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps = {}) => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
+  
+  const effectiveEmployeeId = employeeId || profile?.id;
 
   useEffect(() => {
-    if (profile?.id) {
+    if (effectiveEmployeeId) {
       fetchSchedules();
     }
-  }, [profile?.id]);
+  }, [effectiveEmployeeId]);
 
   const fetchSchedules = async () => {
-    if (!profile?.id) return;
+    if (!effectiveEmployeeId) return;
     
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('employee_schedules')
         .select('*')
-        .eq('employee_id', profile.id)
+        .eq('employee_id', effectiveEmployeeId)
         .order('day_of_week');
 
       if (error) {
@@ -133,7 +139,7 @@ export const EmployeeSchedule = () => {
         const { data, error } = await supabase
           .from('employee_schedules')
           .insert({
-            employee_id: profile?.id,
+            employee_id: effectiveEmployeeId,
             day_of_week: schedule.day_of_week,
             start_time: schedule.start_time,
             end_time: schedule.end_time,

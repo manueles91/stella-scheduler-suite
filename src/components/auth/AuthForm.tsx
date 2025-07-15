@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft } from "lucide-react";
 
 export const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -74,13 +75,23 @@ export const AuthForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-2 sm:p-4">
-      <Card className="w-full max-w-xs sm:max-w-md shadow-luxury">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl sm:text-2xl font-serif text-center">Stella Studio</CardTitle>
-          <CardDescription className="text-center">
-            Your luxury beauty experience awaits
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-xs sm:max-w-md space-y-4">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-white hover:text-white hover:bg-white/10"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver al inicio
+        </Button>
+        
+        <Card className="shadow-luxury">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-xl sm:text-2xl font-serif text-center">Stella Studio</CardTitle>
+            <CardDescription className="text-center">
+              Your luxury beauty experience awaits
+            </CardDescription>
+          </CardHeader>
         <CardContent className="p-2 sm:p-6">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -133,7 +144,8 @@ export const AuthForm = () => {
             </TabsContent>
           </Tabs>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

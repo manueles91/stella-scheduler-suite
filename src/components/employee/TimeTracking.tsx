@@ -49,7 +49,11 @@ for (let hour = 6; hour <= 22; hour++) {
 const HOUR_HEIGHT = 60; // pixels per hour
 const MINUTE_HEIGHT = HOUR_HEIGHT / 60; // pixels per minute
 
-export const TimeTracking = () => {
+interface TimeTrackingProps {
+  employeeId?: string;
+}
+
+export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -80,6 +84,8 @@ export const TimeTracking = () => {
   });
   const { profile } = useAuth();
   const { toast } = useToast();
+  
+  const effectiveEmployeeId = employeeId || profile?.id;
 
   // Update week days when selected date changes
   useEffect(() => {
@@ -87,13 +93,13 @@ export const TimeTracking = () => {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (profile?.id) {
+    if (effectiveEmployeeId) {
       fetchAppointments();
       fetchBlockedTimes();
       fetchServices();
       fetchClients();
     }
-  }, [profile?.id, selectedDate]);
+  }, [effectiveEmployeeId, selectedDate]);
 
   const updateWeekDays = () => {
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
@@ -165,7 +171,7 @@ export const TimeTracking = () => {
   };
 
   const createAppointment = async () => {
-    if (!profile?.id || !appointmentForm.client_id || !appointmentForm.service_id) return;
+    if (!effectiveEmployeeId || !appointmentForm.client_id || !appointmentForm.service_id) return;
     
     try {
       const selectedService = services.find(s => s.id === appointmentForm.service_id);
@@ -185,7 +191,7 @@ export const TimeTracking = () => {
         .insert({
           client_id: appointmentForm.client_id,
           service_id: appointmentForm.service_id,
-          employee_id: profile.id,
+          employee_id: effectiveEmployeeId,
           appointment_date: appointmentForm.date,
           start_time: startTime,
           end_time: endTime,
@@ -384,7 +390,7 @@ export const TimeTracking = () => {
   };
 
   const fetchAppointments = async () => {
-    if (!profile?.id) return;
+    if (!effectiveEmployeeId) return;
     
     setLoading(true);
     try {
@@ -407,8 +413,8 @@ export const TimeTracking = () => {
         .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
 
       // If not admin, filter by employee_id
-      if (profile.role !== 'admin') {
-        query = query.eq('employee_id', profile.id);
+      if (profile?.role !== 'admin') {
+        query = query.eq('employee_id', effectiveEmployeeId);
       }
 
       const { data, error } = await query
@@ -442,7 +448,7 @@ export const TimeTracking = () => {
   };
 
   const fetchBlockedTimes = async () => {
-    if (!profile?.id) return;
+    if (!effectiveEmployeeId) return;
     
     try {
       // Build query - admins see all blocked times, employees see only their own
@@ -453,8 +459,8 @@ export const TimeTracking = () => {
         .lte('date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
 
       // If not admin, filter by employee_id
-      if (profile.role !== 'admin') {
-        query = query.eq('employee_id', profile.id);
+      if (profile?.role !== 'admin') {
+        query = query.eq('employee_id', effectiveEmployeeId);
       }
 
       const { data, error } = await query
@@ -477,7 +483,7 @@ export const TimeTracking = () => {
   };
 
   const createBlockedTime = async () => {
-    if (!profile?.id) return;
+    if (!effectiveEmployeeId) return;
     
     // Validate times before saving
     if (blockTimeForm.start_time >= blockTimeForm.end_time) {
@@ -493,7 +499,7 @@ export const TimeTracking = () => {
       const { error } = await supabase
         .from('blocked_times')
         .insert({
-          employee_id: profile.id,
+          employee_id: effectiveEmployeeId,
           date: blockTimeForm.date,
           start_time: blockTimeForm.start_time,
           end_time: blockTimeForm.end_time,
