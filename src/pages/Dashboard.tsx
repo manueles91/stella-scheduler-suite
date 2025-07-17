@@ -6,6 +6,7 @@ import { EnhancedBookingSystem } from "@/components/EnhancedBookingSystem";
 import { AdminReservations } from "@/components/admin/AdminReservations";
 import { AdminServices } from "@/components/admin/AdminServices";
 import { AdminStaff } from "@/components/admin/AdminStaff";
+import AdminDiscounts from "@/components/admin/AdminDiscounts";
 import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { TimeTracking } from "@/components/employee/TimeTracking";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
@@ -107,6 +108,9 @@ const Dashboard = () => {
         
       case 'admin-services':
         return <AdminServices />;
+        
+      case 'admin-discounts':
+        return <AdminDiscounts />;
         
       case 'admin-staff':
         return <AdminStaff />;

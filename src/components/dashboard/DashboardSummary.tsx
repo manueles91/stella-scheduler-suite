@@ -31,11 +31,44 @@ export const DashboardSummary = ({ effectiveProfile }: DashboardSummaryProps) =>
   const { user } = useAuth();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
+  const [activePromotions, setActivePromotions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAppointments();
+    fetchActivePromotions();
   }, [effectiveProfile?.id, effectiveProfile?.role]);
+
+  const fetchActivePromotions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('discounts')
+        .select(`
+          id,
+          name,
+          description,
+          discount_type,
+          discount_value,
+          start_date,
+          end_date,
+          is_public,
+          services (
+            name
+          )
+        `)
+        .eq('is_active', true)
+        .eq('is_public', true)
+        .lte('start_date', new Date().toISOString())
+        .gte('end_date', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setActivePromotions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+    }
+  };
 
   const fetchAppointments = async () => {
     if (!effectiveProfile?.id) return;
@@ -218,10 +251,35 @@ export const DashboardSummary = ({ effectiveProfile }: DashboardSummaryProps) =>
           <CardTitle>Promociones</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No hay promociones activas en este momento</p>
-            <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
-          </div>
+          {activePromotions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No hay promociones activas en este momento</p>
+              <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activePromotions.map((promotion) => (
+                <div key={promotion.id} className="border border-border rounded-lg p-3 space-y-2 bg-gradient-to-r from-primary/5 to-secondary/5">
+                  <div className="flex justify-between items-start">
+                    <div className="font-medium text-foreground">{promotion.name}</div>
+                    <Badge variant="secondary">
+                      {promotion.discount_type === 'percentage' 
+                        ? `${promotion.discount_value}% OFF`
+                        : `$${promotion.discount_value} OFF`
+                      }
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    <div>Servicio: {promotion.services?.name}</div>
+                    {promotion.description && <div className="mt-1">{promotion.description}</div>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Válida hasta: {new Date(promotion.end_date).toLocaleDateString('es-ES')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

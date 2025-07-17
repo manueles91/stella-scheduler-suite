@@ -58,6 +58,57 @@ export type Database = {
           },
         ]
       }
+      discounts: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_code: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          end_date: string
+          id: string
+          is_active: boolean
+          is_public: boolean
+          name: string
+          service_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          discount_code?: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          end_date: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name: string
+          service_id: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_code?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name?: string
+          service_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_schedules: {
         Row: {
           created_at: string | null
@@ -311,6 +362,7 @@ export type Database = {
       }
     }
     Enums: {
+      discount_type: "percentage" | "flat"
       user_role: "client" | "employee" | "admin"
     }
     CompositeTypes: {
@@ -439,6 +491,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      discount_type: ["percentage", "flat"],
       user_role: ["client", "employee", "admin"],
     },
   },

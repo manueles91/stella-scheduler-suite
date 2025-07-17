@@ -84,6 +84,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-bookings', label: 'Todas las reservas', icon: Calendar },
       { id: 'admin-services', label: 'Servicios', icon: Settings },
+      { id: 'admin-discounts', label: 'Descuentos', icon: Settings },
       { id: 'admin-staff', label: 'Personal', icon: Users },
     ] : []),
   ];
