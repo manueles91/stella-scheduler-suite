@@ -67,6 +67,8 @@ All colors MUST be HSL.
     --sidebar-border: 60 12% 78%;
 
     --sidebar-ring: 33 69% 38%;
+    
+    --reef-gold: 45 82% 58%;
   }
 
   .dark {
@@ -90,6 +92,8 @@ All colors MUST be HSL.
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+    
+    --reef-gold: 45 82% 58%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
