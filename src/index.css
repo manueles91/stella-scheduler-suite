@@ -8,65 +8,65 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Luxury salon color palette */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* Cararra, Reef Gold, Mongoose color palette */
+    --background: 60 12% 91%;
+    --foreground: 35 19% 25%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 60 15% 96%;
+    --card-foreground: 35 19% 25%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 60 15% 96%;
+    --popover-foreground: 35 19% 25%;
 
-    /* Sophisticated rose gold and deep charcoal */
-    --primary: 340 60% 55%;
-    --primary-foreground: 0 0% 98%;
+    /* Reef Gold as primary */
+    --primary: 33 69% 38%;
+    --primary-foreground: 60 12% 91%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 35 19% 58%;
+    --secondary-foreground: 60 12% 91%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 60 12% 85%;
+    --muted-foreground: 35 19% 45%;
 
-    --accent: 340 60% 55%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 35 19% 75%;
+    --accent-foreground: 35 19% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 60 12% 91%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 340 60% 55%;
+    --border: 60 12% 80%;
+    --input: 60 12% 88%;
+    --ring: 33 69% 38%;
 
-    /* Luxury gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(340, 60%, 55%), hsl(320, 50%, 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(240, 5%, 96%), hsl(240, 5%, 90%));
-    --gradient-hero: linear-gradient(135deg, hsl(340, 60%, 55%) 0%, hsl(320, 50%, 45%) 50%, hsl(240, 10%, 10%) 100%);
+    /* Updated gradients with new palette */
+    --gradient-primary: linear-gradient(135deg, hsl(33, 69%, 38%), hsl(35, 19%, 58%));
+    --gradient-secondary: linear-gradient(135deg, hsl(60, 12%, 91%), hsl(60, 12%, 85%));
+    --gradient-hero: linear-gradient(135deg, hsl(33, 69%, 38%) 0%, hsl(35, 19%, 58%) 50%, hsl(35, 19%, 25%) 100%);
     
-    /* Elegant shadows */
-    --shadow-luxury: 0 10px 40px -10px hsl(340 60% 55% / 0.2);
-    --shadow-soft: 0 4px 20px -4px hsl(240 10% 3.9% / 0.1);
+    /* Updated shadows */
+    --shadow-luxury: 0 10px 40px -10px hsl(33 69% 38% / 0.2);
+    --shadow-soft: 0 4px 20px -4px hsl(35 19% 25% / 0.1);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 60 12% 88%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 35 19% 30%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 33 69% 38%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 60 12% 91%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 60 12% 85%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 35 19% 25%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 60 12% 78%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 33 69% 38%;
   }
 
   .dark {
