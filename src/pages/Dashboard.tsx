@@ -8,7 +8,7 @@ import { AdminServices } from "@/components/admin/AdminServices";
 import { AdminStaff } from "@/components/admin/AdminStaff";
 import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { TimeTracking } from "@/components/employee/TimeTracking";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
@@ -91,58 +91,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return (
-          <div className="space-y-4 sm:space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Próximas citas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {appointmentsLoading ? (
-                    <p>Cargando...</p>
-                  ) : appointments.length === 0 ? (
-                    <p className="text-muted-foreground">No hay citas próximas</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {appointments.map((appt) => (
-                        <div key={appt.id} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
-                          <div className="font-medium">{appt.services?.name || 'Service'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {appt.appointment_date} {appt.start_time} - {appt.end_time}
-                          </div>
-                          <div className="text-xs">Estado: {appt.status}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Visitas totales</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">0</p>
-                  <p className="text-muted-foreground">Historial completo</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Servicio favorito</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-medium">-</p>
-                  <p className="text-muted-foreground">¡Reserva tu primer servicio!</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
+        return <DashboardSummary effectiveProfile={effectiveProfile} />;
         
       case 'bookings':
         return <EnhancedBookingSystem />;
