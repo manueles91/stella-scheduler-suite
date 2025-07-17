@@ -10,7 +10,6 @@ import { CalendarIcon, Search, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
 interface Reservation {
   id: string;
   appointment_date: string;
@@ -34,90 +33,87 @@ interface Reservation {
     full_name: string;
   };
 }
-
 export const AdminReservations = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     fetchReservations();
   }, []);
-
   const fetchReservations = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('reservations')
-      .select(`
+    const {
+      data,
+      error
+    } = await supabase.from('reservations').select(`
         *,
         profiles!reservations_client_id_fkey(full_name, email),
         services(name, duration_minutes, price_cents),
         employee:profiles!reservations_employee_id_fkey(full_name)
-      `)
-      .order('appointment_date', { ascending: false })
-      .order('start_time', { ascending: false });
-
+      `).order('appointment_date', {
+      ascending: false
+    }).order('start_time', {
+      ascending: false
+    });
     if (error) {
       toast({
         title: "Error",
         description: "Failed to load reservations",
-        variant: "destructive",
+        variant: "destructive"
       });
     } else {
       setReservations(data || []);
     }
     setLoading(false);
   };
-
   const updateReservationStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from('reservations')
-      .update({ status })
-      .eq('id', id);
-
+    const {
+      error
+    } = await supabase.from('reservations').update({
+      status
+    }).eq('id', id);
     if (error) {
       toast({
         title: "Error",
         description: "Failed to update reservation status",
-        variant: "destructive",
+        variant: "destructive"
       });
     } else {
       toast({
         title: "Success",
-        description: "Reservation status updated",
+        description: "Reservation status updated"
       });
       fetchReservations();
     }
   };
-
-  const filteredReservations = reservations.filter((reservation) => {
+  const filteredReservations = reservations.filter(reservation => {
     const matchesStatus = statusFilter === "all" || reservation.status === statusFilter;
     const matchesDate = !dateFilter || reservation.appointment_date === format(dateFilter, 'yyyy-MM-dd');
-    const matchesSearch = !searchTerm || 
-      reservation.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.services.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = !searchTerm || reservation.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || reservation.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()) || reservation.services.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesDate && matchesSearch;
   });
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'no_show': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'no_show':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
-
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
   };
-
   const formatTime12Hour = (time: string) => {
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours, 10);
@@ -125,20 +121,15 @@ export const AdminReservations = () => {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
   };
-
   if (loading) {
-    return (
-      <div className="space-y-4">
+    return <div className="space-y-4">
         <h2 className="text-3xl font-serif font-bold">Gestión de Reservas</h2>
         <div className="text-center py-8">Cargando reservas...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif font-bold">Gestión de Reservas</h2>
+        <h2 className="text-3xl font-serif font-bold">Citas</h2>
         <div className="text-sm text-muted-foreground">
           Total: {filteredReservations.length} reservas
         </div>
@@ -156,12 +147,7 @@ export const AdminReservations = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar cliente o servicio..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+              <Input placeholder="Buscar cliente o servicio..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -185,23 +171,15 @@ export const AdminReservations = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dateFilter}
-                  onSelect={setDateFilter}
-                  initialFocus
-                />
+                <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} initialFocus />
               </PopoverContent>
             </Popover>
 
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setStatusFilter("all");
-                setDateFilter(undefined);
-                setSearchTerm("");
-              }}
-            >
+            <Button variant="outline" onClick={() => {
+            setStatusFilter("all");
+            setDateFilter(undefined);
+            setSearchTerm("");
+          }}>
               Limpiar filtros
             </Button>
           </div>
@@ -210,15 +188,11 @@ export const AdminReservations = () => {
 
       {/* Reservations List */}
       <div className="space-y-4">
-        {filteredReservations.length === 0 ? (
-          <Card>
+        {filteredReservations.length === 0 ? <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">No se encontraron reservas con los filtros aplicados.</p>
             </CardContent>
-          </Card>
-        ) : (
-          filteredReservations.map((reservation) => (
-            <Card key={reservation.id}>
+          </Card> : filteredReservations.map(reservation => <Card key={reservation.id}>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
@@ -246,11 +220,9 @@ export const AdminReservations = () => {
                     <p className="text-sm">
                       <strong>Empleado:</strong> {reservation.employee?.full_name || 'Sin asignar'}
                     </p>
-                    {reservation.notes && (
-                      <p className="text-sm">
+                    {reservation.notes && <p className="text-sm">
                         <strong>Notas:</strong> {reservation.notes}
-                      </p>
-                    )}
+                      </p>}
                   </div>
                   
                   <div className="space-y-2">
@@ -259,10 +231,7 @@ export const AdminReservations = () => {
                     </Badge>
                     
                     <div className="flex flex-col gap-2">
-                      <Select 
-                        value={reservation.status} 
-                        onValueChange={(value) => updateReservationStatus(reservation.id, value)}
-                      >
+                      <Select value={reservation.status} onValueChange={value => updateReservationStatus(reservation.id, value)}>
                         <SelectTrigger className="h-8">
                           <SelectValue />
                         </SelectTrigger>
@@ -277,10 +246,7 @@ export const AdminReservations = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          ))
-        )}
+            </Card>)}
       </div>
-    </div>
-  );
+    </div>;
 };
