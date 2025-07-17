@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { EditableAppointment } from "./EditableAppointment";
+import { EditableDiscount } from "./EditableDiscount";
 
 interface Appointment {
   id: string;
@@ -11,6 +13,8 @@ interface Appointment {
   end_time: string;
   status: string;
   notes?: string;
+  client_id: string;
+  employee_id?: string;
   services?: {
     name: string;
     duration_minutes: number;
@@ -84,6 +88,8 @@ export const DashboardSummary = ({ effectiveProfile }: DashboardSummaryProps) =>
           end_time,
           status,
           notes,
+          client_id,
+          employee_id,
           services (
             name,
             duration_minutes
@@ -173,13 +179,31 @@ export const DashboardSummary = ({ effectiveProfile }: DashboardSummaryProps) =>
     }
   };
 
+  const canEditAppointment = (appt: Appointment) => {
+    if (effectiveProfile?.role === 'admin') return true;
+    if (effectiveProfile?.role === 'employee' && appt.employee_id === effectiveProfile.id) return true;
+    if (effectiveProfile?.role === 'client' && appt.client_id === effectiveProfile.id) return true;
+    return false;
+  };
+
+  const canEditDiscount = () => {
+    return effectiveProfile?.role === 'admin';
+  };
+
   const renderAppointment = (appt: Appointment) => (
     <div key={appt.id} className="border border-border rounded-lg p-3 space-y-2">
       <div className="flex justify-between items-start">
         <div className="font-medium text-foreground">{appt.services?.name || 'Servicio'}</div>
-        <Badge className={getStatusColor(appt.status)}>
-          {getStatusText(appt.status)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge className={getStatusColor(appt.status)}>
+            {getStatusText(appt.status)}
+          </Badge>
+          <EditableAppointment 
+            appointment={appt} 
+            onUpdate={fetchAppointments}
+            canEdit={canEditAppointment(appt)}
+          />
+        </div>
       </div>
       <div className="text-sm text-muted-foreground">
         <div>{new Date(appt.appointment_date).toLocaleDateString('es-ES', { 
@@ -262,12 +286,19 @@ export const DashboardSummary = ({ effectiveProfile }: DashboardSummaryProps) =>
                 <div key={promotion.id} className="border border-border rounded-lg p-3 space-y-2 bg-gradient-to-r from-primary/5 to-secondary/5">
                   <div className="flex justify-between items-start">
                     <div className="font-medium text-foreground">{promotion.name}</div>
-                    <Badge variant="secondary">
-                      {promotion.discount_type === 'percentage' 
-                        ? `${promotion.discount_value}% OFF`
-                        : `$${promotion.discount_value} OFF`
-                      }
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {promotion.discount_type === 'percentage' 
+                          ? `${promotion.discount_value}% OFF`
+                          : `$${promotion.discount_value} OFF`
+                        }
+                      </Badge>
+                      <EditableDiscount 
+                        discount={promotion} 
+                        onUpdate={fetchActivePromotions}
+                        canEdit={canEditDiscount()}
+                      />
+                    </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     <div>Servicio: {promotion.services?.name}</div>
