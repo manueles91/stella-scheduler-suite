@@ -98,7 +98,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
             <button className="sm:hidden p-2" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Open sidebar">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <h1 className="text-lg sm:text-2xl font-serif font-bold text-reef-gold">Stella Studio</h1>
+            <h1 className="text-lg sm:text-2xl font-serif font-bold">Stella Studio</h1>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
             {isImpersonating && (
