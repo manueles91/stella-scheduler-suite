@@ -274,7 +274,7 @@ export const EnhancedBookingSystem = () => {
               <Star className="h-5 w-5" />
               Selecciona tu servicio
             </CardTitle>
-            <CardDescription>Elige entre nuestros tratamientos de lujo</CardDescription>
+            
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
