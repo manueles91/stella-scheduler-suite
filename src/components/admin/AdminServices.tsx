@@ -718,9 +718,7 @@ export const AdminServices = () => {
                 <Badge variant={service.is_active ? "default" : "secondary"}>
                   {service.is_active ? "Activo" : "Inactivo"}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  Creado: {new Date(service.created_at).toLocaleDateString()}
-                </span>
+                
               </div>
             </CardContent>
           </Card>)}
