@@ -12,7 +12,6 @@ import { Plus, Pencil, Trash2, Percent, DollarSign, Calendar, Code } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
 interface Discount {
   id: string;
   service_id: string;
@@ -30,20 +29,19 @@ interface Discount {
     name: string;
   };
 }
-
 interface Service {
   id: string;
   name: string;
 }
-
 const AdminDiscounts: React.FC = () => {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const [formData, setFormData] = useState({
     service_id: "",
     name: "",
@@ -54,26 +52,25 @@ const AdminDiscounts: React.FC = () => {
     end_date: "",
     is_public: true,
     discount_code: "",
-    is_active: true,
+    is_active: true
   });
-
   useEffect(() => {
     fetchDiscounts();
     fetchServices();
   }, []);
-
   const fetchDiscounts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("discounts")
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from("discounts").select(`
           *,
           services (
             name
           )
-        `)
-        .order("created_at", { ascending: false });
-
+        `).order("created_at", {
+        ascending: false
+      });
       if (error) throw error;
       setDiscounts(data || []);
     } catch (error) {
@@ -81,54 +78,49 @@ const AdminDiscounts: React.FC = () => {
       toast({
         title: "Error",
         description: "No se pudieron cargar los descuentos",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
-        .from("services")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("name");
-
+      const {
+        data,
+        error
+      } = await supabase.from("services").select("id, name").eq("is_active", true).order("name");
       if (error) throw error;
       setServices(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.service_id || !formData.name || !formData.discount_value || 
-        !formData.start_date || !formData.end_date) {
+    if (!formData.service_id || !formData.name || !formData.discount_value || !formData.start_date || !formData.end_date) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos requeridos",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (!formData.is_public && !formData.discount_code) {
       toast({
         title: "Error",
         description: "Los descuentos privados requieren un código",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-
       const discountData = {
         service_id: formData.service_id,
         name: formData.name,
@@ -136,34 +128,30 @@ const AdminDiscounts: React.FC = () => {
         discount_type: formData.discount_type,
         discount_value: parseFloat(formData.discount_value),
         start_date: new Date(formData.start_date).toISOString(),
-        end_date: new Date(formData.end_date + 'T23:59:59').toISOString(), // Set to end of day
+        end_date: new Date(formData.end_date + 'T23:59:59').toISOString(),
+        // Set to end of day
         is_public: formData.is_public,
         discount_code: formData.is_public ? null : formData.discount_code,
         is_active: formData.is_active,
-        created_by: user.id,
+        created_by: user.id
       };
-
       let error;
       if (editingDiscount) {
-        const { error: updateError } = await supabase
-          .from("discounts")
-          .update(discountData)
-          .eq("id", editingDiscount.id);
+        const {
+          error: updateError
+        } = await supabase.from("discounts").update(discountData).eq("id", editingDiscount.id);
         error = updateError;
       } else {
-        const { error: insertError } = await supabase
-          .from("discounts")
-          .insert([discountData]);
+        const {
+          error: insertError
+        } = await supabase.from("discounts").insert([discountData]);
         error = insertError;
       }
-
       if (error) throw error;
-
       toast({
         title: "Éxito",
-        description: `Descuento ${editingDiscount ? "actualizado" : "creado"} correctamente`,
+        description: `Descuento ${editingDiscount ? "actualizado" : "creado"} correctamente`
       });
-
       fetchDiscounts();
       resetForm();
       setDialogOpen(false);
@@ -172,11 +160,10 @@ const AdminDiscounts: React.FC = () => {
       toast({
         title: "Error",
         description: error.message || "Error al guardar el descuento",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleEdit = (discount: Discount) => {
     setEditingDiscount(discount);
     setFormData({
@@ -189,40 +176,33 @@ const AdminDiscounts: React.FC = () => {
       end_date: discount.end_date.split('T')[0],
       is_public: discount.is_public,
       discount_code: discount.discount_code || "",
-      is_active: discount.is_active,
+      is_active: discount.is_active
     });
     setDialogOpen(true);
   };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm("¿Estás seguro de que quieres eliminar este descuento?")) {
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from("discounts")
-        .delete()
-        .eq("id", id);
-
+      const {
+        error
+      } = await supabase.from("discounts").delete().eq("id", id);
       if (error) throw error;
-
       toast({
         title: "Éxito",
-        description: "Descuento eliminado correctamente",
+        description: "Descuento eliminado correctamente"
       });
-
       fetchDiscounts();
     } catch (error: any) {
       console.error("Error deleting discount:", error);
       toast({
         title: "Error",
         description: "Error al eliminar el descuento",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const resetForm = () => {
     setFormData({
       service_id: "",
@@ -234,34 +214,29 @@ const AdminDiscounts: React.FC = () => {
       end_date: "",
       is_public: true,
       discount_code: "",
-      is_active: true,
+      is_active: true
     });
     setEditingDiscount(null);
   };
-
   const formatDiscountValue = (value: number, type: string) => {
     return type === 'percentage' ? `${value}%` : `$${value}`;
   };
-
   const isDiscountActive = (discount: Discount) => {
     const now = new Date();
     const start = new Date(discount.start_date);
     const end = new Date(discount.end_date);
     return discount.is_active && start <= now && end >= now;
   };
-
   if (loading) {
     return <div className="flex justify-center items-center h-48">Cargando descuentos...</div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Gestión de Descuentos</h2>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <h2 className="font-bold text-2xl">Descuentos</h2>
+        <Dialog open={dialogOpen} onOpenChange={open => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -278,48 +253,44 @@ const AdminDiscounts: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="service_id">Servicio *</Label>
-                  <Select value={formData.service_id} onValueChange={(value) => 
-                    setFormData({ ...formData, service_id: value })
-                  }>
+                  <Select value={formData.service_id} onValueChange={value => setFormData({
+                  ...formData,
+                  service_id: value
+                })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar servicio" />
                     </SelectTrigger>
                     <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
+                      {services.map(service => <SelectItem key={service.id} value={service.id}>
                           {service.name}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="name">Nombre del Descuento *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: Descuento de Verano"
-                  />
+                  <Input id="name" value={formData.name} onChange={e => setFormData({
+                  ...formData,
+                  name: e.target.value
+                })} placeholder="Ej: Descuento de Verano" />
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descripción del descuento"
-                />
+                <Textarea id="description" value={formData.description} onChange={e => setFormData({
+                ...formData,
+                description: e.target.value
+              })} placeholder="Descripción del descuento" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="discount_type">Tipo de Descuento *</Label>
-                  <Select value={formData.discount_type} onValueChange={(value: 'percentage' | 'flat') => 
-                    setFormData({ ...formData, discount_type: value })
-                  }>
+                  <Select value={formData.discount_type} onValueChange={(value: 'percentage' | 'flat') => setFormData({
+                  ...formData,
+                  discount_type: value
+                })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -333,68 +304,52 @@ const AdminDiscounts: React.FC = () => {
                   <Label htmlFor="discount_value">
                     Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '($)'}
                   </Label>
-                  <Input
-                    id="discount_value"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max={formData.discount_type === 'percentage' ? "100" : undefined}
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                    placeholder={formData.discount_type === 'percentage' ? "20" : "50"}
-                  />
+                  <Input id="discount_value" type="number" step="0.01" min="0" max={formData.discount_type === 'percentage' ? "100" : undefined} value={formData.discount_value} onChange={e => setFormData({
+                  ...formData,
+                  discount_value: e.target.value
+                })} placeholder={formData.discount_type === 'percentage' ? "20" : "50"} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="start_date">Fecha de Inicio *</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  />
+                  <Input id="start_date" type="date" value={formData.start_date} onChange={e => setFormData({
+                  ...formData,
+                  start_date: e.target.value
+                })} />
                 </div>
                 <div>
                   <Label htmlFor="end_date">Fecha de Fin *</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  />
+                  <Input id="end_date" type="date" value={formData.end_date} onChange={e => setFormData({
+                  ...formData,
+                  end_date: e.target.value
+                })} />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_public"
-                    checked={formData.is_public}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-                  />
+                  <Switch id="is_public" checked={formData.is_public} onCheckedChange={checked => setFormData({
+                  ...formData,
+                  is_public: checked
+                })} />
                   <Label htmlFor="is_public">Descuento Público</Label>
                 </div>
 
-                {!formData.is_public && (
-                  <div>
+                {!formData.is_public && <div>
                     <Label htmlFor="discount_code">Código de Descuento *</Label>
-                    <Input
-                      id="discount_code"
-                      value={formData.discount_code}
-                      onChange={(e) => setFormData({ ...formData, discount_code: e.target.value.toUpperCase() })}
-                      placeholder="CODIGO20"
-                    />
-                  </div>
-                )}
+                    <Input id="discount_code" value={formData.discount_code} onChange={e => setFormData({
+                  ...formData,
+                  discount_code: e.target.value.toUpperCase()
+                })} placeholder="CODIGO20" />
+                  </div>}
 
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  />
+                  <Switch id="is_active" checked={formData.is_active} onCheckedChange={checked => setFormData({
+                  ...formData,
+                  is_active: checked
+                })} />
                   <Label htmlFor="is_active">Activo</Label>
                 </div>
               </div>
@@ -413,29 +368,23 @@ const AdminDiscounts: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {discounts.length === 0 ? (
-          <Card>
+        {discounts.length === 0 ? <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Percent className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-medium text-muted-foreground">No hay descuentos creados</p>
               <p className="text-sm text-muted-foreground">Crea tu primer descuento para comenzar</p>
             </CardContent>
-          </Card>
-        ) : (
-          discounts.map((discount) => (
-            <Card key={discount.id} className="transition-shadow hover:shadow-md">
+          </Card> : discounts.map(discount => <Card key={discount.id} className="transition-shadow hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center space-x-2">
                   <CardTitle className="text-lg">{discount.name}</CardTitle>
                   <Badge variant={isDiscountActive(discount) ? "default" : "secondary"}>
                     {isDiscountActive(discount) ? "Activo" : "Inactivo"}
                   </Badge>
-                  {!discount.is_public && (
-                    <Badge variant="outline">
+                  {!discount.is_public && <Badge variant="outline">
                       <Code className="mr-1 h-3 w-3" />
                       {discount.discount_code}
-                    </Badge>
-                  )}
+                    </Badge>}
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEdit(discount)}>
@@ -455,11 +404,7 @@ const AdminDiscounts: React.FC = () => {
                   <div>
                     <p className="font-medium text-muted-foreground">Descuento</p>
                     <p className="flex items-center">
-                      {discount.discount_type === 'percentage' ? (
-                        <Percent className="mr-1 h-4 w-4" />
-                      ) : (
-                        <DollarSign className="mr-1 h-4 w-4" />
-                      )}
+                      {discount.discount_type === 'percentage' ? <Percent className="mr-1 h-4 w-4" /> : <DollarSign className="mr-1 h-4 w-4" />}
                       {formatDiscountValue(discount.discount_value, discount.discount_type)}
                     </p>
                   </div>
@@ -478,18 +423,12 @@ const AdminDiscounts: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                {discount.description && (
-                  <div className="mt-3">
+                {discount.description && <div className="mt-3">
                     <p className="text-sm text-muted-foreground">{discount.description}</p>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
-            </Card>
-          ))
-        )}
+            </Card>)}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminDiscounts;
