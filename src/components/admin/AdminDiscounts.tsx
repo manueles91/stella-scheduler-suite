@@ -135,8 +135,8 @@ const AdminDiscounts: React.FC = () => {
         description: formData.description,
         discount_type: formData.discount_type,
         discount_value: parseFloat(formData.discount_value),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date + 'T23:59:59').toISOString(), // Set to end of day
         is_public: formData.is_public,
         discount_code: formData.is_public ? null : formData.discount_code,
         is_active: formData.is_active,
