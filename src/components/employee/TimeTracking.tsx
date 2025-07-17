@@ -63,6 +63,10 @@ export const TimeTracking = ({
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
   const [services, setServices] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTime | null>(null);
 
   // Add appointment form state
   const [appointmentForm, setAppointmentForm] = useState({
@@ -140,23 +144,69 @@ export const TimeTracking = ({
       setSelectedDate(addDays(selectedDate, 1));
     }
   };
+  const openTimeSlotPicker = (timeSlot: string) => {
+    setSelectedTimeSlot(timeSlot);
+    setShowTypePicker(true);
+  };
+
   const openDialog = (type: 'appointment' | 'block', timeSlot?: string) => {
     setDialogType(type);
+    setEditMode(false);
+    setEditingAppointment(null);
+    setEditingBlockedTime(null);
     setSelectedTimeSlot(timeSlot || '');
     if (type === 'appointment') {
       setAppointmentForm({
-        ...appointmentForm,
+        client_id: '',
+        service_id: '',
         date: format(selectedDate, 'yyyy-MM-dd'),
-        start_time: timeSlot || '09:00'
+        start_time: timeSlot || '09:00',
+        notes: ''
       });
     } else {
       setBlockTimeForm({
-        ...blockTimeForm,
         date: format(selectedDate, 'yyyy-MM-dd'),
         start_time: timeSlot || '09:00',
-        end_time: timeSlot ? format(addMinutes(parseISO(`2000-01-01T${timeSlot}`), 60), 'HH:mm') : '10:00'
+        end_time: timeSlot ? format(addMinutes(parseISO(`2000-01-01T${timeSlot}`), 60), 'HH:mm') : '10:00',
+        reason: '',
+        is_recurring: false
       });
     }
+    setShowTypePicker(false);
+    setDialogOpen(true);
+  };
+
+  const openEditAppointment = (appointment: Appointment) => {
+    setEditMode(true);
+    setEditingAppointment(appointment);
+    setDialogType('appointment');
+    
+    // Find client and service IDs
+    const client = clients.find(c => c.full_name === appointment.client_name);
+    const service = services.find(s => s.name === appointment.service_name);
+    
+    setAppointmentForm({
+      client_id: client?.id || '',
+      service_id: service?.id || '',
+      date: appointment.appointment_date,
+      start_time: appointment.start_time,
+      notes: appointment.notes || ''
+    });
+    setDialogOpen(true);
+  };
+
+  const openEditBlockedTime = (blockedTime: BlockedTime) => {
+    setEditMode(true);
+    setEditingBlockedTime(blockedTime);
+    setDialogType('block');
+    
+    setBlockTimeForm({
+      date: blockedTime.date,
+      start_time: blockedTime.start_time,
+      end_time: blockedTime.end_time,
+      reason: blockedTime.reason,
+      is_recurring: blockedTime.is_recurring
+    });
     setDialogOpen(true);
   };
   const createAppointment = async () => {
@@ -193,6 +243,39 @@ export const TimeTracking = ({
       });
     }
   };
+
+  const updateAppointment = async () => {
+    if (!editingAppointment || !appointmentForm.client_id || !appointmentForm.service_id) return;
+    try {
+      const selectedService = services.find(s => s.id === appointmentForm.service_id);
+      if (!selectedService) return;
+      const startTime = appointmentForm.start_time;
+      const endTime = format(addMinutes(parseISO(`${appointmentForm.date}T${startTime}`), selectedService.duration_minutes), 'HH:mm');
+      
+      const { error } = await supabase.from('reservations').update({
+        client_id: appointmentForm.client_id,
+        service_id: appointmentForm.service_id,
+        appointment_date: appointmentForm.date,
+        start_time: startTime,
+        end_time: endTime,
+        notes: appointmentForm.notes || null,
+      }).eq('id', editingAppointment.id);
+      
+      if (error) throw error;
+      toast({
+        title: "Éxito",
+        description: "Cita actualizada correctamente"
+      });
+      setDialogOpen(false);
+      fetchAppointments();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al actualizar la cita",
+        variant: "destructive"
+      });
+    }
+  };
   const calculateEventStyle = (startTime: string, endTime: string) => {
     const start = parseISO(`2000-01-01T${startTime}`);
     const end = parseISO(`2000-01-01T${endTime}`);
@@ -224,15 +307,15 @@ export const TimeTracking = ({
           <div className="ml-16 h-full bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative">
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-200"></div>
             
-            <div className="absolute top-0 left-0 right-0 h-1/2 hover:bg-blue-50" onClick={() => openDialog('appointment', `${hour.toString().padStart(2, '0')}:00`)}></div>
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 hover:bg-blue-50" onClick={() => openDialog('appointment', `${hour.toString().padStart(2, '0')}:30`)}></div>
+            <div className="absolute top-0 left-0 right-0 h-1/2 hover:bg-blue-50" onClick={() => openTimeSlotPicker(`${hour.toString().padStart(2, '0')}:00`)}></div>
+            <div className="absolute bottom-0 left-0 right-0 h-1/2 hover:bg-blue-50" onClick={() => openTimeSlotPicker(`${hour.toString().padStart(2, '0')}:30`)}></div>
           </div>
         </div>);
     }
     return slots;
   };
   const renderCalendarAppointments = () => {
-    return appointments.map(appointment => <div key={appointment.id} className="bg-blue-500 text-white rounded-lg p-2 shadow-sm cursor-pointer hover:bg-blue-600 transition-colors" style={calculateEventStyle(appointment.start_time, appointment.end_time)}>
+    return appointments.map(appointment => <div key={appointment.id} className="bg-blue-500 text-white rounded-lg p-2 shadow-sm cursor-pointer hover:bg-blue-600 transition-colors" style={calculateEventStyle(appointment.start_time, appointment.end_time)} onClick={() => openEditAppointment(appointment)}>
         <div className="text-sm font-medium truncate">{appointment.client_name}</div>
         <div className="text-xs opacity-90 truncate">{appointment.service_name}</div>
         {profile?.role === 'admin' && appointment.employee_name && <div className="text-xs opacity-75 truncate">Con: {appointment.employee_name}</div>}
@@ -240,7 +323,7 @@ export const TimeTracking = ({
       </div>);
   };
   const renderCalendarBlockedTimes = () => {
-    return blockedTimes.map(blocked => <div key={blocked.id} className="bg-red-500 text-white rounded-lg p-2 shadow-sm cursor-pointer hover:bg-red-600 transition-colors" style={calculateEventStyle(blocked.start_time, blocked.end_time)}>
+    return blockedTimes.map(blocked => <div key={blocked.id} className="bg-red-500 text-white rounded-lg p-2 shadow-sm cursor-pointer hover:bg-red-600 transition-colors" style={calculateEventStyle(blocked.start_time, blocked.end_time)} onClick={() => openEditBlockedTime(blocked)}>
         <div className="text-sm font-medium truncate">Bloqueado</div>
         <div className="text-xs opacity-90 truncate">{blocked.reason}</div>
         <div className="text-xs opacity-75">{blocked.start_time} - {blocked.end_time}</div>
@@ -296,15 +379,6 @@ export const TimeTracking = ({
           </div>
         </div>
 
-        {/* Floating action buttons */}
-        <div className="fixed bottom-6 right-6 flex flex-col gap-2">
-          <Button onClick={() => openDialog('appointment')} className="rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-shadow">
-            <User className="h-6 w-6" />
-          </Button>
-          <Button onClick={() => openDialog('block')} variant="secondary" className="rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-shadow">
-            <Shield className="h-6 w-6" />
-          </Button>
-        </div>
       </div>;
   };
   const fetchAppointments = async () => {
@@ -430,6 +504,43 @@ export const TimeTracking = ({
       });
     }
   };
+
+  const updateBlockedTime = async () => {
+    if (!editingBlockedTime) return;
+
+    // Validate times before saving
+    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+      toast({
+        title: "Error",
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      const { error } = await supabase.from('blocked_times').update({
+        date: blockTimeForm.date,
+        start_time: blockTimeForm.start_time,
+        end_time: blockTimeForm.end_time,
+        reason: blockTimeForm.reason || 'Tiempo bloqueado',
+        is_recurring: blockTimeForm.is_recurring
+      }).eq('id', editingBlockedTime.id);
+      
+      if (error) throw error;
+      toast({
+        title: "Éxito",
+        description: "Tiempo bloqueado actualizado correctamente"
+      });
+      setDialogOpen(false);
+      fetchBlockedTimes();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al actualizar el tiempo bloqueado",
+        variant: "destructive"
+      });
+    }
+  };
   const deleteBlockedTime = async (id: string) => {
     try {
       const {
@@ -514,7 +625,10 @@ export const TimeTracking = ({
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {dialogType === 'appointment' ? 'Nueva Cita' : 'Bloquear Tiempo'}
+              {dialogType === 'appointment' ? 
+                (editMode ? 'Editar Cita' : 'Nueva Cita') : 
+                (editMode ? 'Editar Tiempo Bloqueado' : 'Bloquear Tiempo')
+              }
             </DialogTitle>
           </DialogHeader>
           
@@ -585,8 +699,8 @@ export const TimeTracking = ({
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={createAppointment} className="flex-1">
-                  Crear Cita
+                <Button onClick={editMode ? updateAppointment : createAppointment} className="flex-1">
+                  {editMode ? 'Actualizar Cita' : 'Crear Cita'}
                 </Button>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
@@ -642,14 +756,45 @@ export const TimeTracking = ({
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={createBlockedTime} className="flex-1">
-                  Bloquear Tiempo
+                <Button onClick={editMode ? updateBlockedTime : createBlockedTime} className="flex-1">
+                  {editMode ? 'Actualizar Tiempo Bloqueado' : 'Bloquear Tiempo'}
                 </Button>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
                 </Button>
               </div>
             </div>}
+        </DialogContent>
+      </Dialog>
+
+      {/* Type Picker Dialog */}
+      <Dialog open={showTypePicker} onOpenChange={setShowTypePicker}>
+        <DialogContent className="sm:max-w-[300px]">
+          <DialogHeader>
+            <DialogTitle>Seleccionar Acción</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ¿Qué te gustaría hacer a las {selectedTimeSlot}?
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                onClick={() => openDialog('appointment', selectedTimeSlot)}
+                className="flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                Nueva Cita
+              </Button>
+              <Button 
+                onClick={() => openDialog('block', selectedTimeSlot)}
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Bloquear Tiempo
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>;
