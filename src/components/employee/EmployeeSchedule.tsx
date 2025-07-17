@@ -185,7 +185,7 @@ export const EmployeeSchedule = ({
 
       <Card>
         <CardHeader>
-          <CardTitle>Configurar Disponibilidad Semanal</CardTitle>
+          
         </CardHeader>
         <CardContent className="space-y-4">
           {schedules.map((schedule, index) => <ScheduleItem key={schedule.day_of_week} schedule={schedule} index={index} onUpdate={updateSchedule} />)}
