@@ -301,7 +301,7 @@ export const EnhancedBookingSystem = () => {
           <Card>
             <CardHeader>
               <CardTitle>Selecciona la fecha</CardTitle>
-              <CardDescription>Elige cuándo te gustaría tu cita</CardDescription>
+              
             </CardHeader>
             <CardContent>
               <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={date => date < startOfDay(new Date()) || date.getDay() === 0} className="rounded-md border w-full" />
