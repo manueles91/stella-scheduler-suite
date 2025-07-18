@@ -229,7 +229,7 @@ export const DashboardSummary = ({
               {appt.employee_profile && (
                 <div className="flex items-center gap-1 min-w-0">
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
+                  <span className="truncate">{appt.employee_profile.full_name}</span>
                 </div>
               )}
             </>
@@ -243,7 +243,7 @@ export const DashboardSummary = ({
           {effectiveProfile?.role === 'client' && appt.employee_profile && (
             <div className="flex items-center gap-1 min-w-0">
               <Sparkles className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
+              <span className="truncate">{appt.employee_profile.full_name}</span>
             </div>
           )}
         </div>

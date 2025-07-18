@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Clock, Users, Settings, LogOut, Eye, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, Users, Settings, LogOut, Eye, ArrowLeft, Scissors, Tags, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
@@ -78,14 +78,14 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     { id: 'overview', label: 'Inicio', icon: Calendar },
     { id: 'bookings', label: 'Reservar', icon: Calendar },
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
-      { id: 'schedule', label: 'Mi agenda', icon: Clock },
-      { id: 'time-tracking', label: 'Mi horario', icon: Clock },
+      { id: 'schedule', label: 'Mi horario', icon: Clock },
+      { id: 'time-tracking', label: 'Mi agenda', icon: Users },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'Citas', icon: Calendar },
-      { id: 'admin-services', label: 'Servicios', icon: Settings },
-      { id: 'admin-discounts', label: 'Descuentos', icon: Settings },
-      { id: 'admin-staff', label: 'Personal', icon: Users },
+      { id: 'admin-bookings', label: 'Citas', icon: Eye },
+      { id: 'admin-services', label: 'Servicios', icon: Scissors },
+      { id: 'admin-discounts', label: 'Descuentos', icon: Tags },
+      { id: 'admin-staff', label: 'Personal', icon: UserPlus },
     ] : []),
   ];
 

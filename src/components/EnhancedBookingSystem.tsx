@@ -386,7 +386,7 @@ export const EnhancedBookingSystem = () => {
               <div className="space-y-4">
                 <div>
                   <strong>Estilista:</strong>
-                  <p>{selectedSlot.employee_name}</p>
+                  <p>{selectedEmployee ? selectedSlot.employee_name : 'Cualquier estilista'}</p>
                 </div>
                 <div>
                   <strong>Duración:</strong>
