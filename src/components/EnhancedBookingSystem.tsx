@@ -270,10 +270,7 @@ export const EnhancedBookingSystem = () => {
       {/* Step Content */}
       {currentStep === 1 && <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              Selecciona tu servicio
-            </CardTitle>
+            
             
           </CardHeader>
           <CardContent>
