@@ -7,26 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
-interface Appointment {
-  id: string;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  notes?: string;
-  client_id: string;
-  employee_id?: string;
-  services?: {
-    name: string;
-    duration_minutes: number;
-  };
-  client_profile?: {
-    full_name: string;
-  };
-  employee_profile?: {
-    full_name: string;
-  };
-}
+import { Appointment } from "@/types/appointment";
 interface DashboardSummaryProps {
   effectiveProfile: any;
 }
@@ -84,9 +65,13 @@ export const DashboardSummary = ({
           notes,
           client_id,
           employee_id,
-          services (
-            name,
-            duration_minutes
+          appointment_services (
+            services (
+              id,
+              name,
+              duration_minutes,
+              price_cents
+            )
           ),
           client_profile:profiles!client_id (
             full_name
@@ -115,13 +100,20 @@ export const DashboardSummary = ({
         console.error('Error fetching appointments:', error);
         return;
       }
+
+      // Transform the data to match our interface
+      const transformedAppointments = appointments?.map(appt => ({
+        ...appt,
+        services: appt.appointment_services?.map(as => as.services).flat() || []
+      })) || [];
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const upcoming = appointments?.filter(appt => {
+      const upcoming = transformedAppointments?.filter(appt => {
         const apptDate = new Date(appt.appointment_date);
         return apptDate >= today;
       }).sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()) || [];
-      const past = appointments?.filter(appt => {
+      const past = transformedAppointments?.filter(appt => {
         const apptDate = new Date(appt.appointment_date);
         return apptDate < today;
       }).sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime()) || [];
@@ -178,61 +170,74 @@ export const DashboardSummary = ({
     return effectiveProfile?.role === 'admin';
   };
   const renderAppointment = (appt: Appointment) => (
-    <div key={appt.id} className="border border-border rounded-lg p-4 space-y-3 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-full bg-primary/10">
+    <div key={appt.id} className="border border-border rounded-lg p-3 sm:p-4 space-y-3 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
             <Calendar className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <div className="font-semibold text-foreground">{appt.services?.name || 'Servicio'}</div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <Clock className="h-3 w-3" />
-              <span>{formatTime12Hour(appt.start_time)} - {formatTime12Hour(appt.end_time)}</span>
+          <div className="flex-1 min-w-0">
+            {/* Services - support multiple services */}
+            <div className="font-semibold text-foreground text-sm sm:text-base leading-tight">
+              {appt.services && appt.services.length > 0 
+                ? appt.services.map(service => service.name).join(', ')
+                : 'Servicio'
+              }
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
+            
+            {/* Time - mobile optimized */}
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground mt-1">
+              <Clock className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">
+                {formatTime12Hour(appt.start_time).replace(' ', '')} - {formatTime12Hour(appt.end_time).replace(' ', '')}
+              </span>
+            </div>
+            
+            {/* Date - mobile optimized */}
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
               {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
                 weekday: 'short',
-                month: 'short', 
-                day: 'numeric'
+                day: 'numeric',
+                month: 'short'
               })}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={getStatusColor(appt.status)}>
+        
+        <div className="flex items-center gap-2 flex-shrink-0 self-start">
+          <Badge className={getStatusColor(appt.status)} variant="secondary">
             {getStatusText(appt.status)}
           </Badge>
           <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
         </div>
       </div>
       
-      {/* Client/Employee info with icons */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t border-border/50">
+      {/* Client/Employee info with icons - mobile optimized */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border/50">
         {effectiveProfile?.role === 'admin' && (
           <>
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span>{appt.client_profile?.full_name}</span>
+            <div className="flex items-center gap-1 min-w-0">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{appt.client_profile?.full_name}</span>
             </div>
             {appt.employee_profile && (
-              <div className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                <span>Estilista: {appt.employee_profile.full_name}</span>
+              <div className="flex items-center gap-1 min-w-0">
+                <Sparkles className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
               </div>
             )}
           </>
         )}
         {effectiveProfile?.role === 'employee' && (
-          <div className="flex items-center gap-1">
-            <User className="h-3 w-3" />
-            <span>{appt.client_profile?.full_name}</span>
+          <div className="flex items-center gap-1 min-w-0">
+            <User className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{appt.client_profile?.full_name}</span>
           </div>
         )}
         {effectiveProfile?.role === 'client' && appt.employee_profile && (
-          <div className="flex items-center gap-1">
-            <Sparkles className="h-3 w-3" />
-            <span>Estilista: {appt.employee_profile.full_name}</span>
+          <div className="flex items-center gap-1 min-w-0">
+            <Sparkles className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
           </div>
         )}
       </div>

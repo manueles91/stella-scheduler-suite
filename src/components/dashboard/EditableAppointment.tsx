@@ -11,33 +11,7 @@ import { CalendarIcon, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-interface Appointment {
-  id: string;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  notes?: string;
-  client_id: string;
-  employee_id?: string;
-  services?: {
-    name: string;
-    duration_minutes: number;
-  };
-  client_profile?: {
-    full_name: string;
-  };
-  employee_profile?: {
-    full_name: string;
-  };
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  role: string;
-}
+import { Appointment, Profile } from "@/types/appointment";
 
 interface EditableAppointmentProps {
   appointment: Appointment;
