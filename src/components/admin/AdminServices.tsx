@@ -557,35 +557,13 @@ export const AdminServices = () => {
   return <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h2 className="text-3xl font-serif font-bold">Servicios</h2>
-        <div className="flex gap-2 items-center">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todas las categorías" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              <SelectItem value="none">Sin categoría</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCategoryManager(true)}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Servicio
-              </Button>
-            </DialogTrigger>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Servicio
+            </Button>
+          </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -763,7 +741,31 @@ export const AdminServices = () => {
             </form>
           </DialogContent>
         </Dialog>
-        </div>
+      </div>
+
+      {/* Category Filter Row */}
+      <div className="flex gap-2 items-center">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Todas las categorías" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las categorías</SelectItem>
+            <SelectItem value="none">Sin categoría</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowCategoryManager(true)}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
 
 
@@ -802,7 +804,11 @@ export const AdminServices = () => {
                 <Badge variant={service.is_active ? "default" : "secondary"}>
                   {service.is_active ? "Activo" : "Inactivo"}
                 </Badge>
-                
+                {service.service_categories && (
+                  <Badge variant="outline" className="text-xs">
+                    {service.service_categories.name}
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>)}
@@ -811,9 +817,6 @@ export const AdminServices = () => {
       {/* Category Manager Modal */}
       <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Gestionar Categorías</DialogTitle>
-          </DialogHeader>
           <AdminCategories />
         </DialogContent>
       </Dialog>

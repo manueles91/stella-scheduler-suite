@@ -74,9 +74,6 @@ function SortableCategory({ category, onEdit, onDelete }: {
               {category.description && (
                 <p className="text-sm text-muted-foreground">{category.description}</p>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Orden: {category.display_order}
-              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -288,7 +285,7 @@ export function AdminCategories() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestión de Categorías</h1>
+        <h1 className="text-2xl font-bold">Categorías</h1>
         <Button onClick={startCreate} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Nueva Categoría
