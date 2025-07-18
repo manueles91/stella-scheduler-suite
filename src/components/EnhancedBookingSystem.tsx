@@ -271,7 +271,7 @@ export const EnhancedBookingSystem = () => {
       {currentStep === 1 && <Card>
           <CardHeader>
             <CardTitle>Selecciona tu servicio</CardTitle>
-            <CardDescription>Elige entre nuestros tratamientos y selecciona tu especialista preferido</CardDescription>
+            
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -291,15 +291,15 @@ export const EnhancedBookingSystem = () => {
                       {/* Employee Selection for each service */}
                       <div className="space-y-2">
                         <Label>Especialista</Label>
-                        <Select value={selectedService?.id === service.id ? (selectedEmployee?.id || "any") : "any"} onValueChange={value => {
-                          setSelectedService(service);
-                          if (value === "any") {
-                            setSelectedEmployee(null);
-                          } else {
-                            const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
-                            setSelectedEmployee(employee || null);
-                          }
-                        }}>
+                        <Select value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} onValueChange={value => {
+                    setSelectedService(service);
+                    if (value === "any") {
+                      setSelectedEmployee(null);
+                    } else {
+                      const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
+                      setSelectedEmployee(employee || null);
+                    }
+                  }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Cualquier especialista" />
                           </SelectTrigger>
@@ -315,11 +315,7 @@ export const EnhancedBookingSystem = () => {
                         </Select>
                       </div>
                       
-                      <Button 
-                        className="w-full" 
-                        variant={selectedService?.id === service.id ? "default" : "outline"}
-                        onClick={() => handleServiceSelect(service)}
-                      >
+                      <Button className="w-full" variant={selectedService?.id === service.id ? "default" : "outline"} onClick={() => handleServiceSelect(service)}>
                         Seleccionar
                       </Button>
                     </div>
