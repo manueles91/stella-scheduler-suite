@@ -54,7 +54,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     status: appointment.status,
     notes: appointment.notes || "",
     client_id: appointment.client_id,
-    employee_id: appointment.employee_id || "",
+    employee_id: appointment.employee_id || "unassigned",
   });
   const [clients, setClients] = useState<Profile[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
@@ -106,7 +106,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
           status: formData.status,
           notes: formData.notes || null,
           client_id: formData.client_id,
-          employee_id: formData.employee_id || null,
+          employee_id: formData.employee_id === "unassigned" ? null : formData.employee_id || null,
         })
         .eq('id', appointment.id);
 
@@ -232,7 +232,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
                 <SelectValue placeholder="Seleccionar estilista" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin estilista asignado</SelectItem>
+                <SelectItem value="unassigned">Sin estilista asignado</SelectItem>
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
                     {employee.full_name}
