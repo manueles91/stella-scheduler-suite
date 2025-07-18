@@ -547,7 +547,7 @@ export const AdminServices = () => {
   };
   if (loading) {
     return <div className="space-y-4">
-        <h2 className="text-3xl font-serif font-bold">Gestión de Servicios</h2>
+        <h2 className="text-3xl font-serif font-bold">Servicios</h2>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin mr-2" />
           <span>Cargando servicios...</span>
@@ -555,12 +555,29 @@ export const AdminServices = () => {
       </div>;
   }
   return <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif font-bold">Gestión de Servicios</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowCategoryManager(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Gestionar Categorías
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <h2 className="text-3xl font-serif font-bold">Servicios</h2>
+        <div className="flex gap-2 items-center">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Todas las categorías" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              <SelectItem value="none">Sin categoría</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCategoryManager(true)}
+          >
+            <Settings className="h-4 w-4" />
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -749,31 +766,6 @@ export const AdminServices = () => {
         </div>
       </div>
 
-      {/* Category Filter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtrar por Categoría
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Seleccionar categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              <SelectItem value="none">Sin categoría</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
