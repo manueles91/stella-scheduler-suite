@@ -310,7 +310,7 @@ export const EnhancedBookingSystem = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Servicio seleccionado</CardTitle>
+              <CardTitle>Servicio </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
