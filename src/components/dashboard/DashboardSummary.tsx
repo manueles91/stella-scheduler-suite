@@ -170,77 +170,84 @@ export const DashboardSummary = ({
     return effectiveProfile?.role === 'admin';
   };
   const renderAppointment = (appt: Appointment) => (
-    <div key={appt.id} className="border border-border rounded-lg p-3 sm:p-4 space-y-3 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+    <div key={appt.id} className="border border-border rounded-lg p-4 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
+      {/* Top row with service and status */}
+      <div className="flex justify-between items-start mb-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
             <Calendar className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            {/* Services - support multiple services */}
-            <div className="font-semibold text-foreground text-sm sm:text-base leading-tight">
+            <div className="font-semibold text-foreground text-base leading-tight mb-1">
               {appt.services && appt.services.length > 0 
                 ? appt.services.map(service => service.name).join(', ')
                 : 'Servicio'
               }
             </div>
-            
-            {/* Time - mobile optimized */}
-            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground mt-1">
-              <Clock className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">
-                {formatTime12Hour(appt.start_time).replace(' ', '')} - {formatTime12Hour(appt.end_time).replace(' ', '')}
-              </span>
-            </div>
-            
-            {/* Date - mobile optimized */}
-            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
-              {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-              })}
-            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 flex-shrink-0 self-start">
-          <Badge className={getStatusColor(appt.status)} variant="secondary">
-            {getStatusText(appt.status)}
-          </Badge>
-          <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
+        <Badge className={getStatusColor(appt.status)} variant="secondary">
+          {getStatusText(appt.status)}
+        </Badge>
+      </div>
+
+      {/* Bottom row with time/date and edit button */}
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          {/* Time */}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Clock className="h-3 w-3 flex-shrink-0" />
+            <span>
+              {formatTime12Hour(appt.start_time).replace(' ', '')} - {formatTime12Hour(appt.end_time).replace(' ', '')}
+            </span>
+          </div>
+          
+          {/* Date */}
+          <div className="text-sm text-muted-foreground">
+            {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short'
+            })}
+          </div>
         </div>
+        
+        {/* Edit button on the right */}
+        <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
       </div>
       
-      {/* Client/Employee info with icons - mobile optimized */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border/50">
-        {effectiveProfile?.role === 'admin' && (
-          <>
+      {/* Client/Employee info - full width at bottom */}
+      {(effectiveProfile?.role === 'admin' || effectiveProfile?.role === 'employee' || appt.employee_profile) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-3 mt-3 border-t border-border/50">
+          {effectiveProfile?.role === 'admin' && (
+            <>
+              <div className="flex items-center gap-1 min-w-0">
+                <User className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{appt.client_profile?.full_name}</span>
+              </div>
+              {appt.employee_profile && (
+                <div className="flex items-center gap-1 min-w-0">
+                  <Sparkles className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
+                </div>
+              )}
+            </>
+          )}
+          {effectiveProfile?.role === 'employee' && (
             <div className="flex items-center gap-1 min-w-0">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{appt.client_profile?.full_name}</span>
             </div>
-            {appt.employee_profile && (
-              <div className="flex items-center gap-1 min-w-0">
-                <Sparkles className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
-              </div>
-            )}
-          </>
-        )}
-        {effectiveProfile?.role === 'employee' && (
-          <div className="flex items-center gap-1 min-w-0">
-            <User className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{appt.client_profile?.full_name}</span>
-          </div>
-        )}
-        {effectiveProfile?.role === 'client' && appt.employee_profile && (
-          <div className="flex items-center gap-1 min-w-0">
-            <Sparkles className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
-          </div>
-        )}
-      </div>
+          )}
+          {effectiveProfile?.role === 'client' && appt.employee_profile && (
+            <div className="flex items-center gap-1 min-w-0">
+              <Sparkles className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Estilista: {appt.employee_profile.full_name}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
   if (loading) {
