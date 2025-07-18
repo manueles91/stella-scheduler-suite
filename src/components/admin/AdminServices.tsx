@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2, Filter, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AdminCategories } from "./AdminCategories";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 interface Service {
@@ -80,6 +81,8 @@ export const AdminServices = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [imageValidationError, setImageValidationError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -97,6 +100,12 @@ export const AdminServices = () => {
     fetchEmployees();
     fetchCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filteredServices = services.filter(service => {
+    if (categoryFilter === "all") return true;
+    if (categoryFilter === "none") return !service.category_id;
+    return service.category_id === categoryFilter;
+  });
 
   const fetchServices = async () => {
     setLoading(true);
@@ -547,14 +556,19 @@ export const AdminServices = () => {
   }
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif font-bold">Servicios</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Servicio
-            </Button>
-          </DialogTrigger>
+        <h2 className="text-3xl font-serif font-bold">Gestión de Servicios</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowCategoryManager(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Gestionar Categorías
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Servicio
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -732,11 +746,38 @@ export const AdminServices = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* Category Filter */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtrar por Categoría
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Seleccionar categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              <SelectItem value="none">Sin categoría</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.map(service => <Card key={service.id} className={`${!service.is_active ? 'opacity-60' : ''}`}>
+        {filteredServices.map(service => <Card key={service.id} className={`${!service.is_active ? 'opacity-60' : ''}`}>
             {service.image_url && <div className="relative">
                 <img src={service.image_url} alt={service.name} className="w-full h-48 object-cover rounded-t-lg" />
               </div>}
@@ -774,6 +815,28 @@ export const AdminServices = () => {
             </CardContent>
           </Card>)}
       </div>
+
+      {/* Category Manager Modal */}
+      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gestionar Categorías</DialogTitle>
+          </DialogHeader>
+          <AdminCategories />
+        </DialogContent>
+      </Dialog>
+
+      {filteredServices.length === 0 && services.length > 0 && <Card>
+          <CardContent className="p-8 text-center">
+            <div className="space-y-4">
+              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">No hay servicios en esta categoría.</p>
+              <p className="text-sm text-muted-foreground">
+                Cambia el filtro para ver otros servicios o crea un nuevo servicio.
+              </p>
+            </div>
+          </CardContent>
+        </Card>}
 
       {services.length === 0 && <Card>
           <CardContent className="p-8 text-center">

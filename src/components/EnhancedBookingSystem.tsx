@@ -65,6 +65,7 @@ export const EnhancedBookingSystem = () => {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const {
     user
   } = useAuth();
@@ -297,10 +298,29 @@ export const EnhancedBookingSystem = () => {
       {currentStep === 1 && <Card>
           <CardHeader>
             <CardTitle>Selecciona tu servicio</CardTitle>
+            {/* Category Filter */}
+            <div className="mt-4">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <SelectValue placeholder="Filtrar por categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectItem value="none">Sin categoría</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="space-y-8">
             {/* Group services by category */}
             {categories.map(category => {
+              if (categoryFilter !== "all" && categoryFilter !== category.id) return null;
+              
               const categoryServices = services.filter(service => service.category_id === category.id);
               
               if (categoryServices.length === 0) return null;
@@ -368,7 +388,7 @@ export const EnhancedBookingSystem = () => {
             })}
 
             {/* Services without category */}
-            {services.filter(service => !service.category_id).length > 0 && (
+            {(categoryFilter === "all" || categoryFilter === "none") && services.filter(service => !service.category_id).length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-primary">Otros Servicios</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

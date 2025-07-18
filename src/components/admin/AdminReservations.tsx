@@ -28,6 +28,10 @@ interface Reservation {
     name: string;
     duration_minutes: number;
     price_cents: number;
+    category_id?: string;
+    service_categories?: {
+      name: string;
+    };
   };
   employee?: {
     full_name: string;
@@ -37,6 +41,8 @@ export const AdminReservations = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categories, setCategories] = useState<any[]>([]);
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const {
@@ -44,7 +50,23 @@ export const AdminReservations = () => {
   } = useToast();
   useEffect(() => {
     fetchReservations();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("service_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
   const fetchReservations = async () => {
     setLoading(true);
     const {
@@ -53,7 +75,7 @@ export const AdminReservations = () => {
     } = await supabase.from('reservations').select(`
         *,
         profiles!reservations_client_id_fkey(full_name, email),
-        services(name, duration_minutes, price_cents),
+        services(name, duration_minutes, price_cents, category_id, service_categories(name)),
         employee:profiles!reservations_employee_id_fkey(full_name)
       `).order('appointment_date', {
       ascending: false
@@ -93,9 +115,12 @@ export const AdminReservations = () => {
   };
   const filteredReservations = reservations.filter(reservation => {
     const matchesStatus = statusFilter === "all" || reservation.status === statusFilter;
+    const matchesCategory = categoryFilter === "all" || 
+      (categoryFilter === "none" && !reservation.services.category_id) ||
+      reservation.services.category_id === categoryFilter;
     const matchesDate = !dateFilter || reservation.appointment_date === format(dateFilter, 'yyyy-MM-dd');
     const matchesSearch = !searchTerm || reservation.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || reservation.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()) || reservation.services.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesDate && matchesSearch;
+    return matchesStatus && matchesCategory && matchesDate && matchesSearch;
   });
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -144,7 +169,7 @@ export const AdminReservations = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input placeholder="Buscar cliente o servicio..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
@@ -163,6 +188,21 @@ export const AdminReservations = () => {
               </SelectContent>
             </Select>
 
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                <SelectItem value="none">Sin categoría</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start text-left font-normal">
@@ -177,6 +217,7 @@ export const AdminReservations = () => {
 
             <Button variant="outline" onClick={() => {
             setStatusFilter("all");
+            setCategoryFilter("all");
             setDateFilter(undefined);
             setSearchTerm("");
           }}>
