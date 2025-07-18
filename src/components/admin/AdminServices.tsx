@@ -87,7 +87,7 @@ export const AdminServices = () => {
     price_cents: 0,
     image_url: "",
     is_active: true,
-    category_id: ""
+    category_id: "none"
   });
   const {
     toast
@@ -452,7 +452,7 @@ export const AdminServices = () => {
       // Convert from cents
       image_url: service.image_url || "",
       is_active: service.is_active,
-      category_id: service.category_id || ""
+      category_id: service.category_id || "none"
     });
     setImagePreview(service.image_url || null);
     setImageFile(null);
@@ -493,7 +493,7 @@ export const AdminServices = () => {
       price_cents: 0,
       image_url: "",
       is_active: true,
-      category_id: ""
+      category_id: "none"
     });
     setEditingService(null);
     setImageFile(null);
@@ -610,7 +610,7 @@ export const AdminServices = () => {
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin categoría</SelectItem>
+                    <SelectItem value="none">Sin categoría</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
