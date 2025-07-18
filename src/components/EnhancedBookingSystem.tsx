@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMinutes, parseISO, isSameDay, isAfter, startOfDay } from "date-fns";
+import { es } from "date-fns/locale";
 interface Service {
   id: string;
   name: string;
@@ -36,7 +37,7 @@ interface TimeSlot {
 const BOOKING_STEPS = [{
   id: 1,
   title: "Servicio",
-  description: "Elige tu servicio y especialista"
+  description: "Elige tu servicio y estilista"
 }, {
   id: 2,
   title: "Fecha",
@@ -275,7 +276,7 @@ export const EnhancedBookingSystem = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services.map(service => <Card key={service.id} className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`}>
+              {services.map(service => <Card key={service.id} className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} onClick={() => handleServiceSelect(service)}>
                   <CardContent className="p-6">
                     <div className="space-y-3">
                       <h3 className="font-semibold text-lg">{service.name}</h3>
@@ -289,8 +290,8 @@ export const EnhancedBookingSystem = () => {
                       </div>
                       
                       {/* Employee Selection for each service */}
-                      <div className="space-y-2">
-                        <Label>Especialista</Label>
+                      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                        <Label>Estilista</Label>
                         <Select value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} onValueChange={value => {
                     setSelectedService(service);
                     if (value === "any") {
@@ -301,10 +302,10 @@ export const EnhancedBookingSystem = () => {
                     }
                   }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Cualquier especialista" />
+                            <SelectValue placeholder="Cualquier estilista" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="any">Cualquier especialista</SelectItem>
+                            <SelectItem value="any">Cualquier estilista</SelectItem>
                             {employees.filter(emp => emp.employee_services.some(es => es.service_id === service.id)).map(employee => <SelectItem key={employee.id} value={employee.id}>
                                 <div className="flex items-center gap-2">
                                   <User className="h-4 w-4" />
@@ -314,10 +315,6 @@ export const EnhancedBookingSystem = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <Button className="w-full" variant={selectedService?.id === service.id ? "default" : "outline"} onClick={() => handleServiceSelect(service)}>
-                        Seleccionar
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>)}
@@ -332,7 +329,14 @@ export const EnhancedBookingSystem = () => {
               <CardDescription>Elige la fecha para tu cita</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={date => date < startOfDay(new Date()) || date.getDay() === 0} className="rounded-md border" />
+              <Calendar 
+                mode="single" 
+                selected={selectedDate} 
+                onSelect={handleDateSelect} 
+                disabled={date => date < startOfDay(new Date()) || date.getDay() === 0} 
+                className="rounded-md border" 
+                locale={es}
+              />
             </CardContent>
           </Card>
         </div>}
@@ -341,7 +345,7 @@ export const EnhancedBookingSystem = () => {
           <CardHeader>
             <CardTitle>Horarios disponibles</CardTitle>
             <CardDescription>
-              {format(selectedDate, 'EEEE, d MMMM yyyy')}
+              {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: es })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -372,7 +376,7 @@ export const EnhancedBookingSystem = () => {
                 </div>
                 <div>
                   <strong>Fecha:</strong>
-                  <p>{format(selectedDate, 'EEEE, d MMMM yyyy')}</p>
+                  <p>{format(selectedDate, 'EEEE, d MMMM yyyy', { locale: es })}</p>
                 </div>
                 <div>
                   <strong>Hora:</strong>
@@ -381,7 +385,7 @@ export const EnhancedBookingSystem = () => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <strong>Especialista:</strong>
+                  <strong>Estilista:</strong>
                   <p>{selectedSlot.employee_name}</p>
                 </div>
                 <div>
