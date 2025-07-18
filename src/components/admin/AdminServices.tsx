@@ -23,6 +23,11 @@ interface Service {
   image_url?: string;
   is_active: boolean;
   created_at: string;
+  category_id?: string;
+  service_categories?: {
+    id: string;
+    name: string;
+  };
 }
 interface Employee {
   id: string;
@@ -64,6 +69,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 export const AdminServices = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,7 +86,8 @@ export const AdminServices = () => {
     duration_minutes: 60,
     price_cents: 0,
     image_url: "",
-    is_active: true
+    is_active: true,
+    category_id: ""
   });
   const {
     toast
@@ -88,6 +95,7 @@ export const AdminServices = () => {
   useEffect(() => {
     fetchServices();
     fetchEmployees();
+    fetchCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchServices = async () => {
@@ -96,7 +104,13 @@ export const AdminServices = () => {
       const {
         data,
         error
-      } = await supabase.from('services').select('*').order('name');
+      } = await supabase.from('services').select(`
+        *,
+        service_categories (
+          id,
+          name
+        )
+      `).order('name');
       if (error) {
         console.error('Error fetching services:', error);
         toast({
@@ -116,6 +130,21 @@ export const AdminServices = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("service_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
     }
   };
   const fetchEmployees = async () => {
@@ -422,7 +451,8 @@ export const AdminServices = () => {
       price_cents: service.price_cents / 100,
       // Convert from cents
       image_url: service.image_url || "",
-      is_active: service.is_active
+      is_active: service.is_active,
+      category_id: service.category_id || ""
     });
     setImagePreview(service.image_url || null);
     setImageFile(null);
@@ -462,7 +492,8 @@ export const AdminServices = () => {
       duration_minutes: 60,
       price_cents: 0,
       image_url: "",
-      is_active: true
+      is_active: true,
+      category_id: ""
     });
     setEditingService(null);
     setImageFile(null);
@@ -567,6 +598,26 @@ export const AdminServices = () => {
                 ...formData,
                 description: e.target.value
               })} placeholder="Descripción del servicio..." rows={3} />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Categoría</Label>
+                <Select value={formData.category_id} onValueChange={value => setFormData({
+                  ...formData,
+                  category_id: value
+                })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sin categoría</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

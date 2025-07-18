@@ -20,6 +20,7 @@ interface Service {
   description: string;
   duration_minutes: number;
   price_cents: number;
+  category_id?: string;
 }
 interface Employee {
   id: string;
@@ -54,6 +55,7 @@ const BOOKING_STEPS = [{
 export const EnhancedBookingSystem = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [services, setServices] = useState<Service[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -72,6 +74,7 @@ export const EnhancedBookingSystem = () => {
   useEffect(() => {
     fetchServices();
     fetchEmployees();
+    fetchCategories();
   }, []);
   useEffect(() => {
     if (selectedService && selectedDate) {
@@ -82,7 +85,14 @@ export const EnhancedBookingSystem = () => {
     const {
       data,
       error
-    } = await supabase.from('services').select('*').eq('is_active', true).order('name');
+    } = await supabase.from('services').select(`
+        *,
+        service_categories (
+          id,
+          name,
+          display_order
+        )
+      `).eq('is_active', true).order('name');
     if (error) {
       toast({
         title: "Error",
@@ -106,6 +116,21 @@ export const EnhancedBookingSystem = () => {
       console.error('Error fetching employees:', error);
     } else {
       setEmployees(data || []);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("service_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
     }
   };
   const fetchAvailableSlots = async () => {
@@ -272,53 +297,137 @@ export const EnhancedBookingSystem = () => {
       {currentStep === 1 && <Card>
           <CardHeader>
             <CardTitle>Selecciona tu servicio</CardTitle>
-            
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services.map(service => <Card key={service.id} className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} onClick={() => handleServiceSelect(service)}>
-                  <CardContent className="p-6">
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-lg">{service.name}</h3>
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
-                      <div className="flex justify-between items-center">
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {service.duration_minutes} min
-                        </Badge>
-                        <span className="font-bold text-lg text-primary">{formatPrice(service.price_cents)}</span>
-                      </div>
-                      
-                      {/* Employee Selection for each service */}
-                      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                        <Label>Estilista</Label>
-                        <Select value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} onValueChange={value => {
-                    setSelectedService(service);
-                    if (value === "any") {
-                      setSelectedEmployee(null);
-                    } else {
-                      const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
-                      setSelectedEmployee(employee || null);
-                    }
-                  }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Cualquier estilista" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="any">Cualquier estilista</SelectItem>
-                            {employees.filter(emp => emp.employee_services.some(es => es.service_id === service.id)).map(employee => <SelectItem key={employee.id} value={employee.id}>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4" />
-                                  {employee.full_name}
-                                </div>
-                              </SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>)}
-            </div>
+          <CardContent className="space-y-8">
+            {/* Group services by category */}
+            {categories.map(category => {
+              const categoryServices = services.filter(service => service.category_id === category.id);
+              
+              if (categoryServices.length === 0) return null;
+              
+              return (
+                <div key={category.id} className="space-y-4">
+                  <h3 className="text-xl font-semibold text-primary">{category.name}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categoryServices.map(service => (
+                      <Card 
+                        key={service.id} 
+                        className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
+                        onClick={() => handleServiceSelect(service)}
+                      >
+                        <CardContent className="p-6">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-lg">{service.name}</h4>
+                            <p className="text-sm text-muted-foreground">{service.description}</p>
+                            <div className="flex justify-between items-center">
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {service.duration_minutes} min
+                              </Badge>
+                              <span className="font-bold text-lg text-primary">{formatPrice(service.price_cents)}</span>
+                            </div>
+                            
+                            {/* Employee Selection for each service */}
+                            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                              <Label>Estilista</Label>
+                              <Select 
+                                value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} 
+                                onValueChange={value => {
+                                  setSelectedService(service);
+                                  if (value === "any") {
+                                    setSelectedEmployee(null);
+                                  } else {
+                                    const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
+                                    setSelectedEmployee(employee || null);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Cualquier estilista" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="any">Cualquier estilista</SelectItem>
+                                  {employees.filter(emp => emp.employee_services.some(es => es.service_id === service.id)).map(employee => (
+                                    <SelectItem key={employee.id} value={employee.id}>
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4" />
+                                        {employee.full_name}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Services without category */}
+            {services.filter(service => !service.category_id).length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-primary">Otros Servicios</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {services.filter(service => !service.category_id).map(service => (
+                    <Card 
+                      key={service.id} 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
+                      onClick={() => handleServiceSelect(service)}
+                    >
+                      <CardContent className="p-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-lg">{service.name}</h4>
+                          <p className="text-sm text-muted-foreground">{service.description}</p>
+                          <div className="flex justify-between items-center">
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {service.duration_minutes} min
+                            </Badge>
+                            <span className="font-bold text-lg text-primary">{formatPrice(service.price_cents)}</span>
+                          </div>
+                          
+                          {/* Employee Selection for each service */}
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <Label>Estilista</Label>
+                            <Select 
+                              value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} 
+                              onValueChange={value => {
+                                setSelectedService(service);
+                                if (value === "any") {
+                                  setSelectedEmployee(null);
+                                } else {
+                                  const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
+                                  setSelectedEmployee(employee || null);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Cualquier estilista" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any">Cualquier estilista</SelectItem>
+                                {employees.filter(emp => emp.employee_services.some(es => es.service_id === service.id)).map(employee => (
+                                  <SelectItem key={employee.id} value={employee.id}>
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4" />
+                                      {employee.full_name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>}
 
