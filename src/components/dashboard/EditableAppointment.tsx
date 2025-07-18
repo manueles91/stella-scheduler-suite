@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ interface Appointment {
   end_time: string;
   status: string;
   notes?: string;
+  client_id: string;
+  employee_id?: string;
   services?: {
     name: string;
     duration_minutes: number;
@@ -29,6 +31,12 @@ interface Appointment {
   employee_profile?: {
     full_name: string;
   };
+}
+
+interface Profile {
+  id: string;
+  full_name: string;
+  role: string;
 }
 
 interface EditableAppointmentProps {
@@ -45,8 +53,45 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     end_time: appointment.end_time,
     status: appointment.status,
     notes: appointment.notes || "",
+    client_id: appointment.client_id,
+    employee_id: appointment.employee_id || "",
   });
+  const [clients, setClients] = useState<Profile[]>([]);
+  const [employees, setEmployees] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchProfiles();
+    }
+  }, [isOpen]);
+
+  const fetchProfiles = async () => {
+    setLoading(true);
+    try {
+      // Fetch clients
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('role', 'client')
+        .order('full_name');
+
+      // Fetch employees
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['employee', 'admin'])
+        .order('full_name');
+
+      if (!clientsError && clientsData) setClients(clientsData);
+      if (!employeesError && employeesData) setEmployees(employeesData);
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +105,8 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
           end_time: formData.end_time,
           status: formData.status,
           notes: formData.notes || null,
+          client_id: formData.client_id,
+          employee_id: formData.employee_id || null,
         })
         .eq('id', appointment.id);
 
@@ -107,7 +154,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
         <Pencil className="h-3 w-3" />
       </Button>
       
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Cita</DialogTitle>
         </DialogHeader>
@@ -152,6 +199,47 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
                 onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
               />
             </div>
+          </div>
+
+          <div>
+            <Label>Cliente</Label>
+            <Select 
+              value={formData.client_id} 
+              onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Estilista</Label>
+            <Select 
+              value={formData.employee_id} 
+              onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar estilista" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sin estilista asignado</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

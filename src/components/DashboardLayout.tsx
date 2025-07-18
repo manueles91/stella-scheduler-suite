@@ -75,7 +75,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Resumen', icon: Calendar },
+    { id: 'overview', label: 'Inicio', icon: Calendar },
     { id: 'bookings', label: 'Mis reservas', icon: Calendar },
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'schedule', label: 'Mi agenda', icon: Clock },

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, User, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditableAppointment } from "./EditableAppointment";
@@ -175,9 +177,28 @@ export const DashboardSummary = ({
   const canEditDiscount = () => {
     return effectiveProfile?.role === 'admin';
   };
-  const renderAppointment = (appt: Appointment) => <div key={appt.id} className="border border-border rounded-lg p-3 space-y-2">
+  const renderAppointment = (appt: Appointment) => (
+    <div key={appt.id} className="border border-border rounded-lg p-4 space-y-3 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start">
-        <div className="font-medium text-foreground">{appt.services?.name || 'Servicio'}</div>
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-full bg-primary/10">
+            <Calendar className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <div className="font-semibold text-foreground">{appt.services?.name || 'Servicio'}</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+              <Clock className="h-3 w-3" />
+              <span>{formatTime12Hour(appt.start_time)} - {formatTime12Hour(appt.end_time)}</span>
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
+                weekday: 'short',
+                month: 'short', 
+                day: 'numeric'
+              })}
+            </div>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Badge className={getStatusColor(appt.status)}>
             {getStatusText(appt.status)}
@@ -185,26 +206,38 @@ export const DashboardSummary = ({
           <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
         </div>
       </div>
-      <div className="text-sm text-muted-foreground">
-        <div>{new Date(appt.appointment_date).toLocaleDateString('es-ES', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })}</div>
-        <div>{formatTime12Hour(appt.start_time)} - {formatTime12Hour(appt.end_time)}</div>
+      
+      {/* Client/Employee info with icons */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t border-border/50">
+        {effectiveProfile?.role === 'admin' && (
+          <>
+            <div className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              <span>{appt.client_profile?.full_name}</span>
+            </div>
+            {appt.employee_profile && (
+              <div className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                <span>Estilista: {appt.employee_profile.full_name}</span>
+              </div>
+            )}
+          </>
+        )}
+        {effectiveProfile?.role === 'employee' && (
+          <div className="flex items-center gap-1">
+            <User className="h-3 w-3" />
+            <span>{appt.client_profile?.full_name}</span>
+          </div>
+        )}
+        {effectiveProfile?.role === 'client' && appt.employee_profile && (
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3" />
+            <span>Estilista: {appt.employee_profile.full_name}</span>
+          </div>
+        )}
       </div>
-      {effectiveProfile?.role === 'admin' && <div className="text-xs text-muted-foreground">
-          <div>Cliente: {appt.client_profile?.full_name}</div>
-          {appt.employee_profile && <div>Empleado: {appt.employee_profile.full_name}</div>}
-        </div>}
-      {effectiveProfile?.role === 'employee' && <div className="text-xs text-muted-foreground">
-          Cliente: {appt.client_profile?.full_name}
-        </div>}
-      {effectiveProfile?.role === 'client' && appt.employee_profile && <div className="text-xs text-muted-foreground">
-          Empleado: {appt.employee_profile.full_name}
-        </div>}
-    </div>;
+    </div>
+  );
   if (loading) {
     return <div className="space-y-6">
         <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
@@ -222,12 +255,28 @@ export const DashboardSummary = ({
           <CardTitle>Próximas Citas</CardTitle>
         </CardHeader>
         <CardContent>
-          {upcomingAppointments.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay citas próximas</p> : <div className="space-y-3">
+          {upcomingAppointments.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
+                <Calendar className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-4">No hay citas próximas</p>
+              {effectiveProfile?.role === 'client' && (
+                <Button onClick={() => window.location.href = '#bookings'} className="bg-primary hover:bg-primary/90">
+                  Reservar una cita
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
               {upcomingAppointments.slice(0, 5).map(renderAppointment)}
-              {upcomingAppointments.length > 5 && <p className="text-sm text-muted-foreground text-center">
+              {upcomingAppointments.length > 5 && (
+                <p className="text-sm text-muted-foreground text-center">
                   Y {upcomingAppointments.length - 5} citas más...
-                </p>}
-            </div>}
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -237,29 +286,51 @@ export const DashboardSummary = ({
           <CardTitle>Promociones</CardTitle>
         </CardHeader>
         <CardContent>
-          {activePromotions.length === 0 ? <div className="text-center py-8 text-muted-foreground">
-              <p>No hay promociones activas en este momento</p>
-              <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
-            </div> : <div className="space-y-3">
-              {activePromotions.map(promotion => <div key={promotion.id} className="border border-border rounded-lg p-3 space-y-2 bg-gradient-to-r from-primary/5 to-secondary/5">
-                  <div className="flex justify-between items-start">
-                    <div className="font-medium text-foreground">{promotion.name}</div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">
-                        {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `$${promotion.discount_value} OFF`}
-                      </Badge>
-                      <EditableDiscount discount={promotion} onUpdate={fetchActivePromotions} canEdit={canEditDiscount()} />
+            {activePromotions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
+                  <Sparkles className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p>No hay promociones activas en este momento</p>
+                <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activePromotions.map(promotion => (
+                  <div key={promotion.id} className="border border-border rounded-lg p-4 space-y-3 bg-gradient-to-r from-primary/5 to-secondary/5 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-foreground">{promotion.name}</div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {promotion.services?.name}
+                          </div>
+                          {promotion.description && (
+                            <div className="text-sm text-muted-foreground mt-1">{promotion.description}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="font-semibold">
+                          {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `$${promotion.discount_value} OFF`}
+                        </Badge>
+                        <EditableDiscount discount={promotion} onUpdate={fetchActivePromotions} canEdit={canEditDiscount()} />
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                      Válida hasta: {new Date(promotion.end_date).toLocaleDateString('es-ES', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    <div>Servicio: {promotion.services?.name}</div>
-                    {promotion.description && <div className="mt-1">{promotion.description}</div>}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Válida hasta: {new Date(promotion.end_date).toLocaleDateString('es-ES')}
-                  </div>
-                </div>)}
-            </div>}
+                ))}
+              </div>
+            )}
         </CardContent>
       </Card>
 
@@ -269,12 +340,18 @@ export const DashboardSummary = ({
           <CardTitle>Últimas Citas</CardTitle>
         </CardHeader>
         <CardContent>
-          {pastAppointments.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay citas anteriores</p> : <div className="space-y-3">
+          {pastAppointments.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No hay citas anteriores</p>
+          ) : (
+            <div className="space-y-4">
               {pastAppointments.slice(0, 5).map(renderAppointment)}
-              {pastAppointments.length > 5 && <p className="text-sm text-muted-foreground text-center">
+              {pastAppointments.length > 5 && (
+                <p className="text-sm text-muted-foreground text-center">
                   Y {pastAppointments.length - 5} citas más en el historial...
-                </p>}
-            </div>}
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>;
