@@ -36,7 +36,7 @@ interface TimeSlot {
 const BOOKING_STEPS = [{
   id: 1,
   title: "Servicio",
-  description: "Elige tu servicio"
+  description: "Elige tu servicio y especialista"
 }, {
   id: 2,
   title: "Fecha",
@@ -189,7 +189,7 @@ export const EnhancedBookingSystem = () => {
       error
     } = await supabase.from('reservations').insert({
       client_id: user.id,
-      employee_id: selectedSlot.employee_id,
+      employee_id: selectedEmployee?.id ? selectedSlot.employee_id : null,
       service_id: selectedService.id,
       appointment_date: format(selectedDate, 'yyyy-MM-dd'),
       start_time: startTime,
@@ -270,12 +270,12 @@ export const EnhancedBookingSystem = () => {
       {/* Step Content */}
       {currentStep === 1 && <Card>
           <CardHeader>
-            
-            
+            <CardTitle>Selecciona tu servicio</CardTitle>
+            <CardDescription>Elige entre nuestros tratamientos y selecciona tu especialista preferido</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services.map(service => <Card key={service.id} className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} onClick={() => handleServiceSelect(service)}>
+              {services.map(service => <Card key={service.id} className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                   <CardContent className="p-6">
                     <div className="space-y-3">
                       <h3 className="font-semibold text-lg">{service.name}</h3>
@@ -287,6 +287,41 @@ export const EnhancedBookingSystem = () => {
                         </Badge>
                         <span className="font-bold text-lg text-primary">{formatPrice(service.price_cents)}</span>
                       </div>
+                      
+                      {/* Employee Selection for each service */}
+                      <div className="space-y-2">
+                        <Label>Especialista</Label>
+                        <Select value={selectedService?.id === service.id ? (selectedEmployee?.id || "any") : "any"} onValueChange={value => {
+                          setSelectedService(service);
+                          if (value === "any") {
+                            setSelectedEmployee(null);
+                          } else {
+                            const employee = employees.find(emp => emp.id === value && emp.employee_services.some(es => es.service_id === service.id));
+                            setSelectedEmployee(employee || null);
+                          }
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Cualquier especialista" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Cualquier especialista</SelectItem>
+                            {employees.filter(emp => emp.employee_services.some(es => es.service_id === service.id)).map(employee => <SelectItem key={employee.id} value={employee.id}>
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4" />
+                                  {employee.full_name}
+                                </div>
+                              </SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <Button 
+                        className="w-full" 
+                        variant={selectedService?.id === service.id ? "default" : "outline"}
+                        onClick={() => handleServiceSelect(service)}
+                      >
+                        Seleccionar
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>)}
@@ -294,56 +329,14 @@ export const EnhancedBookingSystem = () => {
           </CardContent>
         </Card>}
 
-      {currentStep === 2 && selectedService && <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {currentStep === 2 && selectedService && <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
               <CardTitle>Selecciona la fecha</CardTitle>
-              
+              <CardDescription>Elige la fecha para tu cita</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={date => date < startOfDay(new Date()) || date.getDay() === 0} className="rounded-md border w-full" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Servicio </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold">{selectedService.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{selectedService.description}</p>
-                <div className="flex justify-between items-center mt-3">
-                  <Badge variant="secondary">{selectedService.duration_minutes} min</Badge>
-                  <span className="font-bold text-primary">{formatPrice(selectedService.price_cents)}</span>
-                </div>
-              </div>
-
-              {/* Employee Selection */}
-              <div className="space-y-3">
-                <Label>Preferencia de especialista (opcional)</Label>
-                <Select value={selectedEmployee?.id || "any"} onValueChange={value => {
-              if (value === "any") {
-                setSelectedEmployee(null);
-              } else {
-                const employee = employees.find(emp => emp.id === value);
-                setSelectedEmployee(employee || null);
-              }
-            }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Cualquier especialista disponible" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Cualquier especialista disponible</SelectItem>
-                    {getAvailableEmployees().map(employee => <SelectItem key={employee.id} value={employee.id}>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          {employee.full_name}
-                        </div>
-                      </SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <CardContent className="flex justify-center">
+              <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={date => date < startOfDay(new Date()) || date.getDay() === 0} className="rounded-md border" />
             </CardContent>
           </Card>
         </div>}
@@ -353,21 +346,17 @@ export const EnhancedBookingSystem = () => {
             <CardTitle>Horarios disponibles</CardTitle>
             <CardDescription>
               {format(selectedDate, 'EEEE, d MMMM yyyy')}
-              {selectedEmployee && ` - con ${selectedEmployee.full_name}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <div className="text-center py-8">Cargando horarios disponibles...</div> : availableSlots.length === 0 ? <div className="text-center py-8">
                 <p className="text-muted-foreground">No hay horarios disponibles para esta fecha.</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Prueba seleccionar otra fecha o especialista.
+                  Prueba seleccionar otra fecha.
                 </p>
               </div> : <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {availableSlots.map((slot, index) => <Button key={index} variant={selectedSlot?.start_time === slot.start_time && selectedSlot?.employee_id === slot.employee_id ? "default" : "outline"} onClick={() => handleSlotSelect(slot)} className="flex flex-col p-3 h-auto">
+                {availableSlots.map((slot, index) => <Button key={index} variant={selectedSlot?.start_time === slot.start_time && selectedSlot?.employee_id === slot.employee_id ? "default" : "outline"} onClick={() => handleSlotSelect(slot)} className="p-3 h-auto">
                     <span className="font-medium">{slot.start_time}</span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {slot.employee_name}
-                    </span>
                   </Button>)}
               </div>}
           </CardContent>

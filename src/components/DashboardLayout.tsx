@@ -76,13 +76,13 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
 
   const menuItems = [
     { id: 'overview', label: 'Inicio', icon: Calendar },
-    { id: 'bookings', label: 'Mis reservas', icon: Calendar },
+    { id: 'bookings', label: 'Reservar', icon: Calendar },
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'schedule', label: 'Mi agenda', icon: Clock },
-      { id: 'time-tracking', label: 'Agenda y horarios', icon: Clock },
+      { id: 'time-tracking', label: 'Mi horario', icon: Clock },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'Todas las reservas', icon: Calendar },
+      { id: 'admin-bookings', label: 'Citas', icon: Calendar },
       { id: 'admin-services', label: 'Servicios', icon: Settings },
       { id: 'admin-discounts', label: 'Descuentos', icon: Settings },
       { id: 'admin-staff', label: 'Personal', icon: Users },
