@@ -263,15 +263,37 @@ export const AdminServices = () => {
     }
     setImageFile(file);
 
-    // Create preview
+    // Create preview with better error handling
     const reader = new FileReader();
+    
+    // Add timeout for slow file reading
+    const timeoutId = setTimeout(() => {
+      if (reader.readyState !== FileReader.DONE) {
+        reader.abort();
+        setImageValidationError("Tiempo de espera agotado. Intenta con una imagen más pequeña.");
+        setImageFile(null);
+        setImagePreview(null);
+      }
+    }, 5000);
+    
     reader.onloadend = () => {
-      setImagePreview(reader.result as string);
+      clearTimeout(timeoutId);
+      if (reader.result && reader.error === null) {
+        setImagePreview(reader.result as string);
+        setImageValidationError(null);
+      }
     };
+    
     reader.onerror = () => {
-      setImageValidationError("Error al leer el archivo. Asegúrate de que sea una imagen válida.");
-      setImageFile(null);
+      clearTimeout(timeoutId);
+      // Only show error after a brief delay to avoid race conditions
+      setTimeout(() => {
+        setImageValidationError("Error al leer el archivo. Asegúrate de que sea una imagen válida.");
+        setImageFile(null);
+        setImagePreview(null);
+      }, 100);
     };
+    
     reader.readAsDataURL(file);
   };
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -287,64 +309,29 @@ export const AdminServices = () => {
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+      }, 300);
 
       try {
-        // Upload to Supabase storage with retry logic
-        let uploadAttempts = 0;
-        let uploadResult;
-        while (uploadAttempts < 3) {
-          try {
-            uploadResult = await supabase.storage.from('service-images').upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-            if (!uploadResult.error) {
-              break;
-            }
-            uploadAttempts++;
-            if (uploadAttempts < 3) {
-              console.log(`Upload attempt ${uploadAttempts} failed, retrying...`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          } catch (networkError) {
-            uploadAttempts++;
-            console.error(`Upload attempt ${uploadAttempts} failed:`, networkError);
-            if (uploadAttempts >= 3) {
-              throw new Error('Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
+        // Upload to Supabase storage with simplified retry logic
+        const uploadResult = await supabase.storage.from('service-images').upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
         clearInterval(progressInterval);
         setUploadProgress(100);
 
-        if (uploadResult?.error) {
+        if (uploadResult.error) {
           console.error('Upload error:', uploadResult.error);
-
-          // Provide specific error messages for common issues
-          let errorMessage = `Error al subir la imagen: ${uploadResult.error.message}`;
-          if (uploadResult.error.message.includes('bucket') && uploadResult.error.message.includes('not found')) {
-            errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador.";
-          } else if (uploadResult.error.message.includes('row-level security') || uploadResult.error.message.includes('policy')) {
-            errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador o empleado.";
-          } else if (uploadResult.error.message.includes('file size')) {
-            errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
-          }
-          throw new Error(errorMessage);
+          throw new Error(`Error al subir la imagen: ${uploadResult.error.message}`);
         }
 
-        if (!uploadResult?.data) {
+        if (!uploadResult.data) {
           throw new Error('No se recibió respuesta del servidor al subir la imagen');
         }
 
         // Get public URL
-        const {
-          data: {
-            publicUrl
-          }
-        } = supabase.storage.from('service-images').getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage.from('service-images').getPublicUrl(fileName);
         
         if (!publicUrl) {
           throw new Error('No se pudo obtener la URL pública de la imagen');
@@ -359,11 +346,6 @@ export const AdminServices = () => {
     } catch (error) {
       console.error('Image upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir la imagen';
-      toast({
-        title: "Error de subida",
-        description: errorMessage,
-        variant: "destructive"
-      });
       return null;
     } finally {
       setUploadingImage(false);
