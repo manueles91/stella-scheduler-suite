@@ -137,7 +137,7 @@ export const AdminReservations = () => {
     }
   };
   const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `₡${(cents / 100).toFixed(2)}`;
   };
   const formatTime12Hour = (time: string) => {
     const [hours, minutes] = time.split(':');

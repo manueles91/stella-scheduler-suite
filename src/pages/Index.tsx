@@ -62,12 +62,12 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {[
-              { name: "Signature Facial", duration: "90 min", price: "$150", description: "Premium anti-aging treatment" },
-              { name: "Hair Cut & Style", duration: "60 min", price: "$85", description: "Professional styling service" },
-              { name: "Massage Therapy", duration: "90 min", price: "$120", description: "Relaxing full-body massage" },
-              { name: "Manicure", duration: "45 min", price: "$65", description: "Classic nail care service" },
-              { name: "Hair Color", duration: "180 min", price: "$180", description: "Expert color consultation" },
-              { name: "Makeup Application", duration: "45 min", price: "$80", description: "Professional event makeup" },
+              { name: "Signature Facial", duration: "90 min", price: "₡150", description: "Premium anti-aging treatment" },
+              { name: "Hair Cut & Style", duration: "60 min", price: "₡85", description: "Professional styling service" },
+              { name: "Massage Therapy", duration: "90 min", price: "₡120", description: "Relaxing full-body massage" },
+              { name: "Manicure", duration: "45 min", price: "₡65", description: "Classic nail care service" },
+              { name: "Hair Color", duration: "180 min", price: "₡180", description: "Expert color consultation" },
+              { name: "Makeup Application", duration: "45 min", price: "₡80", description: "Professional event makeup" },
             ].map((service, index) => (
               <Card key={index} className="hover:shadow-luxury transition-all duration-300">
                 <CardHeader>

@@ -526,7 +526,7 @@ export const AdminServices = () => {
     }
   };
   const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `₡${(cents / 100).toFixed(2)}`;
   };
   const getDurationLabel = (minutes: number) => {
     if (minutes < 60) return `${minutes} min`;
