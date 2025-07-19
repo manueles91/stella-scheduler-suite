@@ -168,7 +168,7 @@ const DiscountDisplay: React.FC<DiscountDisplayProps> = ({
   };
 
   const formatPrice = (priceInCents: number) => {
-    return `₡${(priceInCents / 100).toFixed(2)}`;
+    return `₡${Math.round(priceInCents / 100)}`;
   };
 
   const finalPrice = calculateFinalPrice();

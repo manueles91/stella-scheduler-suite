@@ -327,7 +327,7 @@ export const DashboardSummary = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="font-semibold">
-                          {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `$${promotion.discount_value} OFF`}
+                          {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `₡${Math.round(promotion.discount_value)} OFF`}
                         </Badge>
                         <EditableDiscount discount={promotion} onUpdate={fetchActivePromotions} canEdit={canEditDiscount()} />
                       </div>

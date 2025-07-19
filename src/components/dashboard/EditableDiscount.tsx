@@ -213,7 +213,7 @@ export const EditableDiscount = ({ discount, onUpdate, canEdit }: EditableDiscou
             </div>
             <div>
               <Label htmlFor="discount_value">
-                Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '($)'}
+                Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '(₡)'}
               </Label>
               <Input
                 id="discount_value"

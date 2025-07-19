@@ -219,7 +219,7 @@ const AdminDiscounts: React.FC = () => {
     setEditingDiscount(null);
   };
   const formatDiscountValue = (value: number, type: string) => {
-    return type === 'percentage' ? `${value}%` : `$${value}`;
+    return type === 'percentage' ? `${value}%` : `₡${Math.round(value)}`;
   };
   const isDiscountActive = (discount: Discount) => {
     const now = new Date();
@@ -302,7 +302,7 @@ const AdminDiscounts: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="discount_value">
-                    Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '($)'}
+                    Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '(₡)'}
                   </Label>
                   <Input id="discount_value" type="number" step="0.01" min="0" max={formData.discount_type === 'percentage' ? "100" : undefined} value={formData.discount_value} onChange={e => setFormData({
                   ...formData,

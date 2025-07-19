@@ -246,7 +246,7 @@ export const EnhancedBookingSystem = () => {
     setSubmitting(false);
   };
   const formatPrice = (cents: number) => {
-    return `₡${(cents / 100).toFixed(2)}`;
+    return `₡${Math.round(cents / 100)}`;
   };
   const getAvailableEmployees = () => {
     if (!selectedService) return [];
