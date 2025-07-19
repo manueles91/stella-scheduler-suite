@@ -289,63 +289,73 @@ export const AdminServices = () => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // Upload to Supabase storage with retry logic
-      let uploadAttempts = 0;
-      let uploadResult;
-      while (uploadAttempts < 3) {
-        try {
-          uploadResult = await supabase.storage.from('service-images').upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-          if (!uploadResult.error) {
-            break;
-          }
-          uploadAttempts++;
-          if (uploadAttempts < 3) {
-            console.log(`Upload attempt ${uploadAttempts} failed, retrying...`);
+      try {
+        // Upload to Supabase storage with retry logic
+        let uploadAttempts = 0;
+        let uploadResult;
+        while (uploadAttempts < 3) {
+          try {
+            uploadResult = await supabase.storage.from('service-images').upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+            if (!uploadResult.error) {
+              break;
+            }
+            uploadAttempts++;
+            if (uploadAttempts < 3) {
+              console.log(`Upload attempt ${uploadAttempts} failed, retrying...`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (networkError) {
+            uploadAttempts++;
+            console.error(`Upload attempt ${uploadAttempts} failed:`, networkError);
+            if (uploadAttempts >= 3) {
+              throw new Error('Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
+            }
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-        } catch (networkError) {
-          uploadAttempts++;
-          console.error(`Upload attempt ${uploadAttempts} failed:`, networkError);
-          if (uploadAttempts >= 3) {
-            throw new Error('Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
+        }
+
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+
+        if (uploadResult?.error) {
+          console.error('Upload error:', uploadResult.error);
+
+          // Provide specific error messages for common issues
+          let errorMessage = `Error al subir la imagen: ${uploadResult.error.message}`;
+          if (uploadResult.error.message.includes('bucket') && uploadResult.error.message.includes('not found')) {
+            errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador.";
+          } else if (uploadResult.error.message.includes('row-level security') || uploadResult.error.message.includes('policy')) {
+            errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador o empleado.";
+          } else if (uploadResult.error.message.includes('file size')) {
+            errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
           }
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          throw new Error(errorMessage);
         }
-      }
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      if (uploadResult?.error) {
-        console.error('Upload error:', uploadResult.error);
 
-        // Provide specific error messages for common issues
-        let errorMessage = `Error al subir la imagen: ${uploadResult.error.message}`;
-        if (uploadResult.error.message.includes('bucket') && uploadResult.error.message.includes('not found')) {
-          errorMessage = "El bucket de almacenamiento no existe. Contacta al administrador.";
-        } else if (uploadResult.error.message.includes('row-level security') || uploadResult.error.message.includes('policy')) {
-          errorMessage = "No tienes permisos para subir imágenes. Asegúrate de tener rol de administrador o empleado.";
-        } else if (uploadResult.error.message.includes('file size')) {
-          errorMessage = "La imagen es demasiado grande. Reduce el tamaño e intenta nuevamente.";
+        if (!uploadResult?.data) {
+          throw new Error('No se recibió respuesta del servidor al subir la imagen');
         }
-        throw new Error(errorMessage);
-      }
-      if (!uploadResult?.data) {
-        throw new Error('No se recibió respuesta del servidor al subir la imagen');
-      }
 
-      // Get public URL
-      const {
-        data: {
-          publicUrl
+        // Get public URL
+        const {
+          data: {
+            publicUrl
+          }
+        } = supabase.storage.from('service-images').getPublicUrl(fileName);
+        
+        if (!publicUrl) {
+          throw new Error('No se pudo obtener la URL pública de la imagen');
         }
-      } = supabase.storage.from('service-images').getPublicUrl(fileName);
-      if (!publicUrl) {
-        throw new Error('No se pudo obtener la URL pública de la imagen');
+        
+        console.log('Image uploaded successfully:', publicUrl);
+        return publicUrl;
+      } catch (error) {
+        clearInterval(progressInterval);
+        throw error;
       }
-      console.log('Image uploaded successfully:', publicUrl);
-      return publicUrl;
     } catch (error) {
       console.error('Image upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir la imagen';
@@ -393,10 +403,18 @@ export const AdminServices = () => {
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile);
         if (!uploadedUrl) {
-          // Error already shown in uploadImage function
-          return;
+          // Show option to save without image
+          const continueWithoutImage = confirm(
+            "La subida de la imagen falló. ¿Deseas guardar el servicio sin imagen?"
+          );
+          if (!continueWithoutImage) {
+            return;
+          }
+          // Keep existing image URL or set to empty
+          imageUrl = editingService?.image_url || "";
+        } else {
+          imageUrl = uploadedUrl;
         }
-        imageUrl = uploadedUrl;
       }
       const serviceData = {
         ...formData,
