@@ -193,7 +193,7 @@ export const EnhancedBookingSystem = () => {
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
     setSelectedSlot(null);
-    setSelectedEmployee(null);
+    // Don't reset selectedEmployee - preserve stylist selection
     setCurrentStep(2);
   };
   const handleDateSelect = (date: Date | undefined) => {
