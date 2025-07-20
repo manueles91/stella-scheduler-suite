@@ -94,6 +94,87 @@ export type Database = {
           },
         ]
       }
+      combo_services: {
+        Row: {
+          combo_id: string
+          created_at: string
+          id: string
+          quantity: number
+          service_id: string
+        }
+        Insert: {
+          combo_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_id: string
+        }
+        Update: {
+          combo_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_services_combo_id_fkey"
+            columns: ["combo_id"]
+            isOneToOne: false
+            referencedRelation: "combos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combos: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          original_price_cents: number
+          start_date: string
+          total_price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          original_price_cents: number
+          start_date: string
+          total_price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          original_price_cents?: number
+          start_date?: string
+          total_price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discounts: {
         Row: {
           created_at: string

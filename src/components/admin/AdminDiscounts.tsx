@@ -12,6 +12,8 @@ import { Plus, Pencil, Trash2, Percent, DollarSign, Calendar, Code } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, X } from "lucide-react";
 interface Discount {
   id: string;
   service_id: string;
@@ -32,13 +34,40 @@ interface Discount {
 interface Service {
   id: string;
   name: string;
+  price_cents: number;
+  duration_minutes: number;
+}
+
+interface Combo {
+  id: string;
+  name: string;
+  description: string;
+  total_price_cents: number;
+  original_price_cents: number;
+  is_active: boolean;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  combo_services: {
+    service_id: string;
+    quantity: number;
+    services: {
+      name: string;
+      price_cents: number;
+      duration_minutes: number;
+    };
+  }[];
 }
 const AdminDiscounts: React.FC = () => {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [combos, setCombos] = useState<Combo[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [comboLoading, setComboLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [comboDialogOpen, setComboDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const {
     toast
   } = useToast();
@@ -54,8 +83,18 @@ const AdminDiscounts: React.FC = () => {
     discount_code: "",
     is_active: true
   });
+
+  const [comboFormData, setComboFormData] = useState({
+    name: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    is_active: true,
+    services: [] as { service_id: string; quantity: number }[]
+  });
   useEffect(() => {
     fetchDiscounts();
+    fetchCombos();
     fetchServices();
   }, []);
   const fetchDiscounts = async () => {
@@ -89,11 +128,43 @@ const AdminDiscounts: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from("services").select("id, name").eq("is_active", true).order("name");
+      } = await supabase.from("services").select("id, name, price_cents, duration_minutes").eq("is_active", true).order("name");
       if (error) throw error;
       setServices(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
+    }
+  };
+
+  const fetchCombos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("combos")
+        .select(`
+          *,
+          combo_services (
+            service_id,
+            quantity,
+            services (
+              name,
+              price_cents,
+              duration_minutes
+            )
+          )
+        `)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      setCombos(data || []);
+    } catch (error) {
+      console.error("Error fetching combos:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los combos",
+        variant: "destructive"
+      });
+    } finally {
+      setComboLoading(false);
     }
   };
   const handleSubmit = async (e: React.FormEvent) => {
@@ -218,6 +289,186 @@ const AdminDiscounts: React.FC = () => {
     });
     setEditingDiscount(null);
   };
+
+  const resetComboForm = () => {
+    setComboFormData({
+      name: "",
+      description: "",
+      start_date: "",
+      end_date: "",
+      is_active: true,
+      services: []
+    });
+    setEditingCombo(null);
+  };
+
+  const handleComboSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!comboFormData.name || !comboFormData.start_date || !comboFormData.end_date || comboFormData.services.length === 0) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos y selecciona al menos un servicio",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
+      // Calculate original and total prices
+      const originalPrice = comboFormData.services.reduce((total, comboService) => {
+        const service = services.find(s => s.id === comboService.service_id);
+        return total + (service ? service.price_cents * comboService.quantity : 0);
+      }, 0);
+
+      // For now, set total price to 80% of original (20% discount)
+      const totalPrice = Math.round(originalPrice * 0.8);
+
+      const comboData = {
+        name: comboFormData.name,
+        description: comboFormData.description,
+        total_price_cents: totalPrice,
+        original_price_cents: originalPrice,
+        start_date: new Date(comboFormData.start_date).toISOString(),
+        end_date: new Date(comboFormData.end_date + 'T23:59:59').toISOString(),
+        is_active: comboFormData.is_active,
+        created_by: user.id
+      };
+
+      let error;
+      let comboId: string;
+
+      if (editingCombo) {
+        const { error: updateError } = await supabase
+          .from("combos")
+          .update(comboData)
+          .eq("id", editingCombo.id);
+        error = updateError;
+        comboId = editingCombo.id;
+
+        // Delete existing combo services
+        if (!error) {
+          await supabase
+            .from("combo_services")
+            .delete()
+            .eq("combo_id", editingCombo.id);
+        }
+      } else {
+        const { data: insertData, error: insertError } = await supabase
+          .from("combos")
+          .insert([comboData])
+          .select()
+          .single();
+        error = insertError;
+        comboId = insertData?.id;
+      }
+
+      if (error) throw error;
+
+      // Insert combo services
+      const comboServices = comboFormData.services.map(service => ({
+        combo_id: comboId,
+        service_id: service.service_id,
+        quantity: service.quantity
+      }));
+
+      const { error: servicesError } = await supabase
+        .from("combo_services")
+        .insert(comboServices);
+
+      if (servicesError) throw servicesError;
+
+      toast({
+        title: "Éxito",
+        description: `Combo ${editingCombo ? "actualizado" : "creado"} correctamente`
+      });
+
+      fetchCombos();
+      resetComboForm();
+      setComboDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error saving combo:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar el combo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditCombo = (combo: Combo) => {
+    setEditingCombo(combo);
+    setComboFormData({
+      name: combo.name,
+      description: combo.description || "",
+      start_date: combo.start_date.split('T')[0],
+      end_date: combo.end_date.split('T')[0],
+      is_active: combo.is_active,
+      services: combo.combo_services.map(cs => ({
+        service_id: cs.service_id,
+        quantity: cs.quantity
+      }))
+    });
+    setComboDialogOpen(true);
+  };
+
+  const handleDeleteCombo = async (id: string) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este combo?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("combos").delete().eq("id", id);
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Combo eliminado correctamente"
+      });
+      fetchCombos();
+    } catch (error: any) {
+      console.error("Error deleting combo:", error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar el combo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const addServiceToCombo = () => {
+    setComboFormData({
+      ...comboFormData,
+      services: [...comboFormData.services, { service_id: "", quantity: 1 }]
+    });
+  };
+
+  const removeServiceFromCombo = (index: number) => {
+    setComboFormData({
+      ...comboFormData,
+      services: comboFormData.services.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateComboService = (index: number, field: 'service_id' | 'quantity', value: string | number) => {
+    const updatedServices = [...comboFormData.services];
+    updatedServices[index] = { ...updatedServices[index], [field]: value };
+    setComboFormData({
+      ...comboFormData,
+      services: updatedServices
+    });
+  };
+
+  const getComboTotalPrice = () => {
+    return comboFormData.services.reduce((total, comboService) => {
+      const service = services.find(s => s.id === comboService.service_id);
+      return total + (service ? service.price_cents * comboService.quantity : 0);
+    }, 0);
+  };
+
   const formatDiscountValue = (value: number, type: string) => {
     return type === 'percentage' ? `${value}%` : `₡${Math.round(value)}`;
   };
@@ -227,12 +478,30 @@ const AdminDiscounts: React.FC = () => {
     const end = new Date(discount.end_date);
     return discount.is_active && start <= now && end >= now;
   };
-  if (loading) {
-    return <div className="flex justify-center items-center h-48">Cargando descuentos...</div>;
+  if (loading || comboLoading) {
+    return <div className="flex justify-center items-center h-48">Cargando...</div>;
   }
+
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="font-bold text-2xl">Descuentos</h2>
+        <h2 className="font-bold text-2xl">Promociones y Descuentos</h2>
+      </div>
+
+      <Tabs defaultValue="discounts" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="discounts" className="flex items-center gap-2">
+            <Percent className="h-4 w-4" />
+            Descuentos
+          </TabsTrigger>
+          <TabsTrigger value="combos" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Combos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="discounts" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">Gestión de Descuentos</h3>
         <Dialog open={dialogOpen} onOpenChange={open => {
         setDialogOpen(open);
         if (!open) resetForm();
@@ -428,7 +697,255 @@ const AdminDiscounts: React.FC = () => {
                   </div>}
               </CardContent>
             </Card>)}
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="combos" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">Gestión de Combos</h3>
+            <Dialog open={comboDialogOpen} onOpenChange={(open) => {
+              setComboDialogOpen(open);
+              if (!open) resetComboForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Combo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCombo ? "Editar Combo" : "Nuevo Combo"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleComboSubmit} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="combo_name">Nombre del Combo *</Label>
+                      <Input 
+                        id="combo_name" 
+                        value={comboFormData.name}
+                        onChange={(e) => setComboFormData({...comboFormData, name: e.target.value})}
+                        placeholder="Ej: Paquete Relajación Total" 
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="combo_active" 
+                        checked={comboFormData.is_active}
+                        onCheckedChange={(checked) => setComboFormData({...comboFormData, is_active: checked})}
+                      />
+                      <Label htmlFor="combo_active">Activo</Label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="combo_description">Descripción</Label>
+                    <Textarea 
+                      id="combo_description" 
+                      value={comboFormData.description}
+                      onChange={(e) => setComboFormData({...comboFormData, description: e.target.value})}
+                      placeholder="Descripción del combo" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="combo_start_date">Fecha de Inicio *</Label>
+                      <Input 
+                        id="combo_start_date" 
+                        type="date" 
+                        value={comboFormData.start_date}
+                        onChange={(e) => setComboFormData({...comboFormData, start_date: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="combo_end_date">Fecha de Fin *</Label>
+                      <Input 
+                        id="combo_end_date" 
+                        type="date" 
+                        value={comboFormData.end_date}
+                        onChange={(e) => setComboFormData({...comboFormData, end_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Label>Servicios del Combo *</Label>
+                      <Button type="button" onClick={addServiceToCombo} variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar Servicio
+                      </Button>
+                    </div>
+                    
+                    {comboFormData.services.map((comboService, index) => (
+                      <Card key={index} className="p-4">
+                        <div className="grid grid-cols-5 gap-4 items-end">
+                          <div className="col-span-3">
+                            <Label>Servicio</Label>
+                            <Select 
+                              value={comboService.service_id}
+                              onValueChange={(value) => updateComboService(index, 'service_id', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar servicio" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {services.map(service => (
+                                  <SelectItem key={service.id} value={service.id}>
+                                    {service.name} - ₡{Math.round(service.price_cents / 100)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Cantidad</Label>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              value={comboService.quantity}
+                              onChange={(e) => updateComboService(index, 'quantity', parseInt(e.target.value))}
+                            />
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => removeServiceFromCombo(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+
+                    {comboFormData.services.length > 0 && (
+                      <Card className="p-4 bg-muted">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Precio Original:</span>
+                            <span className="font-medium">₡{Math.round(getComboTotalPrice() / 100)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Precio con Descuento (20%):</span>
+                            <span className="font-bold text-primary">₡{Math.round(getComboTotalPrice() * 0.8 / 100)}</span>
+                          </div>
+                          <div className="flex justify-between text-green-600">
+                            <span>Ahorro:</span>
+                            <span className="font-bold">₡{Math.round(getComboTotalPrice() * 0.2 / 100)}</span>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setComboDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">
+                      {editingCombo ? "Actualizar" : "Crear"} Combo
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4">
+            {combos.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <Package className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground">No hay combos creados</p>
+                  <p className="text-sm text-muted-foreground">Crea tu primer combo para comenzar</p>
+                </CardContent>
+              </Card>
+            ) : (
+              combos.map(combo => (
+                <Card key={combo.id} className="transition-shadow hover:shadow-md">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div className="flex items-center space-x-2">
+                      <CardTitle className="text-lg">{combo.name}</CardTitle>
+                      <Badge variant={combo.is_active ? "default" : "secondary"}>
+                        {combo.is_active ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEditCombo(combo)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDeleteCombo(combo.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="font-medium text-muted-foreground">Precio Original</p>
+                          <p className="line-through text-muted-foreground">₡{Math.round(combo.original_price_cents / 100)}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">Precio Final</p>
+                          <p className="font-bold text-primary">₡{Math.round(combo.total_price_cents / 100)}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">Ahorro</p>
+                          <p className="font-bold text-green-600">₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">% Descuento</p>
+                          <p className="font-bold text-green-600">{Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}%</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <p className="font-medium text-muted-foreground mb-2">Servicios incluidos:</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {combo.combo_services.map((cs, index) => (
+                            <div key={index} className="flex justify-between items-center bg-muted p-2 rounded">
+                              <span className="text-sm">{cs.services.name}</span>
+                              <Badge variant="outline">x{cs.quantity}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {combo.description && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{combo.description}</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="font-medium text-muted-foreground">Válido desde</p>
+                          <p className="flex items-center">
+                            <Calendar className="mr-1 h-4 w-4" />
+                            {format(new Date(combo.start_date), 'dd/MM/yyyy')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">Válido hasta</p>
+                          <p className="flex items-center">
+                            <Calendar className="mr-1 h-4 w-4" />
+                            {format(new Date(combo.end_date), 'dd/MM/yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>;
 };
 export default AdminDiscounts;
