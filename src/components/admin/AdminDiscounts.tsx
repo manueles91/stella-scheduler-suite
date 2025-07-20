@@ -90,7 +90,10 @@ const AdminDiscounts: React.FC = () => {
     start_date: "",
     end_date: "",
     is_active: true,
-    services: [] as { service_id: string; quantity: number }[]
+    services: [] as { service_id: string; quantity: number }[],
+    pricing_type: "percentage" as "percentage" | "fixed",
+    discount_percentage: "20",
+    fixed_price: ""
   });
   useEffect(() => {
     fetchDiscounts();
@@ -297,7 +300,10 @@ const AdminDiscounts: React.FC = () => {
       start_date: "",
       end_date: "",
       is_active: true,
-      services: []
+      services: [],
+      pricing_type: "percentage",
+      discount_percentage: "20",
+      fixed_price: ""
     });
     setEditingCombo(null);
   };
@@ -324,8 +330,14 @@ const AdminDiscounts: React.FC = () => {
         return total + (service ? service.price_cents * comboService.quantity : 0);
       }, 0);
 
-      // For now, set total price to 80% of original (20% discount)
-      const totalPrice = Math.round(originalPrice * 0.8);
+      // Calculate total price based on pricing type
+      let totalPrice: number;
+      if (comboFormData.pricing_type === "percentage") {
+        const discountPercent = parseFloat(comboFormData.discount_percentage) / 100;
+        totalPrice = Math.round(originalPrice * (1 - discountPercent));
+      } else {
+        totalPrice = Math.round(parseFloat(comboFormData.fixed_price) * 100); // Convert to cents
+      }
 
       const comboData = {
         name: comboFormData.name,
@@ -401,6 +413,12 @@ const AdminDiscounts: React.FC = () => {
 
   const handleEditCombo = (combo: Combo) => {
     setEditingCombo(combo);
+    
+    // Calculate pricing type based on existing data
+    const originalPrice = combo.original_price_cents;
+    const totalPrice = combo.total_price_cents;
+    const discountPercent = Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
+    
     setComboFormData({
       name: combo.name,
       description: combo.description || "",
@@ -410,7 +428,10 @@ const AdminDiscounts: React.FC = () => {
       services: combo.combo_services.map(cs => ({
         service_id: cs.service_id,
         quantity: cs.quantity
-      }))
+      })),
+      pricing_type: "percentage", // Default to percentage for existing combos
+      discount_percentage: discountPercent.toString(),
+      fixed_price: (totalPrice / 100).toString()
     });
     setComboDialogOpen(true);
   };
@@ -822,23 +843,97 @@ const AdminDiscounts: React.FC = () => {
                       </Card>
                     ))}
 
+                    {/* Pricing Type Selection */}
                     {comboFormData.services.length > 0 && (
-                      <Card className="p-4 bg-muted">
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span>Precio Original:</span>
-                            <span className="font-medium">₡{Math.round(getComboTotalPrice() / 100)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Precio con Descuento (20%):</span>
-                            <span className="font-bold text-primary">₡{Math.round(getComboTotalPrice() * 0.8 / 100)}</span>
-                          </div>
-                          <div className="flex justify-between text-green-600">
-                            <span>Ahorro:</span>
-                            <span className="font-bold">₡{Math.round(getComboTotalPrice() * 0.2 / 100)}</span>
+                      <>
+                        <div className="space-y-4">
+                          <Label>Tipo de Precio</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="pricing_type">Método de Precio *</Label>
+                              <Select 
+                                value={comboFormData.pricing_type}
+                                onValueChange={(value: "percentage" | "fixed") => 
+                                  setComboFormData({...comboFormData, pricing_type: value})
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage">Descuento por Porcentaje</SelectItem>
+                                  <SelectItem value="fixed">Precio Fijo</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              {comboFormData.pricing_type === "percentage" ? (
+                                <>
+                                  <Label htmlFor="discount_percentage">Porcentaje de Descuento (%)</Label>
+                                  <Input 
+                                    id="discount_percentage"
+                                    type="number" 
+                                    min="0" 
+                                    max="100"
+                                    step="1"
+                                    value={comboFormData.discount_percentage}
+                                    onChange={(e) => setComboFormData({...comboFormData, discount_percentage: e.target.value})}
+                                    placeholder="20"
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <Label htmlFor="fixed_price">Precio Fijo (₡)</Label>
+                                  <Input 
+                                    id="fixed_price"
+                                    type="number" 
+                                    min="0"
+                                    step="0.01"
+                                    value={comboFormData.fixed_price}
+                                    onChange={(e) => setComboFormData({...comboFormData, fixed_price: e.target.value})}
+                                    placeholder="150.00"
+                                  />
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </Card>
+
+                        <Card className="p-4 bg-muted">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span>Precio Original:</span>
+                              <span className="font-medium">₡{Math.round(getComboTotalPrice() / 100)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Precio Final:</span>
+                              <span className="font-bold text-primary">
+                                ₡{Math.round(
+                                  comboFormData.pricing_type === "percentage" 
+                                    ? getComboTotalPrice() * (1 - parseFloat(comboFormData.discount_percentage || "0") / 100) / 100
+                                    : parseFloat(comboFormData.fixed_price || "0")
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-green-600">
+                              <span>Ahorro:</span>
+                              <span className="font-bold">
+                                ₡{Math.round(
+                                  comboFormData.pricing_type === "percentage" 
+                                    ? getComboTotalPrice() * (parseFloat(comboFormData.discount_percentage || "0") / 100) / 100
+                                    : (getComboTotalPrice() / 100) - parseFloat(comboFormData.fixed_price || "0")
+                                )}
+                              </span>
+                            </div>
+                            {comboFormData.pricing_type === "percentage" && (
+                              <div className="flex justify-between text-blue-600">
+                                <span>Descuento:</span>
+                                <span className="font-bold">{parseFloat(comboFormData.discount_percentage || "0")}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      </>
                     )}
                   </div>
 
