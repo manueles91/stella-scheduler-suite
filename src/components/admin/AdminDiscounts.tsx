@@ -37,7 +37,6 @@ interface Service {
   price_cents: number;
   duration_minutes: number;
 }
-
 interface Combo {
   id: string;
   name: string;
@@ -83,14 +82,16 @@ const AdminDiscounts: React.FC = () => {
     discount_code: "",
     is_active: true
   });
-
   const [comboFormData, setComboFormData] = useState({
     name: "",
     description: "",
     start_date: "",
     end_date: "",
     is_active: true,
-    services: [] as { service_id: string; quantity: number }[],
+    services: [] as {
+      service_id: string;
+      quantity: number;
+    }[],
     pricing_type: "percentage" as "percentage" | "fixed",
     discount_percentage: "20",
     fixed_price: ""
@@ -138,12 +139,12 @@ const AdminDiscounts: React.FC = () => {
       console.error("Error fetching services:", error);
     }
   };
-
   const fetchCombos = async () => {
     try {
-      const { data, error } = await supabase
-        .from("combos")
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from("combos").select(`
           *,
           combo_services (
             service_id,
@@ -154,9 +155,9 @@ const AdminDiscounts: React.FC = () => {
               duration_minutes
             )
           )
-        `)
-        .order("created_at", { ascending: false });
-      
+        `).order("created_at", {
+        ascending: false
+      });
       if (error) throw error;
       setCombos(data || []);
     } catch (error) {
@@ -292,7 +293,6 @@ const AdminDiscounts: React.FC = () => {
     });
     setEditingDiscount(null);
   };
-
   const resetComboForm = () => {
     setComboFormData({
       name: "",
@@ -307,10 +307,8 @@ const AdminDiscounts: React.FC = () => {
     });
     setEditingCombo(null);
   };
-
   const handleComboSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!comboFormData.name || !comboFormData.start_date || !comboFormData.end_date || comboFormData.services.length === 0) {
       toast({
         title: "Error",
@@ -319,9 +317,12 @@ const AdminDiscounts: React.FC = () => {
       });
       return;
     }
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
       // Calculate original and total prices
@@ -338,7 +339,6 @@ const AdminDiscounts: React.FC = () => {
       } else {
         totalPrice = Math.round(parseFloat(comboFormData.fixed_price) * 100); // Convert to cents
       }
-
       const comboData = {
         name: comboFormData.name,
         description: comboFormData.description,
@@ -349,35 +349,27 @@ const AdminDiscounts: React.FC = () => {
         is_active: comboFormData.is_active,
         created_by: user.id
       };
-
       let error;
       let comboId: string;
-
       if (editingCombo) {
-        const { error: updateError } = await supabase
-          .from("combos")
-          .update(comboData)
-          .eq("id", editingCombo.id);
+        const {
+          error: updateError
+        } = await supabase.from("combos").update(comboData).eq("id", editingCombo.id);
         error = updateError;
         comboId = editingCombo.id;
 
         // Delete existing combo services
         if (!error) {
-          await supabase
-            .from("combo_services")
-            .delete()
-            .eq("combo_id", editingCombo.id);
+          await supabase.from("combo_services").delete().eq("combo_id", editingCombo.id);
         }
       } else {
-        const { data: insertData, error: insertError } = await supabase
-          .from("combos")
-          .insert([comboData])
-          .select()
-          .single();
+        const {
+          data: insertData,
+          error: insertError
+        } = await supabase.from("combos").insert([comboData]).select().single();
         error = insertError;
         comboId = insertData?.id;
       }
-
       if (error) throw error;
 
       // Insert combo services
@@ -386,18 +378,14 @@ const AdminDiscounts: React.FC = () => {
         service_id: service.service_id,
         quantity: service.quantity
       }));
-
-      const { error: servicesError } = await supabase
-        .from("combo_services")
-        .insert(comboServices);
-
+      const {
+        error: servicesError
+      } = await supabase.from("combo_services").insert(comboServices);
       if (servicesError) throw servicesError;
-
       toast({
         title: "Éxito",
         description: `Combo ${editingCombo ? "actualizado" : "creado"} correctamente`
       });
-
       fetchCombos();
       resetComboForm();
       setComboDialogOpen(false);
@@ -410,15 +398,13 @@ const AdminDiscounts: React.FC = () => {
       });
     }
   };
-
   const handleEditCombo = (combo: Combo) => {
     setEditingCombo(combo);
-    
+
     // Calculate pricing type based on existing data
     const originalPrice = combo.original_price_cents;
     const totalPrice = combo.total_price_cents;
-    const discountPercent = Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
-    
+    const discountPercent = Math.round((originalPrice - totalPrice) / originalPrice * 100);
     setComboFormData({
       name: combo.name,
       description: combo.description || "",
@@ -429,22 +415,22 @@ const AdminDiscounts: React.FC = () => {
         service_id: cs.service_id,
         quantity: cs.quantity
       })),
-      pricing_type: "percentage", // Default to percentage for existing combos
+      pricing_type: "percentage",
+      // Default to percentage for existing combos
       discount_percentage: discountPercent.toString(),
       fixed_price: (totalPrice / 100).toString()
     });
     setComboDialogOpen(true);
   };
-
   const handleDeleteCombo = async (id: string) => {
     if (!window.confirm("¿Estás seguro de que quieres eliminar este combo?")) {
       return;
     }
-
     try {
-      const { error } = await supabase.from("combos").delete().eq("id", id);
+      const {
+        error
+      } = await supabase.from("combos").delete().eq("id", id);
       if (error) throw error;
-
       toast({
         title: "Éxito",
         description: "Combo eliminado correctamente"
@@ -459,37 +445,38 @@ const AdminDiscounts: React.FC = () => {
       });
     }
   };
-
   const addServiceToCombo = () => {
     setComboFormData({
       ...comboFormData,
-      services: [...comboFormData.services, { service_id: "", quantity: 1 }]
+      services: [...comboFormData.services, {
+        service_id: "",
+        quantity: 1
+      }]
     });
   };
-
   const removeServiceFromCombo = (index: number) => {
     setComboFormData({
       ...comboFormData,
       services: comboFormData.services.filter((_, i) => i !== index)
     });
   };
-
   const updateComboService = (index: number, field: 'service_id' | 'quantity', value: string | number) => {
     const updatedServices = [...comboFormData.services];
-    updatedServices[index] = { ...updatedServices[index], [field]: value };
+    updatedServices[index] = {
+      ...updatedServices[index],
+      [field]: value
+    };
     setComboFormData({
       ...comboFormData,
       services: updatedServices
     });
   };
-
   const getComboTotalPrice = () => {
     return comboFormData.services.reduce((total, comboService) => {
       const service = services.find(s => s.id === comboService.service_id);
       return total + (service ? service.price_cents * comboService.quantity : 0);
     }, 0);
   };
-
   const formatDiscountValue = (value: number, type: string) => {
     return type === 'percentage' ? `${value}%` : `₡${Math.round(value)}`;
   };
@@ -502,7 +489,6 @@ const AdminDiscounts: React.FC = () => {
   if (loading || comboLoading) {
     return <div className="flex justify-center items-center h-48">Cargando...</div>;
   }
-
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="font-bold text-2xl">Promociones y Descuentos</h2>
@@ -522,11 +508,11 @@ const AdminDiscounts: React.FC = () => {
 
         <TabsContent value="discounts" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">Gestión de Descuentos</h3>
+            <h3 className="font-semibold text-lg">Descuentos</h3>
         <Dialog open={dialogOpen} onOpenChange={open => {
-        setDialogOpen(open);
-        if (!open) resetForm();
-      }}>
+            setDialogOpen(open);
+            if (!open) resetForm();
+          }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -544,9 +530,9 @@ const AdminDiscounts: React.FC = () => {
                 <div>
                   <Label htmlFor="service_id">Servicio *</Label>
                   <Select value={formData.service_id} onValueChange={value => setFormData({
-                  ...formData,
-                  service_id: value
-                })}>
+                      ...formData,
+                      service_id: value
+                    })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar servicio" />
                     </SelectTrigger>
@@ -560,27 +546,27 @@ const AdminDiscounts: React.FC = () => {
                 <div>
                   <Label htmlFor="name">Nombre del Descuento *</Label>
                   <Input id="name" value={formData.name} onChange={e => setFormData({
-                  ...formData,
-                  name: e.target.value
-                })} placeholder="Ej: Descuento de Verano" />
+                      ...formData,
+                      name: e.target.value
+                    })} placeholder="Ej: Descuento de Verano" />
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea id="description" value={formData.description} onChange={e => setFormData({
-                ...formData,
-                description: e.target.value
-              })} placeholder="Descripción del descuento" />
+                    ...formData,
+                    description: e.target.value
+                  })} placeholder="Descripción del descuento" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="discount_type">Tipo de Descuento *</Label>
                   <Select value={formData.discount_type} onValueChange={(value: 'percentage' | 'flat') => setFormData({
-                  ...formData,
-                  discount_type: value
-                })}>
+                      ...formData,
+                      discount_type: value
+                    })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -595,9 +581,9 @@ const AdminDiscounts: React.FC = () => {
                     Valor del Descuento * {formData.discount_type === 'percentage' ? '(%)' : '(₡)'}
                   </Label>
                   <Input id="discount_value" type="number" step="0.01" min="0" max={formData.discount_type === 'percentage' ? "100" : undefined} value={formData.discount_value} onChange={e => setFormData({
-                  ...formData,
-                  discount_value: e.target.value
-                })} placeholder={formData.discount_type === 'percentage' ? "20" : "50"} />
+                      ...formData,
+                      discount_value: e.target.value
+                    })} placeholder={formData.discount_type === 'percentage' ? "20" : "50"} />
                 </div>
               </div>
 
@@ -605,41 +591,41 @@ const AdminDiscounts: React.FC = () => {
                 <div>
                   <Label htmlFor="start_date">Fecha de Inicio *</Label>
                   <Input id="start_date" type="date" value={formData.start_date} onChange={e => setFormData({
-                  ...formData,
-                  start_date: e.target.value
-                })} />
+                      ...formData,
+                      start_date: e.target.value
+                    })} />
                 </div>
                 <div>
                   <Label htmlFor="end_date">Fecha de Fin *</Label>
                   <Input id="end_date" type="date" value={formData.end_date} onChange={e => setFormData({
-                  ...formData,
-                  end_date: e.target.value
-                })} />
+                      ...formData,
+                      end_date: e.target.value
+                    })} />
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <Switch id="is_public" checked={formData.is_public} onCheckedChange={checked => setFormData({
-                  ...formData,
-                  is_public: checked
-                })} />
+                      ...formData,
+                      is_public: checked
+                    })} />
                   <Label htmlFor="is_public">Descuento Público</Label>
                 </div>
 
                 {!formData.is_public && <div>
                     <Label htmlFor="discount_code">Código de Descuento *</Label>
                     <Input id="discount_code" value={formData.discount_code} onChange={e => setFormData({
-                  ...formData,
-                  discount_code: e.target.value.toUpperCase()
-                })} placeholder="CODIGO20" />
+                      ...formData,
+                      discount_code: e.target.value.toUpperCase()
+                    })} placeholder="CODIGO20" />
                   </div>}
 
                 <div className="flex items-center space-x-2">
                   <Switch id="is_active" checked={formData.is_active} onCheckedChange={checked => setFormData({
-                  ...formData,
-                  is_active: checked
-                })} />
+                      ...formData,
+                      is_active: checked
+                    })} />
                   <Label htmlFor="is_active">Activo</Label>
                 </div>
               </div>
@@ -724,10 +710,10 @@ const AdminDiscounts: React.FC = () => {
         <TabsContent value="combos" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">Gestión de Combos</h3>
-            <Dialog open={comboDialogOpen} onOpenChange={(open) => {
-              setComboDialogOpen(open);
-              if (!open) resetComboForm();
-            }}>
+            <Dialog open={comboDialogOpen} onOpenChange={open => {
+            setComboDialogOpen(open);
+            if (!open) resetComboForm();
+          }}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -744,51 +730,42 @@ const AdminDiscounts: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="combo_name">Nombre del Combo *</Label>
-                      <Input 
-                        id="combo_name" 
-                        value={comboFormData.name}
-                        onChange={(e) => setComboFormData({...comboFormData, name: e.target.value})}
-                        placeholder="Ej: Paquete Relajación Total" 
-                      />
+                      <Input id="combo_name" value={comboFormData.name} onChange={e => setComboFormData({
+                      ...comboFormData,
+                      name: e.target.value
+                    })} placeholder="Ej: Paquete Relajación Total" />
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Switch 
-                        id="combo_active" 
-                        checked={comboFormData.is_active}
-                        onCheckedChange={(checked) => setComboFormData({...comboFormData, is_active: checked})}
-                      />
+                      <Switch id="combo_active" checked={comboFormData.is_active} onCheckedChange={checked => setComboFormData({
+                      ...comboFormData,
+                      is_active: checked
+                    })} />
                       <Label htmlFor="combo_active">Activo</Label>
                     </div>
                   </div>
 
                   <div>
                     <Label htmlFor="combo_description">Descripción</Label>
-                    <Textarea 
-                      id="combo_description" 
-                      value={comboFormData.description}
-                      onChange={(e) => setComboFormData({...comboFormData, description: e.target.value})}
-                      placeholder="Descripción del combo" 
-                    />
+                    <Textarea id="combo_description" value={comboFormData.description} onChange={e => setComboFormData({
+                    ...comboFormData,
+                    description: e.target.value
+                  })} placeholder="Descripción del combo" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="combo_start_date">Fecha de Inicio *</Label>
-                      <Input 
-                        id="combo_start_date" 
-                        type="date" 
-                        value={comboFormData.start_date}
-                        onChange={(e) => setComboFormData({...comboFormData, start_date: e.target.value})}
-                      />
+                      <Input id="combo_start_date" type="date" value={comboFormData.start_date} onChange={e => setComboFormData({
+                      ...comboFormData,
+                      start_date: e.target.value
+                    })} />
                     </div>
                     <div>
                       <Label htmlFor="combo_end_date">Fecha de Fin *</Label>
-                      <Input 
-                        id="combo_end_date" 
-                        type="date" 
-                        value={comboFormData.end_date}
-                        onChange={(e) => setComboFormData({...comboFormData, end_date: e.target.value})}
-                      />
+                      <Input id="combo_end_date" type="date" value={comboFormData.end_date} onChange={e => setComboFormData({
+                      ...comboFormData,
+                      end_date: e.target.value
+                    })} />
                     </div>
                   </div>
 
@@ -801,62 +778,42 @@ const AdminDiscounts: React.FC = () => {
                       </Button>
                     </div>
                     
-                    {comboFormData.services.map((comboService, index) => (
-                      <Card key={index} className="p-4">
+                    {comboFormData.services.map((comboService, index) => <Card key={index} className="p-4">
                         <div className="grid grid-cols-5 gap-4 items-end">
                           <div className="col-span-3">
                             <Label>Servicio</Label>
-                            <Select 
-                              value={comboService.service_id}
-                              onValueChange={(value) => updateComboService(index, 'service_id', value)}
-                            >
+                            <Select value={comboService.service_id} onValueChange={value => updateComboService(index, 'service_id', value)}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Seleccionar servicio" />
                               </SelectTrigger>
                               <SelectContent>
-                                {services.map(service => (
-                                  <SelectItem key={service.id} value={service.id}>
+                                {services.map(service => <SelectItem key={service.id} value={service.id}>
                                     {service.name} - ₡{Math.round(service.price_cents / 100)}
-                                  </SelectItem>
-                                ))}
+                                  </SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
                           <div>
                             <Label>Cantidad</Label>
-                            <Input 
-                              type="number" 
-                              min="1" 
-                              value={comboService.quantity}
-                              onChange={(e) => updateComboService(index, 'quantity', parseInt(e.target.value))}
-                            />
+                            <Input type="number" min="1" value={comboService.quantity} onChange={e => updateComboService(index, 'quantity', parseInt(e.target.value))} />
                           </div>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => removeServiceFromCombo(index)}
-                          >
+                          <Button type="button" variant="outline" size="sm" onClick={() => removeServiceFromCombo(index)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-                      </Card>
-                    ))}
+                      </Card>)}
 
                     {/* Pricing Type Selection */}
-                    {comboFormData.services.length > 0 && (
-                      <>
+                    {comboFormData.services.length > 0 && <>
                         <div className="space-y-4">
                           <Label>Tipo de Precio</Label>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="pricing_type">Método de Precio *</Label>
-                              <Select 
-                                value={comboFormData.pricing_type}
-                                onValueChange={(value: "percentage" | "fixed") => 
-                                  setComboFormData({...comboFormData, pricing_type: value})
-                                }
-                              >
+                              <Select value={comboFormData.pricing_type} onValueChange={(value: "percentage" | "fixed") => setComboFormData({
+                            ...comboFormData,
+                            pricing_type: value
+                          })}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
@@ -867,34 +824,19 @@ const AdminDiscounts: React.FC = () => {
                               </Select>
                             </div>
                             <div>
-                              {comboFormData.pricing_type === "percentage" ? (
-                                <>
+                              {comboFormData.pricing_type === "percentage" ? <>
                                   <Label htmlFor="discount_percentage">Porcentaje de Descuento (%)</Label>
-                                  <Input 
-                                    id="discount_percentage"
-                                    type="number" 
-                                    min="0" 
-                                    max="100"
-                                    step="1"
-                                    value={comboFormData.discount_percentage}
-                                    onChange={(e) => setComboFormData({...comboFormData, discount_percentage: e.target.value})}
-                                    placeholder="20"
-                                  />
-                                </>
-                              ) : (
-                                <>
+                                  <Input id="discount_percentage" type="number" min="0" max="100" step="1" value={comboFormData.discount_percentage} onChange={e => setComboFormData({
+                              ...comboFormData,
+                              discount_percentage: e.target.value
+                            })} placeholder="20" />
+                                </> : <>
                                   <Label htmlFor="fixed_price">Precio Fijo (₡)</Label>
-                                  <Input 
-                                    id="fixed_price"
-                                    type="number" 
-                                    min="0"
-                                    step="0.01"
-                                    value={comboFormData.fixed_price}
-                                    onChange={(e) => setComboFormData({...comboFormData, fixed_price: e.target.value})}
-                                    placeholder="150.00"
-                                  />
-                                </>
-                              )}
+                                  <Input id="fixed_price" type="number" min="0" step="0.01" value={comboFormData.fixed_price} onChange={e => setComboFormData({
+                              ...comboFormData,
+                              fixed_price: e.target.value
+                            })} placeholder="150.00" />
+                                </>}
                             </div>
                           </div>
                         </div>
@@ -908,33 +850,22 @@ const AdminDiscounts: React.FC = () => {
                             <div className="flex justify-between">
                               <span>Precio Final:</span>
                               <span className="font-bold text-primary">
-                                ₡{Math.round(
-                                  comboFormData.pricing_type === "percentage" 
-                                    ? getComboTotalPrice() * (1 - parseFloat(comboFormData.discount_percentage || "0") / 100) / 100
-                                    : parseFloat(comboFormData.fixed_price || "0")
-                                )}
+                                ₡{Math.round(comboFormData.pricing_type === "percentage" ? getComboTotalPrice() * (1 - parseFloat(comboFormData.discount_percentage || "0") / 100) / 100 : parseFloat(comboFormData.fixed_price || "0"))}
                               </span>
                             </div>
                             <div className="flex justify-between text-green-600">
                               <span>Ahorro:</span>
                               <span className="font-bold">
-                                ₡{Math.round(
-                                  comboFormData.pricing_type === "percentage" 
-                                    ? getComboTotalPrice() * (parseFloat(comboFormData.discount_percentage || "0") / 100) / 100
-                                    : (getComboTotalPrice() / 100) - parseFloat(comboFormData.fixed_price || "0")
-                                )}
+                                ₡{Math.round(comboFormData.pricing_type === "percentage" ? getComboTotalPrice() * (parseFloat(comboFormData.discount_percentage || "0") / 100) / 100 : getComboTotalPrice() / 100 - parseFloat(comboFormData.fixed_price || "0"))}
                               </span>
                             </div>
-                            {comboFormData.pricing_type === "percentage" && (
-                              <div className="flex justify-between text-blue-600">
+                            {comboFormData.pricing_type === "percentage" && <div className="flex justify-between text-blue-600">
                                 <span>Descuento:</span>
                                 <span className="font-bold">{parseFloat(comboFormData.discount_percentage || "0")}%</span>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </Card>
-                      </>
-                    )}
+                      </>}
                   </div>
 
                   <div className="flex justify-end space-x-2">
@@ -951,17 +882,13 @@ const AdminDiscounts: React.FC = () => {
           </div>
 
           <div className="grid gap-4">
-            {combos.length === 0 ? (
-              <Card>
+            {combos.length === 0 ? <Card>
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-lg font-medium text-muted-foreground">No hay combos creados</p>
                   <p className="text-sm text-muted-foreground">Crea tu primer combo para comenzar</p>
                 </CardContent>
-              </Card>
-            ) : (
-              combos.map(combo => (
-                <Card key={combo.id} className="transition-shadow hover:shadow-md">
+              </Card> : combos.map(combo => <Card key={combo.id} className="transition-shadow hover:shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="flex items-center space-x-2">
                       <CardTitle className="text-lg">{combo.name}</CardTitle>
@@ -1002,20 +929,16 @@ const AdminDiscounts: React.FC = () => {
                       <div>
                         <p className="font-medium text-muted-foreground mb-2">Servicios incluidos:</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {combo.combo_services.map((cs, index) => (
-                            <div key={index} className="flex justify-between items-center bg-muted p-2 rounded">
+                          {combo.combo_services.map((cs, index) => <div key={index} className="flex justify-between items-center bg-muted p-2 rounded">
                               <span className="text-sm">{cs.services.name}</span>
                               <Badge variant="outline">x{cs.quantity}</Badge>
-                            </div>
-                          ))}
+                            </div>)}
                         </div>
                       </div>
 
-                      {combo.description && (
-                        <div>
+                      {combo.description && <div>
                           <p className="text-sm text-muted-foreground">{combo.description}</p>
-                        </div>
-                      )}
+                        </div>}
 
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -1035,9 +958,7 @@ const AdminDiscounts: React.FC = () => {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              ))
-            )}
+                </Card>)}
           </div>
         </TabsContent>
       </Tabs>
