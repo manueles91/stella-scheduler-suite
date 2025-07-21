@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Star, Sparkles } from "lucide-react";
+import { Package, Star, Sparkles, Percent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import heroImage from "@/assets/hero-salon.jpg";
 
 interface Combo {
@@ -21,22 +22,35 @@ interface Combo {
   }[];
 }
 
+interface Discount {
+  id: string;
+  name: string;
+  description: string;
+  discount_type: 'percentage' | 'flat';
+  discount_value: number;
+  services: {
+    name: string;
+  };
+}
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [combos, setCombos] = useState<Combo[]>([]);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
 
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
     } else if (!loading && !user) {
-      fetchActiveCombos();
+      fetchActivePromotions();
     }
   }, [user, loading, navigate]);
 
-  const fetchActiveCombos = async () => {
+  const fetchActivePromotions = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch active combos
+      const { data: combosData, error: combosError } = await supabase
         .from("combos")
         .select(`
           id,
@@ -52,13 +66,33 @@ const Index = () => {
         `)
         .eq("is_active", true)
         .lte("start_date", new Date().toISOString())
-        .gte("end_date", new Date().toISOString())
-        .limit(3);
+        .gte("end_date", new Date().toISOString());
       
-      if (error) throw error;
-      setCombos(data || []);
+      if (combosError) throw combosError;
+      setCombos(combosData || []);
+
+      // Fetch active public discounts
+      const { data: discountsData, error: discountsError } = await supabase
+        .from("discounts")
+        .select(`
+          id,
+          name,
+          description,
+          discount_type,
+          discount_value,
+          services (
+            name
+          )
+        `)
+        .eq("is_active", true)
+        .eq("is_public", true)
+        .lte("start_date", new Date().toISOString())
+        .gte("end_date", new Date().toISOString());
+      
+      if (discountsError) throw discountsError;
+      setDiscounts(discountsData || []);
     } catch (error) {
-      console.error("Error fetching combos:", error);
+      console.error("Error fetching promotions:", error);
     }
   };
 
@@ -132,85 +166,133 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Combos Section */}
-      {combos.length > 0 && (
+      {/* Promociones Section */}
+      {(combos.length > 0 || discounts.length > 0) && (
         <section className="py-10 sm:py-20 bg-muted/50 px-2 sm:px-4">
           <div className="max-w-full sm:max-w-6xl mx-auto">
             <div className="text-center mb-8 sm:mb-16">
               <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2">
                 <Sparkles className="h-8 w-8 text-primary" />
-                Combos Especiales
+                Promociones
               </h2>
               <p className="text-base sm:text-xl text-muted-foreground">
-                Aprovecha nuestros paquetes exclusivos con precios especiales
+                Descubre nuestras ofertas especiales y combos exclusivos
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
-              {combos.map((combo) => (
-                <Card key={combo.id} className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20">
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge className="bg-gradient-primary text-white">
-                      <Star className="h-3 w-3 mr-1" />
-                      COMBO
-                    </Badge>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="font-serif text-xl flex items-center gap-2">
-                      <Package className="h-5 w-5 text-primary" />
-                      {combo.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {combo.description || "Paquete especial de servicios"}
-                    </p>
-                    
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Incluye:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {combo.combo_services.slice(0, 3).map((cs, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {cs.services.name}
-                          </Badge>
-                        ))}
-                        {combo.combo_services.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{combo.combo_services.length - 3} más
-                          </Badge>
-                        )}
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {/* Combos */}
+                {combos.map((combo) => (
+                  <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                      <div className="absolute top-4 right-4 z-10">
+                        <Badge className="bg-gradient-primary text-white">
+                          <Package className="h-3 w-3 mr-1" />
+                          COMBO
+                        </Badge>
                       </div>
-                    </div>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="font-serif text-lg flex items-center gap-2">
+                          <Star className="h-4 w-4 text-primary" />
+                          {combo.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {combo.description || "Paquete especial de servicios"}
+                        </p>
+                        
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">Incluye:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {combo.combo_services.slice(0, 2).map((cs, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {cs.services.name}
+                              </Badge>
+                            ))}
+                            {combo.combo_services.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{combo.combo_services.length - 2} más
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground line-through">
-                          ₡{Math.round(combo.original_price_cents / 100)}
-                        </span>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                          Ahorra ₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}
-                        </span>
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground line-through">
+                              ₡{Math.round(combo.original_price_cents / 100)}
+                            </span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                              Ahorra ₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-primary">
+                              ₡{Math.round(combo.total_price_cents / 100)}
+                            </span>
+                            <span className="text-sm font-medium text-green-600">
+                              {Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}% OFF
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+
+                {/* Discounts */}
+                {discounts.map((discount) => (
+                  <CarouselItem key={`discount-${discount.id}`} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                      <div className="absolute top-4 right-4 z-10">
+                        <Badge className="bg-gradient-primary text-white">
+                          <Percent className="h-3 w-3 mr-1" />
+                          {discount.discount_type === 'percentage' ? `${discount.discount_value}% OFF` : `₡${discount.discount_value} OFF`}
+                        </Badge>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-primary">
-                          ₡{Math.round(combo.total_price_cents / 100)}
-                        </span>
-                        <span className="text-sm font-medium text-green-600">
-                          {Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}% OFF
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="font-serif text-lg flex items-center gap-2">
+                          <Star className="h-4 w-4 text-primary" />
+                          {discount.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {discount.description || "Oferta especial limitada"}
+                        </p>
+                        
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">Aplicable a:</p>
+                          <Badge variant="outline" className="text-xs">
+                            {discount.services.name}
+                          </Badge>
+                        </div>
+
+                        <div className="pt-2">
+                          <p className="text-lg font-bold text-primary">
+                            {discount.discount_type === 'percentage' 
+                              ? `${discount.discount_value}% de descuento` 
+                              : `₡${discount.discount_value} de descuento`
+                            }
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
 
             <div className="text-center mt-8">
               <Button 
                 onClick={() => navigate('/auth')}
                 className="bg-gradient-primary hover:bg-gradient-primary/90"
               >
-                Ver todos los combos
+                Ver todas las promociones
               </Button>
             </div>
           </div>
