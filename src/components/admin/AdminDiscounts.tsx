@@ -709,7 +709,7 @@ const AdminDiscounts: React.FC = () => {
 
         <TabsContent value="combos" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">Gestión de Combos</h3>
+            <h3 className="font-semibold text-lg">Combos</h3>
             <Dialog open={comboDialogOpen} onOpenChange={open => {
             setComboDialogOpen(open);
             if (!open) resetComboForm();
