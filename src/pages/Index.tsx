@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Package, Star, Sparkles, Percent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import heroImage from "@/assets/hero-salon.jpg";
 
 interface Combo {
@@ -49,6 +50,8 @@ const Index = () => {
 
   const fetchActivePromotions = async () => {
     try {
+      const now = new Date().toISOString();
+      
       // Fetch active combos
       const { data: combosData, error: combosError } = await supabase
         .from("combos")
@@ -65,11 +68,15 @@ const Index = () => {
           )
         `)
         .eq("is_active", true)
-        .lte("start_date", new Date().toISOString())
-        .gte("end_date", new Date().toISOString());
+        .lte("start_date", now)
+        .gte("end_date", now);
       
-      if (combosError) throw combosError;
-      setCombos(combosData || []);
+      if (combosError) {
+        console.error("Error fetching combos:", combosError);
+      } else {
+        console.log("Fetched combos:", combosData);
+        setCombos(combosData || []);
+      }
 
       // Fetch active public discounts
       const { data: discountsData, error: discountsError } = await supabase
@@ -86,11 +93,15 @@ const Index = () => {
         `)
         .eq("is_active", true)
         .eq("is_public", true)
-        .lte("start_date", new Date().toISOString())
-        .gte("end_date", new Date().toISOString());
+        .lte("start_date", now)
+        .gte("end_date", now);
       
-      if (discountsError) throw discountsError;
-      setDiscounts(discountsData || []);
+      if (discountsError) {
+        console.error("Error fetching discounts:", discountsError);
+      } else {
+        console.log("Fetched discounts:", discountsData);
+        setDiscounts(discountsData || []);
+      }
     } catch (error) {
       console.error("Error fetching promotions:", error);
     }
@@ -180,7 +191,18 @@ const Index = () => {
               </p>
             </div>
             
-            <Carousel className="w-full">
+            <Carousel 
+              className="w-full"
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                })
+              ]}
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+            >
               <CarouselContent className="-ml-2 md:-ml-4">
                 {/* Combos */}
                 {combos.map((combo) => (
