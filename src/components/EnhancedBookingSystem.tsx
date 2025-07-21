@@ -21,6 +21,7 @@ interface Service {
   duration_minutes: number;
   price_cents: number;
   category_id?: string;
+  image_url?: string;
 }
 interface Employee {
   id: string;
@@ -332,12 +333,27 @@ export const EnhancedBookingSystem = () => {
                     {categoryServices.map(service => (
                       <Card 
                         key={service.id} 
-                        className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
+                        className={`cursor-pointer transition-all hover:shadow-lg overflow-hidden ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
                         onClick={() => handleServiceSelect(service)}
                       >
+                        {service.image_url && (
+                          <div className="relative h-48 w-full">
+                            <img 
+                              src={service.image_url} 
+                              alt={service.name}
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                            <div className="absolute bottom-4 left-4 right-4">
+                              <h4 className="font-semibold text-lg text-white drop-shadow-lg">{service.name}</h4>
+                            </div>
+                          </div>
+                        )}
                         <CardContent className="p-6">
                           <div className="space-y-3">
-                            <h4 className="font-semibold text-lg">{service.name}</h4>
+                            {!service.image_url && (
+                              <h4 className="font-semibold text-lg">{service.name}</h4>
+                            )}
                             <p className="text-sm text-muted-foreground">{service.description}</p>
                             <div className="flex justify-between items-center">
                               <Badge variant="secondary" className="flex items-center gap-1">
@@ -395,12 +411,27 @@ export const EnhancedBookingSystem = () => {
                   {services.filter(service => !service.category_id).map(service => (
                     <Card 
                       key={service.id} 
-                      className={`cursor-pointer transition-all hover:shadow-lg ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
+                      className={`cursor-pointer transition-all hover:shadow-lg overflow-hidden ${selectedService?.id === service.id ? 'ring-2 ring-primary shadow-lg' : ''}`} 
                       onClick={() => handleServiceSelect(service)}
                     >
+                      {service.image_url && (
+                        <div className="relative h-48 w-full">
+                          <img 
+                            src={service.image_url} 
+                            alt={service.name}
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <h4 className="font-semibold text-lg text-white drop-shadow-lg">{service.name}</h4>
+                          </div>
+                        </div>
+                      )}
                       <CardContent className="p-6">
                         <div className="space-y-3">
-                          <h4 className="font-semibold text-lg">{service.name}</h4>
+                          {!service.image_url && (
+                            <h4 className="font-semibold text-lg">{service.name}</h4>
+                          )}
                           <p className="text-sm text-muted-foreground">{service.description}</p>
                           <div className="flex justify-between items-center">
                             <Badge variant="secondary" className="flex items-center gap-1">
