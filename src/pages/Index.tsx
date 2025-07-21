@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, Star, Sparkles, Percent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import heroImage from "@/assets/hero-salon.jpg";
 
 interface Combo {
@@ -16,6 +15,8 @@ interface Combo {
   description: string;
   total_price_cents: number;
   original_price_cents: number;
+  start_date?: string;
+  end_date?: string;
   combo_services: {
     services: {
       name: string;
@@ -29,6 +30,8 @@ interface Discount {
   description: string;
   discount_type: 'percentage' | 'flat';
   discount_value: number;
+  start_date?: string;
+  end_date?: string;
   services: {
     name: string;
   };
@@ -39,6 +42,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [combos, setCombos] = useState<Combo[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     if (!loading && user) {
@@ -48,11 +53,30 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
+  // Auto-scroll carousel effect
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    const interval = setTimeout(() => {
+      if (api.selectedScrollSnap() + 1 === api.scrollSnapList().length) {
+        setCurrent(0);
+        api.scrollTo(0);
+      } else {
+        api.scrollNext();
+        setCurrent(current + 1);
+      }
+    }, 4000);
+
+    return () => clearTimeout(interval);
+  }, [api, current]);
+
   const fetchActivePromotions = async () => {
     try {
-      const now = new Date().toISOString();
+      const now = new Date();
       
-      // Fetch active combos
+      // Fetch active combos - simplified query without date filtering first
       const { data: combosData, error: combosError } = await supabase
         .from("combos")
         .select(`
@@ -61,21 +85,28 @@ const Index = () => {
           description,
           total_price_cents,
           original_price_cents,
+          start_date,
+          end_date,
           combo_services (
             services (
               name
             )
           )
         `)
-        .eq("is_active", true)
-        .lte("start_date", now)
-        .gte("end_date", now);
+        .eq("is_active", true);
       
       if (combosError) {
         console.error("Error fetching combos:", combosError);
       } else {
-        console.log("Fetched combos:", combosData);
-        setCombos(combosData || []);
+        console.log("All combos:", combosData);
+        // Filter by date in JavaScript for now
+        const filteredCombos = combosData?.filter(combo => {
+          const startDate = new Date(combo.start_date || '2020-01-01');
+          const endDate = new Date(combo.end_date || '2030-12-31');
+          return now >= startDate && now <= endDate;
+        }) || [];
+        console.log("Filtered combos:", filteredCombos);
+        setCombos(filteredCombos);
       }
 
       // Fetch active public discounts
@@ -87,20 +118,27 @@ const Index = () => {
           description,
           discount_type,
           discount_value,
+          start_date,
+          end_date,
           services (
             name
           )
         `)
         .eq("is_active", true)
-        .eq("is_public", true)
-        .lte("start_date", now)
-        .gte("end_date", now);
+        .eq("is_public", true);
       
       if (discountsError) {
         console.error("Error fetching discounts:", discountsError);
       } else {
-        console.log("Fetched discounts:", discountsData);
-        setDiscounts(discountsData || []);
+        console.log("All discounts:", discountsData);
+        // Filter by date in JavaScript for now
+        const filteredDiscounts = discountsData?.filter(discount => {
+          const startDate = new Date(discount.start_date || '2020-01-01');
+          const endDate = new Date(discount.end_date || '2030-12-31');
+          return now >= startDate && now <= endDate;
+        }) || [];
+        console.log("Filtered discounts:", filteredDiscounts);
+        setDiscounts(filteredDiscounts);
       }
     } catch (error) {
       console.error("Error fetching promotions:", error);
@@ -192,12 +230,8 @@ const Index = () => {
             </div>
             
             <Carousel 
+              setApi={setApi}
               className="w-full"
-              plugins={[
-                Autoplay({
-                  delay: 4000,
-                })
-              ]}
               opts={{
                 align: "start",
                 loop: true,
@@ -305,8 +339,6 @@ const Index = () => {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
             </Carousel>
 
             <div className="text-center mt-8">
