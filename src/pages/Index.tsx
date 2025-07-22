@@ -69,12 +69,16 @@ const Index = () => {
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
-    } else if (!loading && !user) {
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!loading) {
       fetchActiveCombos();
       fetchActiveServices();
       fetchActiveDiscounts();
     }
-  }, [user, loading, navigate]);
+  }, [loading]);
 
   const fetchActiveCombos = async () => {
     try {
@@ -118,18 +122,20 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from("services")
-        .select("id, name, description, duration_minutes, price_cents, image_url, discount_percentage, original_price_cents")
+        .select("*")
         .eq("is_active", true)
         .limit(12);
       
       if (error) {
         console.error("Supabase error fetching services:", error);
+        setFetchError("Error loading services");
         return;
       }
       
       setServices(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
+      setFetchError("Error loading services");
     }
   };
 
