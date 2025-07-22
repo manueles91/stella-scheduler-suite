@@ -298,8 +298,12 @@ export const GuestBookingSystem = () => {
   };
 
   const handleEmployeeSelect = (employeeId: string) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    setSelectedEmployee(employee || null);
+    if (employeeId === 'any') {
+      setSelectedEmployee(null);
+    } else {
+      const employee = employees.find(emp => emp.id === employeeId);
+      setSelectedEmployee(employee || null);
+    }
     setSelectedSlot(null);
   };
 
@@ -466,12 +470,12 @@ export const GuestBookingSystem = () => {
               {/* Employee Filter */}
               <div className="mb-6">
                 <Label>Estilista preferido (opcional)</Label>
-                <Select value={selectedEmployee?.id || ''} onValueChange={handleEmployeeSelect}>
+                <Select value={selectedEmployee?.id || 'any'} onValueChange={handleEmployeeSelect}>
                   <SelectTrigger>
                     <SelectValue placeholder="Cualquier estilista disponible" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Cualquier estilista disponible</SelectItem>
+                    <SelectItem value="any">Cualquier estilista disponible</SelectItem>
                     {employees.map((employee) => (
                       <SelectItem key={employee.id} value={employee.id}>
                         {employee.full_name}
