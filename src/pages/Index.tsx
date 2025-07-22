@@ -39,11 +39,31 @@ interface Service {
   original_price_cents?: number;
 }
 
+interface Discount {
+  id: string;
+  name: string;
+  description: string;
+  discount_type: string;
+  discount_value: number;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  services: {
+    id: string;
+    name: string;
+    description: string;
+    duration_minutes: number;
+    price_cents: number;
+    image_url?: string;
+  };
+}
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [combos, setCombos] = useState<Combo[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,6 +72,7 @@ const Index = () => {
     } else if (!loading && !user) {
       fetchActiveCombos();
       fetchActiveServices();
+      fetchActiveDiscounts();
     }
   }, [user, loading, navigate]);
 
@@ -109,6 +130,51 @@ const Index = () => {
       setServices(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
+    }
+  };
+
+  const fetchActiveDiscounts = async () => {
+    try {
+      setFetchError(null);
+      const now = new Date();
+      const nowISO = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      
+      const { data, error } = await supabase
+        .from("discounts")
+        .select(`
+          id,
+          name,
+          description,
+          discount_type,
+          discount_value,
+          start_date,
+          end_date,
+          is_active,
+          services (
+            id,
+            name,
+            description,
+            duration_minutes,
+            price_cents,
+            image_url
+          )
+        `)
+        .eq("is_active", true)
+        .eq("is_public", true)
+        .lte("start_date", nowISO)
+        .gte("end_date", nowISO)
+        .limit(10);
+      
+      if (error) {
+        console.error("Supabase error fetching discounts:", error);
+        setFetchError("Error loading discounts");
+        return;
+      }
+      
+      setDiscounts(data || []);
+    } catch (error) {
+      console.error("Error fetching discounts:", error);
+      setFetchError("Error loading discounts");
     }
   };
 
@@ -217,7 +283,10 @@ const Index = () => {
                 {services.length > 0 ? (
                   services.map((service) => (
                     <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <Card className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden">
+                      <Card 
+                        className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden cursor-pointer"
+                        onClick={() => navigate(`/book?service=${service.id}&step=2&estilista=cualquier`)}
+                      >
                         {service.image_url && (
                           <div className="aspect-video overflow-hidden">
                             <img 
@@ -236,6 +305,9 @@ const Index = () => {
                         </CardHeader>
                         <CardContent>
                           <p className="text-muted-foreground">{service.description || "Servicio profesional disponible"}</p>
+                          <Button className="w-full mt-4" variant="outline">
+                            Reservar ahora
+                          </Button>
                         </CardContent>
                       </Card>
                     </CarouselItem>
@@ -244,7 +316,10 @@ const Index = () => {
                   // Fallback hardcoded services with images
                   fallbackServices.map((service, index) => (
                     <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <Card className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden">
+                      <Card 
+                        className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden cursor-pointer"
+                        onClick={() => navigate('/book')}
+                      >
                         <div className="aspect-video overflow-hidden">
                           <img 
                             src={service.image} 
@@ -261,6 +336,9 @@ const Index = () => {
                         </CardHeader>
                         <CardContent>
                           <p className="text-muted-foreground">{service.description}</p>
+                          <Button className="w-full mt-4" variant="outline">
+                            Reservar ahora
+                          </Button>
                         </CardContent>
                       </Card>
                     </CarouselItem>
@@ -287,8 +365,8 @@ const Index = () => {
             </p>
           </div>
           
-          {/* Show both combos and discounted services */}
-          {(combos.length > 0 || services.some(service => service.discount_percentage && service.discount_percentage > 0)) ? (
+          {/* Show combos, individual discounts, and discounted services */}
+          {(combos.length > 0 || discounts.length > 0 || services.some(service => service.discount_percentage && service.discount_percentage > 0)) ? (
             <div className="relative px-12">
               <Carousel
                 opts={{
@@ -301,7 +379,10 @@ const Index = () => {
                   {/* Show combos first */}
                   {combos.map((combo) => (
                     <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                      <Card 
+                        className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full cursor-pointer"
+                        onClick={() => navigate('/book')}
+                      >
                         <div className="absolute top-4 right-4 z-10">
                           <Badge className="bg-gradient-primary text-white">
                             <Star className="h-3 w-3 mr-1" />
@@ -358,12 +439,87 @@ const Index = () => {
                     </CarouselItem>
                   ))}
                   
+                  {/* Show individual discounts */}
+                  {discounts.map((discount) => {
+                    const discountedPrice = discount.discount_type === 'percentage' 
+                      ? discount.services.price_cents * (1 - discount.discount_value / 100)
+                      : discount.services.price_cents - (discount.discount_value * 100);
+                    const savings = discount.services.price_cents - discountedPrice;
+                    
+                    return (
+                      <CarouselItem key={`discount-${discount.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                        <Card 
+                          className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full cursor-pointer"
+                          onClick={() => navigate(`/book?service=${discount.services.id}&step=2&estilista=cualquier&discount=${discount.id}`)}
+                        >
+                          <div className="absolute top-4 right-4 z-10">
+                            <Badge className="bg-red-500 text-white">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              {discount.discount_type === 'percentage' ? `${discount.discount_value}%` : `₡${discount.discount_value}`} OFF
+                            </Badge>
+                          </div>
+                          {discount.services.image_url && (
+                            <div className="aspect-video overflow-hidden">
+                              <img 
+                                src={discount.services.image_url} 
+                                alt={discount.services.name}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          <CardHeader className="pb-2">
+                            <CardTitle className="font-serif text-xl">
+                              {discount.name}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                              {discount.services.name}
+                            </p>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {discount.description || discount.services.description || "Descuento especial disponible"}
+                            </p>
+                            
+                            <div className="flex justify-between items-center">
+                              <Badge variant="secondary">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {discount.services.duration_minutes} min
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-muted-foreground line-through">
+                                  ₡{Math.round(discount.services.price_cents / 100)}
+                                </span>
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  Ahorra ₡{Math.round(savings / 100)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-bold text-primary">
+                                  ₡{Math.round(discountedPrice / 100)}
+                                </span>
+                                <span className="text-sm font-medium text-green-600">
+                                  {discount.discount_type === 'percentage' ? `${discount.discount_value}%` : `₡${discount.discount_value}`} OFF
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </CarouselItem>
+                    );
+                  })}
+                  
                   {/* Show discounted services */}
                   {services
                     .filter(service => service.discount_percentage && service.discount_percentage > 0 && service.original_price_cents)
                     .map((service) => (
                       <CarouselItem key={`service-${service.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                        <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                        <Card 
+                          className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full cursor-pointer"
+                          onClick={() => navigate(`/book?service=${service.id}&step=2&estilista=cualquier`)}
+                        >
                           <div className="absolute top-4 right-4 z-10">
                             <Badge className="bg-red-500 text-white">
                               <Sparkles className="h-3 w-3 mr-1" />

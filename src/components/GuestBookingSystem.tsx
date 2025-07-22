@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,12 +90,40 @@ export const GuestBookingSystem = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetchServices();
     fetchEmployees();
     fetchCategories();
   }, []);
+
+  // Handle URL parameters for pre-selecting service and step
+  useEffect(() => {
+    if (services.length > 0) {
+      const serviceId = searchParams.get('service');
+      const step = searchParams.get('step');
+      const estilista = searchParams.get('estilista');
+      
+      if (serviceId) {
+        const service = services.find(s => s.id === serviceId);
+        if (service) {
+          setSelectedService(service);
+          
+          // Auto-select "cualquier estilista" if specified
+          if (estilista === 'cualquier') {
+            setSelectedEmployee(null); // null means "any stylist"
+          }
+          
+          // Skip to specified step (default to step 2 for date selection)
+          const targetStep = step ? parseInt(step) : 2;
+          if (targetStep >= 1 && targetStep <= 5) {
+            setCurrentStep(targetStep);
+          }
+        }
+      }
+    }
+  }, [services, searchParams]);
 
   useEffect(() => {
     if (selectedService && selectedDate) {
