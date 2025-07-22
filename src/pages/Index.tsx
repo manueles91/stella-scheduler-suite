@@ -182,8 +182,8 @@ const Index = () => {
             Disfruta de nuestros tratamientos exclusivos y reserva tu cita hoy mismo.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-            <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6" onClick={() => navigate('/auth')}>
-              Iniciar sesión / Registrarse
+            <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6" onClick={() => navigate('/book')}>
+              Reserva tu cita
             </Button>
             <Button variant="outline" size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white/10 border-white text-white hover:bg-white hover:text-foreground">
               Más información
@@ -286,10 +286,10 @@ const Index = () => {
 
           <div className="text-center mt-8">
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/book')}
               className="bg-gradient-primary hover:bg-gradient-primary/90"
             >
-              Ver todos los combos
+              Reservar ahora
             </Button>
           </div>
         </div>
@@ -437,7 +437,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 className="w-full bg-gradient-primary hover:bg-gradient-primary/90"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/book')}
               >
                 Reservar tu cita
               </Button>
@@ -457,7 +457,7 @@ const Index = () => {
             size="lg" 
             variant="outline" 
             className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white text-primary hover:bg-white/90"
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/book')}
           >
             Reservar ahora
           </Button>
