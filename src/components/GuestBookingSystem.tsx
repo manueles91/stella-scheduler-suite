@@ -233,7 +233,7 @@ export const GuestBookingSystem = () => {
         )
       `)
       .eq('day_of_week', dayOfWeek)
-      .eq('is_active', true);
+      .eq('is_available', true);
 
     if (selectedEmployee) {
       scheduleQuery = scheduleQuery.eq('employee_id', selectedEmployee.id);

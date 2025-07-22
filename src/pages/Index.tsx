@@ -35,8 +35,6 @@ interface Service {
   duration_minutes: number;
   price_cents: number;
   image_url?: string;
-  discount_percentage?: number;
-  original_price_cents?: number;
 }
 
 interface Discount {
@@ -122,7 +120,7 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from("services")
-        .select("*")
+        .select("id, name, description, duration_minutes, price_cents, image_url, is_active")
         .eq("is_active", true)
         .limit(12);
       
@@ -291,7 +289,7 @@ const Index = () => {
                     <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                       <Card 
                         className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden cursor-pointer"
-                        onClick={() => navigate(`/book?service=${service.id}&step=2&estilista=cualquier`)}
+                        onClick={() => navigate('/book')}
                       >
                         {service.image_url && (
                           <div className="aspect-video overflow-hidden">
@@ -372,7 +370,7 @@ const Index = () => {
           </div>
           
           {/* Show combos, individual discounts, and discounted services */}
-          {(combos.length > 0 || discounts.length > 0 || services.some(service => service.discount_percentage && service.discount_percentage > 0)) ? (
+          {(combos.length > 0 || discounts.length > 0) ? (
             <div className="relative px-12">
               <Carousel
                 opts={{
@@ -517,69 +515,6 @@ const Index = () => {
                     );
                   })}
                   
-                  {/* Show discounted services */}
-                  {services
-                    .filter(service => service.discount_percentage && service.discount_percentage > 0 && service.original_price_cents)
-                    .map((service) => (
-                      <CarouselItem key={`service-${service.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                        <Card 
-                          className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full cursor-pointer"
-                          onClick={() => navigate(`/book?service=${service.id}&step=2&estilista=cualquier`)}
-                        >
-                          <div className="absolute top-4 right-4 z-10">
-                            <Badge className="bg-red-500 text-white">
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              {service.discount_percentage}% OFF
-                            </Badge>
-                          </div>
-                          {service.image_url && (
-                            <div className="aspect-video overflow-hidden">
-                              <img 
-                                src={service.image_url} 
-                                alt={service.name}
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          <CardHeader className="pb-2">
-                            <CardTitle className="font-serif text-xl">
-                              {service.name}
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {service.description || "Servicio profesional con descuento especial"}
-                            </p>
-                            
-                            <div className="flex justify-between items-center">
-                              <Badge variant="secondary">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {service.duration_minutes} min
-                              </Badge>
-                            </div>
-
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground line-through">
-                                  ₡{Math.round((service.original_price_cents || 0) / 100)}
-                                </span>
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                  Ahorra ₡{Math.round(((service.original_price_cents || 0) - service.price_cents) / 100)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-lg font-bold text-primary">
-                                  ₡{Math.round(service.price_cents / 100)}
-                                </span>
-                                <span className="text-sm font-medium text-green-600">
-                                  {service.discount_percentage}% OFF
-                                </span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </CarouselItem>
-                    ))}
                 </CarouselContent>
                 <CarouselPrevious />
                 <CarouselNext />
