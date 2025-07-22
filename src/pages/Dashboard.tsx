@@ -37,10 +37,19 @@ const Dashboard = () => {
           try {
             const parsedProfile = JSON.parse(effectiveProfileData);
             setEffectiveProfile(parsedProfile);
+            console.log("Effective profile updated:", parsedProfile);
           } catch (e) {
+            console.error("Error parsing effective profile data:", e);
             setEffectiveProfile(profile);
           }
+        } else {
+          // If no attribute data, fall back to profile
+          setEffectiveProfile(profile);
         }
+      } else {
+        // If no main element found, fall back to profile
+        console.warn("Main element with data-effective-profile not found, using profile");
+        setEffectiveProfile(profile);
       }
     };
 
@@ -48,10 +57,31 @@ const Dashboard = () => {
     handleImpersonationChange();
 
     // Set up observer for changes
-    const observer = new MutationObserver(handleImpersonationChange);
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(() => {
+        handleImpersonationChange();
+      });
+    });
+    
     const mainElement = document.querySelector('[data-effective-profile]');
     if (mainElement) {
-      observer.observe(mainElement, { attributes: true, attributeFilter: ['data-effective-profile'] });
+      observer.observe(mainElement, { 
+        attributes: true, 
+        attributeFilter: ['data-effective-profile'],
+        attributeOldValue: true 
+      });
+    } else {
+      // Retry finding the element after a short delay
+      setTimeout(() => {
+        const retryElement = document.querySelector('[data-effective-profile]');
+        if (retryElement) {
+          observer.observe(retryElement, { 
+            attributes: true, 
+            attributeFilter: ['data-effective-profile'],
+            attributeOldValue: true 
+          });
+        }
+      }, 100);
     }
 
     return () => observer.disconnect();
@@ -59,17 +89,34 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchAppointments = async () => {
-      if (!effectiveProfile?.id) return;
+      if (!effectiveProfile?.id) {
+        console.log("No effective profile ID available for fetching appointments");
+        return;
+      }
+      
       setAppointmentsLoading(true);
-      const { data, error } = await supabase
-        .from('reservations')
-        .select('id, appointment_date, start_time, end_time, status, service_id, services(name)')
-        .eq('client_id', effectiveProfile.id)
-        .order('appointment_date', { ascending: true })
-        .order('start_time', { ascending: true });
-      if (!error) setAppointments(data || []);
-      setAppointmentsLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('reservations')
+          .select('id, appointment_date, start_time, end_time, status, service_id, services(name)')
+          .eq('client_id', effectiveProfile.id)
+          .order('appointment_date', { ascending: true })
+          .order('start_time', { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching appointments:", error);
+          setAppointments([]);
+        } else {
+          setAppointments(data || []);
+        }
+      } catch (error) {
+        console.error("Error in fetchAppointments:", error);
+        setAppointments([]);
+      } finally {
+        setAppointmentsLoading(false);
+      }
     };
+    
     fetchAppointments();
   }, [effectiveProfile?.id]);
 

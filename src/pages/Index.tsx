@@ -21,21 +21,36 @@ interface Combo {
   }[];
 }
 
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  duration_minutes: number;
+  price_cents: number;
+}
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [combos, setCombos] = useState<Combo[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
     } else if (!loading && !user) {
       fetchActiveCombos();
+      fetchActiveServices();
     }
   }, [user, loading, navigate]);
 
   const fetchActiveCombos = async () => {
     try {
+      setFetchError(null);
+      const now = new Date();
+      const nowISO = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      
       const { data, error } = await supabase
         .from("combos")
         .select(`
@@ -51,14 +66,39 @@ const Index = () => {
           )
         `)
         .eq("is_active", true)
-        .lte("start_date", new Date().toISOString())
-        .gte("end_date", new Date().toISOString())
+        .lte("start_date", nowISO)
+        .gte("end_date", nowISO)
         .limit(3);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error fetching combos:", error);
+        setFetchError("Error loading combos");
+        return;
+      }
+      
       setCombos(data || []);
     } catch (error) {
       console.error("Error fetching combos:", error);
+      setFetchError("Error loading combos");
+    }
+  };
+
+  const fetchActiveServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("services")
+        .select("id, name, description, duration_minutes, price_cents")
+        .eq("is_active", true)
+        .limit(6);
+      
+      if (error) {
+        console.error("Supabase error fetching services:", error);
+        return;
+      }
+      
+      setServices(data || []);
+    } catch (error) {
+      console.error("Error fetching services:", error);
     }
   };
 
@@ -107,27 +147,45 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
-            {[
-              { name: "Signature Facial", duration: "90 min", price: "₡150", description: "Premium anti-aging treatment" },
-              { name: "Hair Cut & Style", duration: "60 min", price: "₡85", description: "Professional styling service" },
-              { name: "Massage Therapy", duration: "90 min", price: "₡120", description: "Relaxing full-body massage" },
-              { name: "Manicure", duration: "45 min", price: "₡65", description: "Classic nail care service" },
-              { name: "Hair Color", duration: "180 min", price: "₡180", description: "Expert color consultation" },
-              { name: "Makeup Application", duration: "45 min", price: "₡80", description: "Professional event makeup" },
-            ].map((service, index) => (
-              <Card key={index} className="hover:shadow-luxury transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="font-serif">{service.name}</CardTitle>
-                  <div className="flex justify-between items-center">
-                    <Badge variant="secondary">{service.duration}</Badge>
-                    <span className="text-lg font-bold text-primary">{service.price}</span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{service.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {services.length > 0 ? (
+              services.map((service) => (
+                <Card key={service.id} className="hover:shadow-luxury transition-all duration-300">
+                  <CardHeader>
+                    <CardTitle className="font-serif">{service.name}</CardTitle>
+                    <div className="flex justify-between items-center">
+                      <Badge variant="secondary">{service.duration_minutes} min</Badge>
+                      <span className="text-lg font-bold text-primary">₡{Math.round(service.price_cents / 100)}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{service.description || "Servicio profesional disponible"}</p>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              // Fallback hardcoded services
+              [
+                { name: "Signature Facial", duration: "90 min", price: "₡150", description: "Premium anti-aging treatment" },
+                { name: "Hair Cut & Style", duration: "60 min", price: "₡85", description: "Professional styling service" },
+                { name: "Massage Therapy", duration: "90 min", price: "₡120", description: "Relaxing full-body massage" },
+                { name: "Manicure", duration: "45 min", price: "₡65", description: "Classic nail care service" },
+                { name: "Hair Color", duration: "180 min", price: "₡180", description: "Expert color consultation" },
+                { name: "Makeup Application", duration: "45 min", price: "₡80", description: "Professional event makeup" },
+              ].map((service, index) => (
+                <Card key={index} className="hover:shadow-luxury transition-all duration-300">
+                  <CardHeader>
+                    <CardTitle className="font-serif">{service.name}</CardTitle>
+                    <div className="flex justify-between items-center">
+                      <Badge variant="secondary">{service.duration}</Badge>
+                      <span className="text-lg font-bold text-primary">{service.price}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{service.description}</p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </section>
