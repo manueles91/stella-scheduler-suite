@@ -297,15 +297,7 @@ export const GuestBookingSystem = () => {
     setCurrentStep(2);
   };
 
-  const handleEmployeeSelect = (employeeId: string) => {
-    if (employeeId === 'any') {
-      setSelectedEmployee(null);
-    } else {
-      const employee = employees.find(emp => emp.id === employeeId);
-      setSelectedEmployee(employee || null);
-    }
-    setSelectedSlot(null);
-  };
+
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -467,69 +459,87 @@ export const GuestBookingSystem = () => {
               <CardDescription>Selecciona el servicio que deseas reservar</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Employee Filter */}
-              <div className="mb-6">
-                <Label>Estilista preferido (opcional)</Label>
-                <Select value={selectedEmployee?.id || 'any'} onValueChange={handleEmployeeSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Cualquier estilista disponible" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Cualquier estilista disponible</SelectItem>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Services Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services
-                  .filter((service) => 
-                    !selectedEmployee || 
-                    selectedEmployee.employee_services.some(es => es.service_id === service.id)
-                  )
-                  .map((service) => (
-                    <Card
-                      key={service.id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedService?.id === service.id
-                          ? 'ring-2 ring-primary border-primary'
-                          : ''
-                      }`}
-                      onClick={() => handleServiceSelect(service)}
-                    >
-                      {service.image_url && (
-                        <div className="aspect-video overflow-hidden rounded-t-lg">
-                          <img 
-                            src={service.image_url} 
-                            alt={service.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">{service.name}</CardTitle>
-                        <div className="flex justify-between items-center">
-                          <Badge variant="secondary">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {service.duration_minutes} min
-                          </Badge>
-                          <span className="text-lg font-bold text-primary">
-                            {formatPrice(service.price_cents)}
-                          </span>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          {service.description || "Servicio profesional disponible"}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                {services.map((service) => (
+                  <Card
+                    key={service.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedService?.id === service.id
+                        ? 'ring-2 ring-primary border-primary'
+                        : ''
+                    }`}
+                    onClick={() => handleServiceSelect(service)}
+                  >
+                    {service.image_url && (
+                      <div className="aspect-video overflow-hidden rounded-t-lg">
+                        <img 
+                          src={service.image_url} 
+                          alt={service.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">{service.name}</CardTitle>
+                      <div className="flex justify-between items-center">
+                        <Badge variant="secondary">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {service.duration_minutes} min
+                        </Badge>
+                        <span className="text-lg font-bold text-primary">
+                          {formatPrice(service.price_cents)}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        {service.description || "Servicio profesional disponible"}
+                      </p>
+                      
+                      {/* Employee Selection within each service card */}
+                      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                        <Label>Estilista</Label>
+                        <Select 
+                          value={selectedService?.id === service.id ? selectedEmployee?.id || "any" : "any"} 
+                          onValueChange={(value) => {
+                            setSelectedService(service);
+                            if (value === "any") {
+                              setSelectedEmployee(null);
+                            } else {
+                              const employee = employees.find(emp => 
+                                emp.id === value && 
+                                emp.employee_services.some(es => es.service_id === service.id)
+                              );
+                              setSelectedEmployee(employee || null);
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Cualquier estilista" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Cualquier estilista</SelectItem>
+                            {employees
+                              .filter(emp => emp.employee_services.some(es => es.service_id === service.id))
+                              .map((employee) => (
+                                <SelectItem key={employee.id} value={employee.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-4 w-4">
+                                      <AvatarFallback className="text-xs">
+                                        {employee.full_name.split(' ').map(n => n[0]).join('')}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    {employee.full_name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>

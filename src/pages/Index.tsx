@@ -35,6 +35,8 @@ interface Service {
   duration_minutes: number;
   price_cents: number;
   image_url?: string;
+  discount_percentage?: number;
+  original_price_cents?: number;
 }
 
 const Index = () => {
@@ -95,7 +97,7 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from("services")
-        .select("id, name, description, duration_minutes, price_cents, image_url")
+        .select("id, name, description, duration_minutes, price_cents, image_url, discount_percentage, original_price_cents")
         .eq("is_active", true)
         .limit(12);
       
@@ -185,6 +187,9 @@ const Index = () => {
             <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6" onClick={() => navigate('/book')}>
               Reserva tu cita
             </Button>
+            <Button size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-primary hover:bg-primary/90" onClick={() => navigate('/auth')}>
+              Ingresar / Registrarte
+            </Button>
             <Button variant="outline" size="lg" className="text-base sm:text-lg px-4 sm:px-8 py-3 sm:py-6 bg-white/10 border-white text-white hover:bg-white hover:text-foreground">
               Más información
             </Button>
@@ -192,110 +197,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Combos Section - Now First */}
-      <section className="py-10 sm:py-20 bg-muted/50 px-2 sm:px-4">
-        <div className="max-w-full sm:max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2">
-              <Sparkles className="h-8 w-8 text-primary" />
-              Combos Especiales
-            </h2>
-            <p className="text-base sm:text-xl text-muted-foreground">
-              Aprovecha nuestros paquetes exclusivos con precios especiales
-            </p>
-          </div>
-          
-          {combos.length > 0 ? (
-            <div className="relative px-12">
-              <Carousel
-                opts={{
-                  align: "start",
-                  loop: true,
-                }}
-                className="w-full"
-              >
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {combos.map((combo) => (
-                    <CarouselItem key={combo.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
-                        <div className="absolute top-4 right-4 z-10">
-                          <Badge className="bg-gradient-primary text-white">
-                            <Star className="h-3 w-3 mr-1" />
-                            COMBO
-                          </Badge>
-                        </div>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="font-serif text-xl flex items-center gap-2">
-                            <Package className="h-5 w-5 text-primary" />
-                            {combo.name}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {combo.description || "Paquete especial de servicios"}
-                          </p>
-                          
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">Incluye:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {combo.combo_services.slice(0, 3).map((cs, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {cs.services.name}
-                                </Badge>
-                              ))}
-                              {combo.combo_services.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{combo.combo_services.length - 3} más
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground line-through">
-                                ₡{Math.round(combo.original_price_cents / 100)}
-                              </span>
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                Ahorra ₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-bold text-primary">
-                                ₡{Math.round(combo.total_price_cents / 100)}
-                              </span>
-                              <span className="text-sm font-medium text-green-600">
-                                {Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}% OFF
-                              </span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No hay combos disponibles en este momento</p>
-            </div>
-          )}
-
-          <div className="text-center mt-8">
-            <Button 
-              onClick={() => navigate('/book')}
-              className="bg-gradient-primary hover:bg-gradient-primary/90"
-            >
-              Reservar ahora
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section - Now Second with Carousel */}
+      {/* Services Section - Now First */}
       <section className="py-10 sm:py-20 px-2 sm:px-4">
         <div className="max-w-full sm:max-w-7xl mx-auto">
           <div className="text-center mb-8 sm:mb-16">
@@ -372,6 +274,174 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Promociones Section - Now Second */}
+      <section className="py-10 sm:py-20 bg-muted/50 px-2 sm:px-4">
+        <div className="max-w-full sm:max-w-7xl mx-auto">
+          <div className="text-center mb-8 sm:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2">
+              <Sparkles className="h-8 w-8 text-primary" />
+              Promociones
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground">
+              Aprovecha nuestros paquetes exclusivos y descuentos especiales
+            </p>
+          </div>
+          
+          {/* Show both combos and discounted services */}
+          {(combos.length > 0 || services.some(service => service.discount_percentage && service.discount_percentage > 0)) ? (
+            <div className="relative px-12">
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {/* Show combos first */}
+                  {combos.map((combo) => (
+                    <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                      <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                        <div className="absolute top-4 right-4 z-10">
+                          <Badge className="bg-gradient-primary text-white">
+                            <Star className="h-3 w-3 mr-1" />
+                            COMBO
+                          </Badge>
+                        </div>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="font-serif text-xl flex items-center gap-2">
+                            <Package className="h-5 w-5 text-primary" />
+                            {combo.name}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {combo.description || "Paquete especial de servicios"}
+                          </p>
+                          
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">Incluye:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {combo.combo_services.slice(0, 3).map((cs, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {cs.services.name}
+                                </Badge>
+                              ))}
+                              {combo.combo_services.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{combo.combo_services.length - 3} más
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground line-through">
+                                ₡{Math.round(combo.original_price_cents / 100)}
+                              </span>
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                Ahorra ₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-lg font-bold text-primary">
+                                ₡{Math.round(combo.total_price_cents / 100)}
+                              </span>
+                              <span className="text-sm font-medium text-green-600">
+                                {Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}% OFF
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                  
+                  {/* Show discounted services */}
+                  {services
+                    .filter(service => service.discount_percentage && service.discount_percentage > 0 && service.original_price_cents)
+                    .map((service) => (
+                      <CarouselItem key={`service-${service.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                        <Card className="relative overflow-hidden hover:shadow-luxury transition-all duration-300 border-primary/20 h-full">
+                          <div className="absolute top-4 right-4 z-10">
+                            <Badge className="bg-red-500 text-white">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              {service.discount_percentage}% OFF
+                            </Badge>
+                          </div>
+                          {service.image_url && (
+                            <div className="aspect-video overflow-hidden">
+                              <img 
+                                src={service.image_url} 
+                                alt={service.name}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          <CardHeader className="pb-2">
+                            <CardTitle className="font-serif text-xl">
+                              {service.name}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {service.description || "Servicio profesional con descuento especial"}
+                            </p>
+                            
+                            <div className="flex justify-between items-center">
+                              <Badge variant="secondary">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {service.duration_minutes} min
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-muted-foreground line-through">
+                                  ₡{Math.round((service.original_price_cents || 0) / 100)}
+                                </span>
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  Ahorra ₡{Math.round(((service.original_price_cents || 0) - service.price_cents) / 100)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-bold text-primary">
+                                  ₡{Math.round(service.price_cents / 100)}
+                                </span>
+                                <span className="text-sm font-medium text-green-600">
+                                  {service.discount_percentage}% OFF
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No hay promociones disponibles en este momento</p>
+            </div>
+          )}
+
+          <div className="text-center mt-8">
+            <Button 
+              onClick={() => navigate('/book')}
+              className="bg-gradient-primary hover:bg-gradient-primary/90"
+            >
+              Reservar ahora
+            </Button>
+          </div>
+        </div>
+      </section>
+
+
+
       {/* Map Location Section */}
       <section className="py-10 sm:py-20 bg-muted/30 px-2 sm:px-4">
         <div className="max-w-full sm:max-w-6xl mx-auto">
@@ -443,6 +513,86 @@ const Index = () => {
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Horario Section */}
+      <section className="py-10 sm:py-20 px-2 sm:px-4">
+        <div className="max-w-full sm:max-w-4xl mx-auto">
+          <div className="text-center mb-8 sm:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2">
+              <Clock className="h-8 w-8 text-primary" />
+              Horario de Atención
+            </h2>
+            <p className="text-base sm:text-xl text-muted-foreground">
+              Conoce nuestros horarios y planifica tu visita
+            </p>
+          </div>
+          
+          <Card className="overflow-hidden">
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-primary mb-4">Horarios Regulares</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b border-muted">
+                      <span className="font-medium">Lunes - Viernes</span>
+                      <span className="text-primary">9:00 AM - 7:00 PM</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-muted">
+                      <span className="font-medium">Sábados</span>
+                      <span className="text-primary">9:00 AM - 5:00 PM</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-muted">
+                      <span className="font-medium">Domingos</span>
+                      <span className="text-muted-foreground">Cerrado</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-primary mb-4">Información Adicional</h3>
+                  <div className="space-y-3 text-muted-foreground">
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Última cita del día</p>
+                        <p className="text-sm">Una hora antes del cierre</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Reservas telefónicas</p>
+                        <p className="text-sm">+506 2222-3333</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Star className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Feriados</p>
+                        <p className="text-sm">Horarios especiales - consultar</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 p-4 bg-primary/10 rounded-lg">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    ¡Te recomendamos reservar tu cita con anticipación!
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/book')}
+                    className="bg-gradient-primary hover:bg-gradient-primary/90"
+                  >
+                    Reservar ahora
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
