@@ -13,7 +13,7 @@ import { CheckCircle, Clock, ArrowLeft, ArrowRight, UserPlus } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format, addMinutes, parseISO, isSameDay, startOfDay } from "date-fns";
+import { format, addMinutes, parseISO, isSameDay, isAfter, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Service {
@@ -220,34 +220,19 @@ export const GuestBookingSystem = () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const dayOfWeek = selectedDate.getDay();
     
-    // Get employee schedules for this day
-    let scheduleQuery = supabase
-      .from('employee_schedules')
-      .select(`
-        employee_id,
-        start_time,
-        end_time,
-        profiles (
-          id,
-          full_name
-        )
-      `)
-      .eq('day_of_week', dayOfWeek)
-      .eq('is_available', true);
-
-    if (selectedEmployee) {
-      scheduleQuery = scheduleQuery.eq('employee_id', selectedEmployee.id);
-    }
-
-    const { data: schedules, error: scheduleError } = await scheduleQuery;
-
-    if (scheduleError) {
-      console.error('Error fetching schedules:', scheduleError);
+    // Skip Sundays (day 0)
+    if (dayOfWeek === 0) {
+      setAvailableSlots([]);
       setLoading(false);
       return;
     }
 
-    if (!schedules || schedules.length === 0) {
+    // Get employees who can perform this service
+    const availableEmployees = selectedEmployee 
+      ? [selectedEmployee] 
+      : employees.filter(emp => emp.employee_services.some(es => es.service_id === selectedService.id));
+    
+    if (availableEmployees.length === 0) {
       setAvailableSlots([]);
       setLoading(false);
       return;
@@ -266,51 +251,43 @@ export const GuestBookingSystem = () => {
       return;
     }
 
-    // Generate time slots
+    // Generate time slots using fixed business hours
     const slots: TimeSlot[] = [];
+    const startHour = 9; // 9 AM
+    const endHour = 18;  // 6 PM
     const serviceDuration = selectedService.duration_minutes;
     const now = new Date();
     const isToday = isSameDay(selectedDate, now);
 
-    schedules.forEach((schedule) => {
-      const startTime = parseISO(`${dateStr}T${schedule.start_time}`);
-      const endTime = parseISO(`${dateStr}T${schedule.end_time}`);
-      
-      let currentSlot = startTime;
-      
-      while (currentSlot < endTime) {
-        const slotEndTime = addMinutes(currentSlot, serviceDuration);
-        
-        if (slotEndTime <= endTime) {
-          const slotTimeStr = format(currentSlot, 'HH:mm');
+    for (const employee of availableEmployees) {
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          const slotDateTime = parseISO(`${dateStr}T${timeString}`);
+          const slotEndTime = addMinutes(slotDateTime, serviceDuration);
           
-          // Check if slot is not in the past (for today)
-          const isPastSlot = isToday && currentSlot <= now;
+          // Only show slots that are in the future (if today)
+          const isFutureSlot = !isToday || isAfter(slotDateTime, now);
           
           // Check if slot conflicts with existing reservations
           const hasConflict = reservations?.some((reservation) => {
+            if (reservation.employee_id !== employee.id) return false;
             const resStart = parseISO(`${dateStr}T${reservation.start_time}`);
             const resEnd = parseISO(`${dateStr}T${reservation.end_time}`);
-            return (
-              reservation.employee_id === schedule.employee_id &&
-              currentSlot < resEnd && 
-              slotEndTime > resStart
-            );
+            return slotDateTime < resEnd && slotEndTime > resStart;
           });
           
-          if (!isPastSlot && !hasConflict) {
+          if (isFutureSlot && !hasConflict) {
             slots.push({
-              start_time: slotTimeStr,
-              employee_id: schedule.employee_id,
-              employee_name: schedule.profiles.full_name,
+              start_time: timeString,
+              employee_id: employee.id,
+              employee_name: employee.full_name,
               available: true,
             });
           }
         }
-        
-        currentSlot = addMinutes(currentSlot, 30); // 30-minute increments
       }
-    });
+    }
 
     // Sort slots by time
     slots.sort((a, b) => a.start_time.localeCompare(b.start_time));
