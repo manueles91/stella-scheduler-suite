@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
+import { DiscountServiceCard } from "@/components/cards/DiscountServiceCard";
 import { Appointment } from "@/types/appointment";
 interface DashboardSummaryProps {
   effectiveProfile: any;
@@ -307,40 +308,35 @@ export const DashboardSummary = ({
                 <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {activePromotions.map(promotion => (
-                  <div key={promotion.id} className="border border-border rounded-lg p-4 space-y-3 bg-gradient-to-r from-primary/5 to-secondary/5 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground">{promotion.name}</div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {promotion.services?.name}
-                          </div>
-                          {promotion.description && (
-                            <div className="text-sm text-muted-foreground mt-1">{promotion.description}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-semibold">
-                          {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `₡${Math.round(promotion.discount_value)} OFF`}
-                        </Badge>
-                        <EditableDiscount discount={promotion} onUpdate={fetchActivePromotions} canEdit={canEditDiscount()} />
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
-                      Válida hasta: {new Date(promotion.end_date).toLocaleDateString('es-ES', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activePromotions.map(promotion => {
+                  // Calculate prices for dashboard display
+                  const originalPrice = 10000; // Default price in cents for display
+                  const discountAmount = promotion.discount_type === 'percentage' 
+                    ? (originalPrice * promotion.discount_value) / 100
+                    : promotion.discount_value * 100;
+                  const finalPrice = originalPrice - discountAmount;
+                  
+                  return (
+                    <DiscountServiceCard
+                      key={promotion.id}
+                      id={promotion.id}
+                      name={promotion.name}
+                      description={promotion.description || `Descuento en ${promotion.services?.name}`}
+                      originalPrice={originalPrice}
+                      finalPrice={finalPrice}
+                      savings={discountAmount}
+                      discountType={promotion.discount_type}
+                      discountValue={promotion.discount_value}
+                      variant="dashboard"
+                      className="h-auto"
+                      onEdit={canEditDiscount() ? () => {
+                        // Handle edit action - you can expand this later
+                      } : undefined}
+                      canEdit={canEditDiscount()}
+                    />
+                  );
+                })}
               </div>
             )}
         </CardContent>

@@ -57,7 +57,7 @@ export const ServiceCard = ({
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <Card 
-        className={`transition-all hover:shadow-lg overflow-hidden ${
+        className={`transition-all hover:shadow-lg overflow-hidden h-64 ${
           isSelected ? 'ring-2 ring-primary shadow-lg' : ''
         }`}
       >
