@@ -142,7 +142,7 @@ export const ServicesSection = () => {
                   <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                     <Card 
                       className="hover:shadow-luxury transition-all duration-300 h-full overflow-hidden cursor-pointer"
-                      onClick={() => navigate('/book')}
+                      onClick={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
                     >
                       {service.image_url && (
                         <div className="aspect-video overflow-hidden">
