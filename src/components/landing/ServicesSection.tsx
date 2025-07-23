@@ -48,7 +48,7 @@ export const ServicesSection = () => {
         <Carousel className="w-full">
           <CarouselContent className="-ml-2 md:-ml-4">
             {bookableItems.map((service) => (
-              <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+              <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
                 <ServiceCard
                   service={service}
                   isSelected={false}
