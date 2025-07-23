@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Service, Employee, TimeSlot } from "@/types/booking";
+import { Service, Employee, TimeSlot, Combo, Discount, BookableItem } from "@/types/booking";
 import { format, addMinutes, parseISO, isSameDay, isAfter } from "date-fns";
 
 export const useBookingData = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [combos, setCombos] = useState<Combo[]>([]);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [bookableItems, setBookableItems] = useState<BookableItem[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -13,9 +16,17 @@ export const useBookingData = () => {
 
   useEffect(() => {
     fetchServices();
+    fetchCombos();
+    fetchDiscounts();
     fetchEmployees();
     fetchCategories();
   }, []);
+
+  // Process services and combos into bookable items with discounts
+  useEffect(() => {
+    const processedItems = processBookableItems();
+    setBookableItems(processedItems);
+  }, [services, combos, discounts]);
 
   const fetchServices = async () => {
     const { data, error } = await supabase
@@ -41,6 +52,60 @@ export const useBookingData = () => {
     }
 
     setServices(data || []);
+  };
+
+  const fetchCombos = async () => {
+    const now = new Date();
+    const nowISO = now.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('combos')
+      .select(`
+        *,
+        combo_services (
+          service_id,
+          quantity,
+          services (
+            id,
+            name,
+            description,
+            duration_minutes,
+            price_cents,
+            image_url
+          )
+        )
+      `)
+      .eq('is_active', true)
+      .lte('start_date', nowISO)
+      .gte('end_date', nowISO)
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching combos:', error);
+      return;
+    }
+
+    setCombos(data || []);
+  };
+
+  const fetchDiscounts = async () => {
+    const now = new Date();
+    const nowISO = now.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('discounts')
+      .select('*')
+      .eq('is_active', true)
+      .lte('start_date', nowISO)
+      .gte('end_date', nowISO)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching discounts:', error);
+      return;
+    }
+
+    setDiscounts(data || []);
   };
 
   const fetchEmployees = async () => {
@@ -79,8 +144,92 @@ export const useBookingData = () => {
     }
   };
 
+  const processBookableItems = (): BookableItem[] => {
+    const items: BookableItem[] = [];
+
+
+
+    // Process services with discounts
+    services.forEach(service => {
+      const serviceDiscounts = discounts.filter(d => d.service_id === service.id);
+      const bestDiscount = findBestDiscount(serviceDiscounts, service.price_cents);
+      
+      const finalPrice = bestDiscount 
+        ? calculateDiscountedPrice(service.price_cents, bestDiscount)
+        : service.price_cents;
+      
+      const savings = service.price_cents - finalPrice;
+
+      const serviceItem = {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        duration_minutes: service.duration_minutes,
+        original_price_cents: service.price_cents,
+        final_price_cents: finalPrice,
+        category_id: service.category_id,
+        image_url: service.image_url,
+        type: 'service' as const,
+        appliedDiscount: bestDiscount,
+        savings_cents: savings,
+      };
+
+
+
+      items.push(serviceItem);
+    });
+
+    // Process combos
+    combos.forEach(combo => {
+      const totalDuration = combo.combo_services.reduce((total, cs) => {
+        return total + (cs.services.duration_minutes * cs.quantity);
+      }, 0);
+
+      const comboItem = {
+        id: combo.id,
+        name: combo.name,
+        description: combo.description,
+        duration_minutes: totalDuration,
+        original_price_cents: combo.original_price_cents,
+        final_price_cents: combo.total_price_cents,
+        image_url: combo.combo_services[0]?.services.image_url,
+        type: 'combo' as const,
+        savings_cents: combo.original_price_cents - combo.total_price_cents,
+        combo_services: combo.combo_services,
+      };
+
+
+
+      items.push(comboItem);
+    });
+
+    return items.sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const findBestDiscount = (discounts: Discount[], originalPrice: number): Discount | null => {
+    if (discounts.length === 0) return null;
+
+    return discounts.reduce((best, current) => {
+      const bestSavings = calculateSavings(best, originalPrice);
+      const currentSavings = calculateSavings(current, originalPrice);
+      return currentSavings > bestSavings ? current : best;
+    });
+  };
+
+  const calculateSavings = (discount: Discount, price: number): number => {
+    if (discount.discount_type === 'percentage') {
+      return (price * discount.discount_value) / 100;
+    }
+    return Math.min(discount.discount_value, price);
+  };
+
+  const calculateDiscountedPrice = (originalPrice: number, discount: Discount): number => {
+    const savings = calculateSavings(discount, originalPrice);
+    return Math.max(0, originalPrice - savings);
+  };
+
   const fetchAvailableSlots = useCallback(async (
-    selectedService: Service | null,
+    selectedService: BookableItem | null,
     selectedDate: Date | undefined,
     selectedEmployee: Employee | null
   ): Promise<TimeSlot[]> => {
@@ -97,10 +246,19 @@ export const useBookingData = () => {
         return [];
       }
 
-      // Get employees who can perform this service
+      // Get employees who can perform this service/combo
       let availableEmployees = selectedEmployee 
         ? [selectedEmployee] 
-        : employees.filter(emp => emp.employee_services.some(es => es.service_id === selectedService.id));
+        : employees.filter(emp => {
+          if (selectedService.type === 'service') {
+            return emp.employee_services.some(es => es.service_id === selectedService.id);
+          } else {
+            // For combos, check if employee can perform all services in the combo
+            return selectedService.combo_services?.every(cs => 
+              emp.employee_services.some(es => es.service_id === cs.service_id)
+            ) || false;
+          }
+        });
       
       // Fallback: if no employees are assigned to this service, use all employees
       if (availableEmployees.length === 0 && employees.length > 0) {
@@ -180,6 +338,9 @@ export const useBookingData = () => {
 
   return {
     services,
+    combos,
+    discounts,
+    bookableItems,
     categories,
     employees,
     loading,

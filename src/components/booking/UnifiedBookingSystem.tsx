@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, ArrowRight, UserPlus, CheckCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, UserPlus, CheckCircle, Sparkles, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,7 @@ import { BookingProgress } from "./BookingProgress";
 import { ServiceCard } from "./ServiceCard";
 import { TimeSlotGrid } from "./TimeSlotGrid";
 import { 
-  Service, 
+  BookableItem, 
   Employee, 
   TimeSlot, 
   BookingStep, 
@@ -54,17 +54,13 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
   const [searchParams] = useSearchParams();
   
   const { 
-    services, 
+    bookableItems, 
     categories, 
     employees, 
     loading, 
     fetchAvailableSlots, 
     formatPrice 
   } = useBookingData();
-
-
-
-
 
   // Define steps based on config
   const getSteps = (): BookingStep[] => {
@@ -86,13 +82,14 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
 
   // Handle URL parameters for pre-selecting service and step
   useEffect(() => {
-    if (services.length > 0) {
+    if (bookableItems.length > 0) {
       const serviceId = searchParams.get('service');
       const step = searchParams.get('step');
       const estilista = searchParams.get('estilista');
+      const discountId = searchParams.get('discount');
       
       if (serviceId) {
-        const service = services.find(s => s.id === serviceId);
+        const service = bookableItems.find(s => s.id === serviceId);
         if (service) {
           setState(prev => ({ ...prev, selectedService: service }));
           
@@ -107,7 +104,7 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         }
       }
     }
-  }, [services, searchParams, config.maxSteps]);
+  }, [bookableItems, searchParams, config.maxSteps]);
 
   // Fetch available slots when service/date/employee changes
   useEffect(() => {
@@ -156,7 +153,7 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
     }
   }, [user, pendingBooking, config.isGuest]);
 
-  const handleServiceSelect = (service: Service) => {
+  const handleServiceSelect = (service: BookableItem) => {
     setState(prev => ({ 
       ...prev, 
       selectedService: service,
@@ -215,34 +212,78 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
       'HH:mm'
     );
 
-    const { error } = await supabase
-      .from('reservations')
-      .insert({
+    // Handle combo booking
+    if (service.type === 'combo') {
+      // Create multiple reservations for combo services
+      const reservations = service.combo_services?.map(cs => ({
         client_id: user.id,
         employee_id: slot.employee_id,
-        service_id: service.id,
+        service_id: cs.service_id,
         appointment_date: format(bookingDate, 'yyyy-MM-dd'),
         start_time: startTime,
         end_time: endTime,
-        notes: bookingNotes || null
-      });
+        notes: bookingNotes || null,
+        original_price_cents: service.original_price_cents,
+        final_price_cents: service.final_price_cents,
+        savings_cents: service.savings_cents
+      })) || [];
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Error al crear la reserva. Por favor intenta de nuevo.",
-        variant: "destructive",
-      });
-      setState(prev => ({ ...prev, submitting: false }));
+      const { error } = await supabase
+        .from('reservations')
+        .insert(reservations);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al crear la reserva del combo. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+        setState(prev => ({ ...prev, submitting: false }));
+      } else {
+        toast({
+          title: "¡Reserva confirmada!",
+          description: "Tu combo ha sido reservado exitosamente.",
+        });
+
+        localStorage.removeItem('pendingBooking');
+        setPendingBooking(null);
+        navigate('/dashboard');
+      }
     } else {
-      toast({
-        title: "¡Reserva confirmada!",
-        description: "Tu cita ha sido reservada exitosamente.",
-      });
+      // Handle single service booking
+      const { error } = await supabase
+        .from('reservations')
+        .insert({
+          client_id: user.id,
+          employee_id: slot.employee_id,
+          service_id: service.id,
+          appointment_date: format(bookingDate, 'yyyy-MM-dd'),
+          start_time: startTime,
+          end_time: endTime,
+          notes: bookingNotes || null,
+          applied_discount_id: service.appliedDiscount?.id,
+          original_price_cents: service.original_price_cents,
+          final_price_cents: service.final_price_cents,
+          savings_cents: service.savings_cents
+        });
 
-      localStorage.removeItem('pendingBooking');
-      setPendingBooking(null);
-      navigate('/dashboard');
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al crear la reserva. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+        setState(prev => ({ ...prev, submitting: false }));
+      } else {
+        toast({
+          title: "¡Reserva confirmada!",
+          description: "Tu cita ha sido reservada exitosamente.",
+        });
+
+        localStorage.removeItem('pendingBooking');
+        setPendingBooking(null);
+        navigate('/dashboard');
+      }
     }
   };
 
@@ -260,41 +301,91 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
       'HH:mm'
     );
 
-    const { error } = await supabase
-      .from('reservations')
-      .insert({
+    // Handle combo booking
+    if (state.selectedService.type === 'combo') {
+      const reservations = state.selectedService.combo_services?.map(cs => ({
         client_id: user.id,
         employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
-        service_id: state.selectedService.id,
+        service_id: cs.service_id,
         appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
         start_time: startTime,
         end_time: endTime,
-        notes: state.notes || null
-      });
+        notes: state.notes || null,
+        original_price_cents: state.selectedService.original_price_cents,
+        final_price_cents: state.selectedService.final_price_cents,
+        savings_cents: state.selectedService.savings_cents
+      })) || [];
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create booking",
-        variant: "destructive",
-      });
+      const { error } = await supabase
+        .from('reservations')
+        .insert(reservations);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create combo booking",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "¡Reserva confirmada!",
+          description: "Tu combo ha sido reservado exitosamente.",
+        });
+
+        // Reset form
+        setState({
+          currentStep: 1,
+          selectedService: null,
+          selectedDate: new Date(),
+          selectedSlot: null,
+          selectedEmployee: null,
+          notes: "",
+          loading: false,
+          submitting: false,
+        });
+      }
     } else {
-      toast({
-        title: "¡Reserva confirmada!",
-        description: "Tu cita ha sido reservada exitosamente.",
-      });
+      // Handle single service booking
+      const { error } = await supabase
+        .from('reservations')
+        .insert({
+          client_id: user.id,
+          employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
+          service_id: state.selectedService.id,
+          appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+          start_time: startTime,
+          end_time: endTime,
+          notes: state.notes || null,
+          applied_discount_id: state.selectedService.appliedDiscount?.id,
+          original_price_cents: state.selectedService.original_price_cents,
+          final_price_cents: state.selectedService.final_price_cents,
+          savings_cents: state.selectedService.savings_cents
+        });
 
-      // Reset form
-      setState({
-        currentStep: 1,
-        selectedService: null,
-        selectedDate: new Date(),
-        selectedSlot: null,
-        selectedEmployee: null,
-        notes: "",
-        loading: false,
-        submitting: false,
-      });
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create booking",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "¡Reserva confirmada!",
+          description: "Tu cita ha sido reservada exitosamente.",
+        });
+
+        // Reset form
+        setState({
+          currentStep: 1,
+          selectedService: null,
+          selectedDate: new Date(),
+          selectedSlot: null,
+          selectedEmployee: null,
+          notes: "",
+          loading: false,
+          submitting: false,
+        });
+      }
     }
 
     setState(prev => ({ ...prev, submitting: false }));
@@ -324,7 +415,7 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
           <Card>
             <CardHeader>
               <CardTitle>Elige tu servicio</CardTitle>
-              <CardDescription>Selecciona el servicio que deseas reservar</CardDescription>
+              <CardDescription>Selecciona el servicio o combo que deseas reservar</CardDescription>
               {config.showCategories && (
                 <div className="mt-4">
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -346,19 +437,25 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    isSelected={state.selectedService?.id === service.id}
-                    onSelect={handleServiceSelect}
-                    employees={employees}
-                    selectedEmployee={state.selectedEmployee}
-                    onEmployeeSelect={handleEmployeeSelect}
-                    allowEmployeeSelection={config.allowEmployeeSelection}
-                    formatPrice={formatPrice}
-                  />
-                ))}
+                {bookableItems
+                  .filter(item => {
+                    if (categoryFilter === "all") return true;
+                    if (categoryFilter === "none") return !item.category_id;
+                    return item.category_id === categoryFilter;
+                  })
+                  .map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      isSelected={state.selectedService?.id === service.id}
+                      onSelect={handleServiceSelect}
+                      employees={employees}
+                      selectedEmployee={state.selectedEmployee}
+                      onEmployeeSelect={handleEmployeeSelect}
+                      allowEmployeeSelection={config.allowEmployeeSelection}
+                      formatPrice={formatPrice}
+                    />
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -366,95 +463,45 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
 
       case 2:
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Selecciona una fecha</CardTitle>
-                <CardDescription>Elige el día para tu cita</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={state.selectedDate}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => 
-                    date < startOfDay(new Date()) || 
-                    date.getDay() === 0
-                  }
-                  initialFocus
-                  locale={es}
-                  className="rounded-md border"
-                />
-              </CardContent>
-            </Card>
-
-            {state.selectedService && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumen del servicio</CardTitle>
-                  <CardDescription>Detalles de tu selección</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    {state.selectedService.image_url && (
-                      <img 
-                        src={state.selectedService.image_url} 
-                        alt={state.selectedService.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{state.selectedService.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {state.selectedService.description}
-                      </p>
-                      <div className="flex justify-between items-center mt-2">
-                        <Badge variant="secondary">{state.selectedService.duration_minutes} min</Badge>
-                        <span className="font-bold text-primary">
-                          {formatPrice(state.selectedService.price_cents)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {state.selectedEmployee && (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {state.selectedEmployee.full_name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">Estilista preferido</p>
-                          <p className="text-sm text-muted-foreground">
-                            {state.selectedEmployee.full_name}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Selecciona una fecha</CardTitle>
+              <CardDescription>
+                Elige la fecha para tu {state.selectedService?.type === 'combo' ? 'combo' : 'servicio'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={state.selectedDate}
+                onSelect={handleDateSelect}
+                disabled={(date) => {
+                  const today = startOfDay(new Date());
+                  const selectedDate = startOfDay(date);
+                  return selectedDate < today || date.getDay() === 0; // Disable Sundays
+                }}
+                className="rounded-md border"
+                locale={es}
+              />
+            </CardContent>
+          </Card>
         );
 
       case 3:
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Horarios disponibles</CardTitle>
+              <CardTitle>Elige tu horario</CardTitle>
               <CardDescription>
-                {state.selectedDate ? format(state.selectedDate, 'EEEE, d MMMM yyyy', { locale: es }) : ''}
+                Horarios disponibles para {format(state.selectedDate!, 'EEEE, d MMMM', { locale: es })}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <TimeSlotGrid
                 slots={availableSlots}
+                loading={slotsLoading}
                 selectedSlot={state.selectedSlot}
                 onSlotSelect={handleSlotSelect}
-                loading={slotsLoading}
               />
             </CardContent>
           </Card>
@@ -464,66 +511,125 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Confirmar reserva</CardTitle>
-              <CardDescription>Revisa los detalles de tu cita</CardDescription>
+              <CardTitle>Confirma tu reserva</CardTitle>
+              <CardDescription>Revisa los detalles antes de confirmar</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-muted rounded-lg">
+              {state.selectedService && (
                 <div className="space-y-4">
-                  <div>
-                    <strong>Servicio:</strong>
-                    <p>{state.selectedService?.name}</p>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      {state.selectedService.image_url && (
+                        <img
+                          src={state.selectedService.image_url}
+                          alt={state.selectedService.name}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-lg">{state.selectedService.name}</h3>
+                        <p className="text-sm text-muted-foreground">{state.selectedService.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary">
+                            {state.selectedService.duration_minutes} min
+                          </Badge>
+                          {state.selectedService.type === 'combo' && state.selectedService.combo_services && state.selectedService.combo_services.length > 1 && (
+                            <Badge className="bg-blue-500 text-white">
+                              <Package className="h-3 w-3 mr-1" />
+                              COMBO
+                            </Badge>
+                          )}
+                          {state.selectedService.savings_cents > 0 && (
+                            <Badge className="bg-red-500 text-white">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              {state.selectedService.appliedDiscount?.discount_type === 'percentage' 
+                                ? `${Math.round((state.selectedService.savings_cents / state.selectedService.original_price_cents) * 100)}%` 
+                                : `${formatPrice(state.selectedService.appliedDiscount?.discount_value || 0)}`} OFF
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {state.selectedService.savings_cents > 0 ? (
+                        <div className="space-y-1">
+                          <div className="text-sm text-muted-foreground line-through">
+                            {formatPrice(state.selectedService.original_price_cents)}
+                          </div>
+                          <div className="text-lg font-bold text-primary">
+                            {formatPrice(state.selectedService.final_price_cents)}
+                          </div>
+                          <div className="text-xs text-green-600">
+                            Ahorras {formatPrice(state.selectedService.savings_cents)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-lg font-bold text-primary">
+                          {formatPrice(state.selectedService.final_price_cents)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Fecha:</strong>
-                    <p>{state.selectedDate ? format(state.selectedDate, 'EEEE, d MMMM yyyy', { locale: es }) : ''}</p>
+
+                  {state.selectedService.type === 'combo' && state.selectedService.combo_services && state.selectedService.combo_services.length > 1 && (
+                    <div className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">Servicios incluidos:</h4>
+                      <div className="space-y-2">
+                        {state.selectedService.combo_services.map((cs, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span className="text-sm">
+                              • {cs.services.name} {cs.quantity > 1 && `(x${cs.quantity})`}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {cs.services.duration_minutes} min
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">Fecha y hora</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {format(state.selectedDate!, 'EEEE, d MMMM yyyy', { locale: es })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {state.selectedSlot?.start_time} - {format(
+                          addMinutes(
+                            parseISO(`${format(state.selectedDate!, 'yyyy-MM-dd')}T${state.selectedSlot?.start_time}`),
+                            state.selectedService.duration_minutes
+                          ),
+                          'HH:mm'
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">Estilista</h4>
+                      <div className="flex items-center space-x-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">
+                            {state.selectedSlot?.employee_name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{state.selectedSlot?.employee_name}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <strong>Hora:</strong>
-                    <p>{state.selectedSlot?.start_time}</p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Agrega cualquier nota especial o requerimiento..."
+                      value={state.notes}
+                      onChange={(e) => setState(prev => ({ ...prev, notes: e.target.value }))}
+                      rows={3}
+                    />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <strong>Estilista:</strong>
-                    <p>{state.selectedEmployee ? state.selectedSlot?.employee_name : 'Cualquier estilista'}</p>
-                  </div>
-                  <div>
-                    <strong>Duración:</strong>
-                    <p>{state.selectedService?.duration_minutes} minutos</p>
-                  </div>
-                  <div>
-                    <strong>Precio:</strong>
-                    <p className="text-lg font-bold text-primary">
-                      {state.selectedService ? formatPrice(state.selectedService.price_cents) : ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas adicionales (opcional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="¿Alguna petición o preferencia especial?"
-                  value={state.notes}
-                  onChange={(e) => setState(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-
-              {config.isGuest ? (
-                <Button onClick={handleProceedToAuth} className="w-full" size="lg">
-                  Continuar al registro/inicio de sesión
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleBooking} 
-                  disabled={state.submitting || !user} 
-                  className="w-full" 
-                  size="lg"
-                >
-                  {state.submitting ? "Confirmando..." : "Confirmar reserva"}
-                </Button>
               )}
             </CardContent>
           </Card>
@@ -533,55 +639,22 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Casi listo!
-              </CardTitle>
+              <CardTitle>Autenticación requerida</CardTitle>
               <CardDescription>
-                Para completar tu reserva, necesitas una cuenta en Stella Studio
+                Necesitas iniciar sesión para completar tu reserva
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {user ? (
-                <div className="text-center space-y-4">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-                  <p className="text-lg font-medium">¡Autenticado exitosamente!</p>
-                  <p className="text-muted-foreground">Completando tu reserva...</p>
-                  <Button onClick={handleFinalBooking} disabled={state.submitting} size="lg">
-                    {state.submitting ? "Confirmando..." : "Confirmar reserva"}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-center space-y-2">
-                    <p className="font-medium">
-                      Tu cita está casi lista. Solo necesitas iniciar sesión o crear una cuenta.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Tus selecciones se guardarán y completaremos la reserva automáticamente.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-semibold mb-2">Resumen de tu reserva:</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><strong>Servicio:</strong> {state.selectedService?.name || pendingBooking?.service?.name}</p>
-                      <p><strong>Fecha:</strong> {state.selectedDate ? format(state.selectedDate, 'EEEE, d MMMM yyyy', { locale: es }) : pendingBooking?.date && format(new Date(pendingBooking.date), 'EEEE, d MMMM yyyy', { locale: es })}</p>
-                      <p><strong>Hora:</strong> {state.selectedSlot?.start_time || pendingBooking?.slot?.start_time}</p>
-                      <p><strong>Estilista:</strong> {state.selectedSlot?.employee_name || pendingBooking?.slot?.employee_name}</p>
-                      <p><strong>Precio:</strong> {state.selectedService ? formatPrice(state.selectedService.price_cents) : pendingBooking?.service && formatPrice(pendingBooking.service.price_cents)}</p>
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={() => navigate('/auth')} 
-                    size="lg" 
-                    className="w-full"
-                  >
-                    Iniciar sesión / Registrarse
-                  </Button>
-                </div>
-              )}
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Para completar tu reserva, necesitas tener una cuenta. 
+                  Puedes iniciar sesión o crear una cuenta nueva.
+                </p>
+                <Button onClick={() => navigate('/auth')} className="w-full">
+                  Ir a autenticación
+                </Button>
+              </div>
             </CardContent>
           </Card>
         );
@@ -591,60 +664,73 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
     }
   };
 
+  const handleNext = () => {
+    if (state.currentStep === 4 && config.isGuest) {
+      handleProceedToAuth();
+    } else if (state.currentStep === 4) {
+      handleBooking();
+    } else if (canGoNext()) {
+      setState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+    }
+  };
+
+  const handlePrevious = () => {
+    if (state.currentStep > 1) {
+      setState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando servicios...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="space-y-4">
-          {config.isGuest && (
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al inicio
-            </Button>
-          )}
-          
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-serif font-bold">Reserva tu cita</h1>
-            {config.isGuest && (
-              <p className="text-muted-foreground">
-                Complete todos los pasos para reservar su cita. Solo necesita iniciar sesión al final.
-              </p>
-            )}
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <BookingProgress steps={steps} currentStep={state.currentStep} />
+      
+      {renderStepContent()}
 
-          </div>
-        </div>
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={state.currentStep === 1}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Anterior
+        </Button>
 
-        {/* Progress Bar */}
-        <BookingProgress steps={steps} currentStep={state.currentStep} />
-
-        {/* Step Content */}
-        {renderStepContent()}
-
-        {/* Navigation */}
-        <div className="flex justify-between">
+        {state.currentStep < config.maxSteps && (
           <Button
-            variant="outline"
-            onClick={() => setState(prev => ({ ...prev, currentStep: Math.max(1, prev.currentStep - 1) }))}
-            disabled={state.currentStep === 1}
+            onClick={handleNext}
+            disabled={!canGoNext() || state.submitting}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Anterior
+            {state.currentStep === 4 ? (
+              <>
+                {state.submitting ? (
+                  "Procesando..."
+                ) : (
+                  <>
+                    {config.isGuest ? "Continuar" : "Confirmar reserva"}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                Siguiente
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </>
+            )}
           </Button>
-          
-          {state.currentStep < config.maxSteps && (
-            <Button
-              onClick={() => setState(prev => ({ ...prev, currentStep: Math.min(config.maxSteps, prev.currentStep + 1) }))}
-              disabled={!canGoNext()}
-            >
-              Siguiente
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
