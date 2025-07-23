@@ -57,7 +57,7 @@ export const ServiceCard = ({
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <Card 
-        className={`transition-all hover:shadow-lg overflow-hidden h-96 flex flex-col ${
+        className={`transition-all hover:shadow-lg overflow-hidden ${
           isSelected ? 'ring-2 ring-primary shadow-lg' : ''
         }`}
       >
@@ -157,8 +157,8 @@ export const ServiceCard = ({
         </CollapsibleTrigger>
 
         {/* Expandable content */}
-        <CollapsibleContent className="flex-1 flex flex-col">
-          <CardContent className="px-4 pb-4 flex-1 flex flex-col">
+        <CollapsibleContent>
+          <CardContent className="px-4 pb-4">
             <div className="space-y-3 border-t pt-3">
               {/* Full image if available */}
               {service.image_url && (
@@ -248,7 +248,7 @@ export const ServiceCard = ({
               )}
 
               {/* Select button */}
-              <div className="pt-2 mt-auto">
+              <div className="pt-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

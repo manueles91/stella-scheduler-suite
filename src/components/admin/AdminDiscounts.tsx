@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, X } from "lucide-react";
-import { DiscountServiceCard, type Discount as DiscountCardType } from "@/components/ui/DiscountServiceCard";
 interface Discount {
   id: string;
   service_id: string;
@@ -644,55 +643,68 @@ const AdminDiscounts: React.FC = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {discounts.length === 0 ? (
-          <div className="col-span-full">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <Percent className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium text-muted-foreground">No hay descuentos creados</p>
-                <p className="text-sm text-muted-foreground">Crea tu primer descuento para comenzar</p>
+      <div className="grid gap-4">
+        {discounts.length === 0 ? <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Percent className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">No hay descuentos creados</p>
+              <p className="text-sm text-muted-foreground">Crea tu primer descuento para comenzar</p>
+            </CardContent>
+          </Card> : discounts.map(discount => <Card key={discount.id} className="transition-shadow hover:shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="flex items-center space-x-2">
+                  <CardTitle className="text-lg">{discount.name}</CardTitle>
+                  <Badge variant={isDiscountActive(discount) ? "default" : "secondary"}>
+                    {isDiscountActive(discount) ? "Activo" : "Inactivo"}
+                  </Badge>
+                  {!discount.is_public && <Badge variant="outline">
+                      <Code className="mr-1 h-3 w-3" />
+                      {discount.discount_code}
+                    </Badge>}
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(discount)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(discount.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-muted-foreground">Servicio</p>
+                    <p>{discount.service?.name}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Descuento</p>
+                    <p className="flex items-center">
+                      {discount.discount_type === 'percentage' ? <Percent className="mr-1 h-4 w-4" /> : <DollarSign className="mr-1 h-4 w-4" />}
+                      {formatDiscountValue(discount.discount_value, discount.discount_type)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Inicio</p>
+                    <p className="flex items-center">
+                      <Calendar className="mr-1 h-4 w-4" />
+                      {format(new Date(discount.start_date), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Fin</p>
+                    <p className="flex items-center">
+                      <Calendar className="mr-1 h-4 w-4" />
+                      {format(new Date(discount.end_date), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                </div>
+                {discount.description && <div className="mt-3">
+                    <p className="text-sm text-muted-foreground">{discount.description}</p>
+                  </div>}
               </CardContent>
-            </Card>
+            </Card>)}
           </div>
-        ) : (
-          discounts.map(discount => {
-            // Transform the discount to match DiscountCardType
-            const transformedDiscount: DiscountCardType = {
-              id: discount.id,
-              name: discount.name,
-              description: discount.description,
-              discount_type: discount.discount_type === 'flat' ? 'fixed' : discount.discount_type,
-              discount_value: discount.discount_value,
-              start_date: discount.start_date,
-              end_date: discount.end_date,
-              is_active: discount.is_active,
-              is_public: discount.is_public,
-              discount_code: discount.discount_code || undefined,
-              service: discount.service ? {
-                id: discount.service.id,
-                name: discount.service.name,
-                description: discount.service.description || '',
-                duration_minutes: discount.service.duration_minutes,
-                price_cents: discount.service.price_cents,
-                image_url: discount.service.image_url
-              } : undefined
-            };
-
-            return (
-              <DiscountServiceCard
-                key={discount.id}
-                discount={transformedDiscount}
-                variant="admin"
-                isActive={isDiscountActive(discount)}
-                canEdit={true}
-                onEdit={() => handleEdit(discount)}
-                onDelete={() => handleDelete(discount.id)}
-              />
-            );
-          })
-        )}
-      </div>
         </TabsContent>
 
         <TabsContent value="combos" className="space-y-6">
