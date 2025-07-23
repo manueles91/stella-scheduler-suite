@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
 import { Appointment } from "@/types/appointment";
+import { DiscountServiceCard, type Discount } from "@/components/ui/DiscountServiceCard";
 interface DashboardSummaryProps {
   effectiveProfile: any;
 }
@@ -19,7 +20,7 @@ export const DashboardSummary = ({
   } = useAuth();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
-  const [activePromotions, setActivePromotions] = useState<any[]>([]);
+  const [activePromotions, setActivePromotions] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetchAppointments();
@@ -307,39 +308,18 @@ export const DashboardSummary = ({
                 <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 {activePromotions.map(promotion => (
-                  <div key={promotion.id} className="border border-border rounded-lg p-4 space-y-3 bg-gradient-to-r from-primary/5 to-secondary/5 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground">{promotion.name}</div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {promotion.services?.name}
-                          </div>
-                          {promotion.description && (
-                            <div className="text-sm text-muted-foreground mt-1">{promotion.description}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-semibold">
-                          {promotion.discount_type === 'percentage' ? `${promotion.discount_value}% OFF` : `₡${Math.round(promotion.discount_value)} OFF`}
-                        </Badge>
-                        <EditableDiscount discount={promotion} onUpdate={fetchActivePromotions} canEdit={canEditDiscount()} />
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
-                      Válida hasta: {new Date(promotion.end_date).toLocaleDateString('es-ES', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </div>
-                  </div>
+                  <DiscountServiceCard
+                    key={promotion.id}
+                    discount={promotion}
+                    variant="dashboard"
+                    canEdit={canEditDiscount()}
+                    onEdit={() => {
+                      // Handle edit action - you may want to implement a modal here
+                      console.log('Edit promotion:', promotion);
+                    }}
+                  />
                 ))}
               </div>
             )}
