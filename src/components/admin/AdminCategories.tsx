@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Save, X, GripVertical } from "lucide-react";
+import { Pencil, Trash2, Plus, Save, X, GripVertical, Upload, Image } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   DndContext,
@@ -34,6 +34,7 @@ type ServiceCategory = {
   description: string | null;
   display_order: number;
   is_active: boolean;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -64,6 +65,15 @@ function SortableCategory({ category, onEdit, onDelete }: {
             <div {...attributes} {...listeners} className="cursor-move">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
+            {category.image_url && (
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                <img 
+                  src={category.image_url} 
+                  alt={category.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-semibold">{category.name}</h3>
@@ -117,7 +127,10 @@ export function AdminCategories() {
     description: "",
     display_order: 0,
     is_active: true,
+    image_url: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   useEffect(() => {
     fetchCategories();
@@ -144,12 +157,50 @@ export function AdminCategories() {
     }
   };
 
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `categories/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('service-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('service-images')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir la imagen",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     try {
+      let imageUrl = formData.image_url;
+      
+      if (imageFile) {
+        const uploadedUrl = await handleImageUpload(imageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const saveData = { ...formData, image_url: imageUrl };
+
       if (editingCategory) {
         const { error } = await supabase
           .from("service_categories")
-          .update(formData)
+          .update(saveData)
           .eq("id", editingCategory.id);
 
         if (error) throw error;
@@ -160,7 +211,7 @@ export function AdminCategories() {
       } else {
         const { error } = await supabase
           .from("service_categories")
-          .insert([formData]);
+          .insert([saveData]);
 
         if (error) throw error;
         toast({
@@ -252,7 +303,10 @@ export function AdminCategories() {
       description: category.description || "",
       display_order: category.display_order,
       is_active: category.is_active,
+      image_url: category.image_url || "",
     });
+    setImagePreview(category.image_url || "");
+    setImageFile(null);
     setIsCreating(false);
   };
 
@@ -264,7 +318,10 @@ export function AdminCategories() {
       description: "",
       display_order: categories.length + 1,
       is_active: true,
+      image_url: "",
     });
+    setImagePreview("");
+    setImageFile(null);
   };
 
   const resetForm = () => {
@@ -275,7 +332,10 @@ export function AdminCategories() {
       description: "",
       display_order: 0,
       is_active: true,
+      image_url: "",
     });
+    setImagePreview("");
+    setImageFile(null);
   };
 
   if (loading) {
@@ -326,6 +386,48 @@ export function AdminCategories() {
                 value={formData.display_order}
                 onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
               />
+            </div>
+            <div>
+              <Label htmlFor="image">Imagen de la categoría</Label>
+              <div className="space-y-4">
+                {(imagePreview || formData.image_url) && (
+                  <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
+                    <img 
+                      src={imagePreview || formData.image_url} 
+                      alt="Vista previa"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setImagePreview(e.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {imagePreview || formData.image_url ? "Cambiar imagen" : "Subir imagen"}
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="flex items-center space-x-2">
               <Switch

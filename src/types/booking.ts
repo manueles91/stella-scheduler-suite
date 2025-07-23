@@ -35,6 +35,7 @@ export interface Discount {
   is_public: boolean;
   discount_code?: string;
   is_active: boolean;
+  service_id: string;
 }
 
 export interface BookableItem {
