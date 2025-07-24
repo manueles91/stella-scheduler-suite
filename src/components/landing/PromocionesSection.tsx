@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-import { DiscountServiceCard } from "@/components/cards/DiscountServiceCard";
+import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 import {
   Carousel,
   CarouselContent,
@@ -188,21 +188,22 @@ export const PromocionesSection = () => {
                 {/* Show combos first */}
                 {combos.map((combo) => (
                   <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <DiscountServiceCard
+                    <StandardServiceCard
                       id={combo.id}
                       name={combo.name}
                       description={combo.description || "Paquete especial de servicios"}
                       originalPrice={combo.original_price_cents}
                       finalPrice={combo.total_price_cents}
                       savings={combo.original_price_cents - combo.total_price_cents}
+                      type="combo"
                       discountType="combo"
-                      isCombo={true}
                       comboServices={combo.combo_services.map(cs => ({
                         name: cs.services.name,
                         quantity: 1
                       }))}
-                      onClick={() => navigate('/book')}
+                      onSelect={() => navigate('/book')}
                       variant="landing"
+                      showExpandable={true}
                     />
                   </CarouselItem>
                 ))}
@@ -216,19 +217,21 @@ export const PromocionesSection = () => {
                   
                   return (
                     <CarouselItem key={`discount-${discount.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <DiscountServiceCard
+                      <StandardServiceCard
                         id={discount.id}
                         name={discount.name}
                         description={discount.description || discount.services.description || "Descuento especial disponible"}
                         originalPrice={discount.services.price_cents}
                         finalPrice={discountedPrice}
                         savings={savings}
+                        type="discount"
                         discountType={discount.discount_type}
                         discountValue={discount.discount_value}
                         duration={discount.services.duration_minutes}
                         imageUrl={discount.services.image_url}
-                        onClick={() => navigate(`/book?service=${discount.services.id}&step=2&estilista=cualquier&discount=${discount.id}`)}
+                        onSelect={() => navigate(`/book?service=${discount.services.id}&step=2&estilista=cualquier&discount=${discount.id}`)}
                         variant="landing"
+                        showExpandable={true}
                       />
                     </CarouselItem>
                   );

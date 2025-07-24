@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
-import { DiscountServiceCard } from "@/components/cards/DiscountServiceCard";
+import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 import { Appointment } from "@/types/appointment";
 interface DashboardSummaryProps {
   effectiveProfile: any;
@@ -318,7 +318,7 @@ export const DashboardSummary = ({
                   const finalPrice = originalPrice - discountAmount;
                   
                   return (
-                    <DiscountServiceCard
+                    <StandardServiceCard
                       key={promotion.id}
                       id={promotion.id}
                       name={promotion.name}
@@ -326,10 +326,11 @@ export const DashboardSummary = ({
                       originalPrice={originalPrice}
                       finalPrice={finalPrice}
                       savings={discountAmount}
+                      type="discount"
                       discountType={promotion.discount_type}
                       discountValue={promotion.discount_value}
                       variant="dashboard"
-                      className="h-auto"
+                      showExpandable={true}
                       onEdit={canEditDiscount() ? () => {
                         // Handle edit action - you can expand this later
                       } : undefined}
