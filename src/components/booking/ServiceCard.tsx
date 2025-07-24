@@ -57,15 +57,15 @@ export const ServiceCard = ({
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <Card 
-        className={`transition-all hover:shadow-lg overflow-hidden h-64 ${
-          isSelected ? 'ring-2 ring-primary shadow-lg' : ''
-        }`}
+        className={`transition-all hover:shadow-lg overflow-hidden ${
+          isExpanded ? 'h-64' : 'h-20'
+        } ${isSelected ? 'ring-2 ring-primary shadow-lg' : ''}`}
       >
-        {/* Compact header with image thumbnail or icon */}
+        {/* Compact header */}
         <CollapsibleTrigger asChild>
-          <div className="cursor-pointer p-4 hover:bg-muted/50">
-            <div className="flex items-center gap-3">
-              {/* Small image thumbnail or icon */}
+          <div className="cursor-pointer p-3 hover:bg-muted/50 h-full">
+            <div className="flex items-center gap-3 h-full">
+              {/* Small image thumbnail */}
               <div className="relative flex-shrink-0">
                 {service.image_url ? (
                   <div className="relative w-12 h-12 rounded-lg overflow-hidden">
@@ -74,63 +74,37 @@ export const ServiceCard = ({
                       alt={service.name}
                       className="w-full h-full object-cover"
                     />
-                    {/* Small badges for compact view */}
-                    {hasDiscount && (
-                      <div className="absolute -top-1 -right-1">
-                        <Badge className="bg-red-500 text-white text-xs px-1 py-0">
-                          <Sparkles className="h-2 w-2 mr-0.5" />
-                          {actualDiscountPercentage}%
-                        </Badge>
-                      </div>
-                    )}
-                    {isCombo && (
-                      <div className="absolute -top-1 -left-1">
-                        <Badge className="bg-blue-500 text-white text-xs px-1 py-0">
-                          <Package className="h-2 w-2" />
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 ) : (
-                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center relative">
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-muted-foreground" />
-                    {hasDiscount && (
-                      <div className="absolute -top-1 -right-1">
-                        <Badge className="bg-red-500 text-white text-xs px-1 py-0">
-                          {actualDiscountPercentage}%
-                        </Badge>
-                      </div>
-                    )}
-                    {isCombo && (
-                      <div className="absolute -top-1 -left-1">
-                        <Badge className="bg-blue-500 text-white text-xs px-1 py-0">
-                          <Package className="h-2 w-2" />
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              {/* Service info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm truncate">{service.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-2 w-2 mr-1" />
-                        {service.duration_minutes}min
+              {/* Service info - Collapsed layout */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
+                {/* Top row: Name */}
+                <h4 className="font-semibold text-base truncate">{service.name}</h4>
+                
+                {/* Bottom row: Price and Tags */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {isCombo && (
+                      <Badge className="bg-blue-500 text-white text-xs">
+                        <Package className="h-2 w-2 mr-1" />
+                        COMBO
                       </Badge>
-                      {isCombo && (
-                        <Badge className="bg-blue-500 text-white text-xs">
-                          COMBO
-                        </Badge>
-                      )}
-                    </div>
+                    )}
+                    {hasDiscount && (
+                      <Badge className="bg-red-500 text-white text-xs">
+                        <Sparkles className="h-2 w-2 mr-1" />
+                        {actualDiscountPercentage}% OFF
+                      </Badge>
+                    )}
                   </div>
                   
-                  <div className="flex items-center gap-2 ml-2">
+                  <div className="flex items-center gap-2">
                     <div className="text-right">
                       {hasDiscount ? (
                         <div className="space-y-0.5">
@@ -142,7 +116,7 @@ export const ServiceCard = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="font-bold text-sm text-primary">
+                        <div className="font-bold text-base text-primary">
                           {formatPrice(service.final_price_cents)}
                         </div>
                       )}
@@ -171,6 +145,26 @@ export const ServiceCard = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 </div>
               )}
+              
+              {/* Duration badge - only in expanded view */}
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  <Clock className="h-2 w-2 mr-1" />
+                  {service.duration_minutes}min
+                </Badge>
+                {isCombo && (
+                  <Badge className="bg-blue-500 text-white text-xs">
+                    <Package className="h-2 w-2 mr-1" />
+                    COMBO
+                  </Badge>
+                )}
+                {hasDiscount && (
+                  <Badge className="bg-red-500 text-white text-xs">
+                    <Sparkles className="h-2 w-2 mr-1" />
+                    {actualDiscountPercentage}% OFF
+                  </Badge>
+                )}
+              </div>
               
               {/* Description */}
               <p className="text-sm text-muted-foreground">{service.description}</p>
