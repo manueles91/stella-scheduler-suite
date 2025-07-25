@@ -5,7 +5,7 @@ const guestConfig: BookingConfig = {
   isGuest: true,
   showAuthStep: true,
   allowEmployeeSelection: true,
-  showCategories: false,
+  showCategories: true,
   maxSteps: 5,
 };
 

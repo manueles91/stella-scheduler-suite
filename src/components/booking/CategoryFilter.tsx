@@ -32,11 +32,11 @@ export const CategoryFilter = ({
       </div>
       
       <Carousel className="w-full">
-        <CarouselContent className="-ml-2 md:-ml-4">
+        <CarouselContent className="-ml-1 md:-ml-2">
           {/* All Services Card */}
-          <CarouselItem className="pl-2 md:pl-4 basis-auto">
+          <CarouselItem className="pl-1 md:pl-2 basis-[80px] md:basis-[120px]">
             <Card 
-              className={`h-20 w-32 cursor-pointer transition-all duration-300 relative overflow-hidden ${
+              className={`h-16 md:h-20 cursor-pointer transition-all duration-300 relative overflow-hidden ${
                 selectedCategory === null 
                   ? 'ring-2 ring-primary shadow-lg bg-primary/10' 
                   : 'hover:shadow-md'
@@ -45,8 +45,8 @@ export const CategoryFilter = ({
             >
               <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-xs font-medium text-foreground">Todos</div>
-                  <div className="text-xs text-muted-foreground">los servicios</div>
+                  <div className="text-[10px] md:text-xs font-medium text-foreground">Todos</div>
+                  <div className="text-[9px] md:text-xs text-muted-foreground">servicios</div>
                 </div>
               </div>
             </Card>
@@ -54,9 +54,9 @@ export const CategoryFilter = ({
 
           {/* Category Cards */}
           {categories.map((category) => (
-            <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-auto">
+            <CarouselItem key={category.id} className="pl-1 md:pl-2 basis-[80px] md:basis-[120px]">
               <Card 
-                className={`h-20 w-32 cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                className={`h-16 md:h-20 cursor-pointer transition-all duration-300 relative overflow-hidden ${
                   selectedCategory === category.id 
                     ? 'ring-2 ring-primary shadow-lg' 
                     : 'hover:shadow-md'
@@ -79,9 +79,9 @@ export const CategoryFilter = ({
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 h-full flex items-center justify-center p-2">
+                <div className="relative z-10 h-full flex items-center justify-center p-1 md:p-2">
                   <div className="text-center">
-                    <div className="text-xs font-medium text-white drop-shadow-md">
+                    <div className="text-[10px] md:text-xs font-medium text-white drop-shadow-md">
                       {category.name}
                     </div>
                   </div>
@@ -89,7 +89,7 @@ export const CategoryFilter = ({
 
                 {/* Selected Indicator */}
                 {selectedCategory === category.id && (
-                  <Badge className="absolute top-1 right-1 text-xs h-5 bg-primary">
+                  <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[9px] md:text-xs h-4 md:h-5 bg-primary">
                     ✓
                   </Badge>
                 )}

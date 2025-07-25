@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, User, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
 import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
@@ -15,42 +16,65 @@ interface DashboardSummaryProps {
 export const DashboardSummary = ({
   effectiveProfile
 }: DashboardSummaryProps) => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
   const [activePromotions, setActivePromotions] = useState<any[]>([]);
+  const [activeCombos, setActiveCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetchAppointments();
     fetchActivePromotions();
+    fetchActiveCombos();
   }, [effectiveProfile?.id, effectiveProfile?.role]);
   const fetchActivePromotions = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('discounts').select(`
-          id,
-          name,
-          description,
-          discount_type,
-          discount_value,
-          start_date,
-          end_date,
-          is_public,
-          services (
-            name
-          )
-        `).eq('is_active', true).eq('is_public', true).lte('start_date', new Date().toISOString()).gte('end_date', new Date().toISOString()).order('created_at', {
-        ascending: false
-      });
-      if (!error && data) {
-        setActivePromotions(data);
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*, services(id, name, description, duration_minutes, price_cents, image_url)')
+        .eq('is_active', true)
+        .eq('is_public', true)
+        .lte('start_date', new Date().toISOString())
+        .gte('end_date', new Date().toISOString())
+        .limit(3);
+
+      if (error) {
+        console.error('Error fetching active promotions:', error);
+        return;
       }
+
+      setActivePromotions(data || []);
     } catch (error) {
-      console.error('Error fetching promotions:', error);
+      console.error('Error fetching active promotions:', error);
+    }
+  };
+
+  const fetchActiveCombos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('combos')
+        .select(`
+          *,
+          combo_services(
+            service_id,
+            quantity,
+            services(id, name, description, duration_minutes, price_cents, image_url)
+          )
+        `)
+        .eq('is_active', true)
+        .lte('start_date', new Date().toISOString())
+        .gte('end_date', new Date().toISOString())
+        .limit(3);
+
+      if (error) {
+        console.error('Error fetching active combos:', error);
+        return;
+      }
+
+      setActiveCombos(data || []);
+    } catch (error) {
+      console.error('Error fetching active combos:', error);
     }
   };
   const fetchAppointments = async () => {
@@ -296,50 +320,73 @@ export const DashboardSummary = ({
       {/* Promociones */}
       <Card>
         <CardHeader>
-          <CardTitle>Promociones</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Promociones
+          </CardTitle>
         </CardHeader>
         <CardContent>
-            {activePromotions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
-                  <Sparkles className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p>No hay promociones activas en este momento</p>
-                <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
+          {(activePromotions.length > 0 || activeCombos.length > 0) ? (
+            <div className="space-y-4">
+              {/* Display Combos */}
+              {activeCombos.map((combo) => (
+                <StandardServiceCard
+                  key={`combo-${combo.id}`}
+                  id={combo.id}
+                  name={combo.name}
+                  description={combo.description}
+                  originalPrice={combo.original_price_cents}
+                  finalPrice={combo.total_price_cents}
+                  savings={combo.original_price_cents - combo.total_price_cents}
+                  duration={combo.combo_services?.reduce((total: number, cs: any) => 
+                    total + cs.services.duration_minutes, 0) || 0}
+                  imageUrl={combo.combo_services?.[0]?.services?.image_url}
+                  type="combo"
+                  comboServices={combo.combo_services?.map((cs: any) => ({
+                    name: cs.services.name,
+                    quantity: cs.quantity,
+                    service_id: cs.service_id
+                  })) || []}
+                  variant="dashboard"
+                  onSelect={() => navigate(`/book?service=${combo.id}&step=2`)}
+                  showExpandable={false}
+                />
+              ))}
+              
+              {/* Display Individual Discounts */}
+              {activePromotions.map((promo) => (
+                <StandardServiceCard
+                  key={`discount-${promo.id}`}
+                  id={promo.services.id}
+                  name={promo.services.name}
+                  description={promo.services.description}
+                  originalPrice={promo.services.price_cents}
+                  finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' 
+                    ? (promo.services.price_cents * promo.discount_value) / 100 
+                    : promo.discount_value * 100)}
+                  savings={promo.discount_type === 'percentage' 
+                    ? (promo.services.price_cents * promo.discount_value) / 100 
+                    : promo.discount_value * 100}
+                  duration={promo.services.duration_minutes}
+                  imageUrl={promo.services.image_url}
+                  type="service"
+                  discountType={promo.discount_type}
+                  discountValue={promo.discount_value}
+                  variant="dashboard"
+                  onSelect={() => navigate(`/book?service=${promo.services.id}&step=2`)}
+                  showExpandable={false}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
+                <Sparkles className="h-8 w-8 text-muted-foreground" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activePromotions.map(promotion => {
-                  // Calculate prices for dashboard display
-                  const originalPrice = 10000; // Default price in cents for display
-                  const discountAmount = promotion.discount_type === 'percentage' 
-                    ? (originalPrice * promotion.discount_value) / 100
-                    : promotion.discount_value * 100;
-                  const finalPrice = originalPrice - discountAmount;
-                  
-                  return (
-                    <StandardServiceCard
-                      key={promotion.id}
-                      id={promotion.id}
-                      name={promotion.name}
-                      description={promotion.description || `Descuento en ${promotion.services?.name}`}
-                      originalPrice={originalPrice}
-                      finalPrice={finalPrice}
-                      savings={discountAmount}
-                      type="discount"
-                      discountType={promotion.discount_type}
-                      discountValue={promotion.discount_value}
-                      variant="dashboard"
-                      showExpandable={true}
-                      onEdit={canEditDiscount() ? () => {
-                        // Handle edit action - you can expand this later
-                      } : undefined}
-                      canEdit={canEditDiscount()}
-                    />
-                  );
-                })}
-              </div>
-            )}
+              <p>No hay promociones activas en este momento</p>
+              <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
