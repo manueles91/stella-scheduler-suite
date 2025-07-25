@@ -2,8 +2,19 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Clock, Sparkles, Package, ChevronDown } from "lucide-react";
+
+interface Employee {
+  id: string;
+  full_name: string;
+  employee_services: {
+    service_id: string;
+  }[];
+}
 
 interface StandardServiceCardProps {
   // Core data
@@ -25,12 +36,19 @@ interface StandardServiceCardProps {
   comboServices?: Array<{
     name: string;
     quantity?: number;
+    service_id?: string;
   }>;
   
   // Interaction
   onSelect?: () => void;
   onEdit?: () => void;
   canEdit?: boolean;
+  
+  // Employee selection (for reservation flow)
+  employees?: Employee[];
+  selectedEmployee?: Employee | null;
+  onEmployeeSelect?: (employee: Employee | null) => void;
+  allowEmployeeSelection?: boolean;
   
   // Display options
   variant?: 'landing' | 'dashboard' | 'reservation' | 'admin';
@@ -54,6 +72,10 @@ export const StandardServiceCard = ({
   onSelect,
   onEdit,
   canEdit = false,
+  employees = [],
+  selectedEmployee,
+  onEmployeeSelect,
+  allowEmployeeSelection = false,
   variant = 'landing',
   showExpandable = true,
   className = ""
@@ -71,6 +93,19 @@ export const StandardServiceCard = ({
 
   const hasDiscount = savings > 0;
   const isCombo = type === 'combo' || (comboServices && comboServices.length > 1);
+
+  // Filter available employees for this service/combo
+  const availableEmployees = employees.filter(emp => {
+    if (type === 'service') {
+      return emp.employee_services.some(es => es.service_id === id);
+    } else if (type === 'combo' && comboServices) {
+      // For combos, check if employee can perform all services in the combo
+      return comboServices.every(cs => 
+        emp.employee_services.some(es => es.service_id === cs.service_id)
+      );
+    }
+    return true;
+  });
 
   const getDiscountBadge = () => {
     if (isCombo) {
@@ -218,6 +253,43 @@ export const StandardServiceCard = ({
                     Ahorra {formatPrice(savings)}
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Employee Selection - only for reservation variant */}
+            {allowEmployeeSelection && variant === 'reservation' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Estilista</Label>
+                <Select 
+                  value={selectedEmployee?.id || "any"} 
+                  onValueChange={(value) => {
+                    if (value === "any") {
+                      onEmployeeSelect?.(null);
+                    } else {
+                      const employee = availableEmployees.find(emp => emp.id === value);
+                      onEmployeeSelect?.(employee || null);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Cualquier estilista" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Cualquier estilista</SelectItem>
+                    {availableEmployees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="text-xs">
+                              {employee.full_name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          {employee.full_name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             

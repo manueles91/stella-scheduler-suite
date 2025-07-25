@@ -18,6 +18,7 @@ import { useBookingData } from "@/hooks/useBookingData";
 import { BookingProgress } from "./BookingProgress";
 import { ServiceCard } from "./ServiceCard";
 import { TimeSlotGrid } from "./TimeSlotGrid";
+import { CategoryFilter } from "./CategoryFilter";
 import { 
   BookableItem, 
   Employee, 
@@ -45,7 +46,6 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
 
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [pendingBooking, setPendingBooking] = useState<any>(null);
 
   const { user } = useAuth();
@@ -56,6 +56,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
   const { 
     bookableItems, 
     categories, 
+    selectedCategory,
+    setSelectedCategory,
     employees, 
     loading, 
     fetchAvailableSlots, 
@@ -416,34 +418,19 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
             <CardHeader>
               <CardTitle>Elige tu servicio</CardTitle>
               <CardDescription>Selecciona el servicio o combo que deseas reservar</CardDescription>
-              {config.showCategories && (
-                <div className="mt-4">
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-full sm:w-64">
-                      <SelectValue placeholder="Filtrar por categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las categorías</SelectItem>
-                      <SelectItem value="none">Sin categoría</SelectItem>
-                      {categories.map(category => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </CardHeader>
             <CardContent>
+              {config.showCategories && (
+                <CategoryFilter
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onCategorySelect={setSelectedCategory}
+                  className="mb-6"
+                />
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bookableItems
-                  .filter(item => {
-                    if (categoryFilter === "all") return true;
-                    if (categoryFilter === "none") return !item.category_id;
-                    return item.category_id === categoryFilter;
-                  })
-                  .map((service) => (
+                {bookableItems.map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}

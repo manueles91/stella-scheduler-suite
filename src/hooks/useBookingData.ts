@@ -12,6 +12,7 @@ export const useBookingData = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,6 +28,22 @@ export const useBookingData = () => {
     const processedItems = processBookableItems();
     setBookableItems(processedItems);
   }, [services, combos, discounts]);
+
+  // Filter bookable items by category
+  const filteredBookableItems = selectedCategory 
+    ? bookableItems.filter(item => {
+        if (item.type === 'service') {
+          return item.category_id === selectedCategory;
+        } else if (item.type === 'combo' && item.combo_services) {
+          // For combos, check if any service in the combo belongs to the selected category
+          const serviceIds = item.combo_services.map(cs => cs.service_id);
+          return services.some(service => 
+            serviceIds.includes(service.id) && service.category_id === selectedCategory
+          );
+        }
+        return false;
+      })
+    : bookableItems;
 
   const fetchServices = async () => {
     const { data, error } = await supabase
@@ -340,10 +357,13 @@ export const useBookingData = () => {
     services,
     combos,
     discounts,
-    bookableItems,
+    bookableItems: filteredBookableItems,
+    allBookableItems: bookableItems, // Unfiltered items for admin purposes
     categories,
     employees,
     loading,
+    selectedCategory,
+    setSelectedCategory,
     fetchAvailableSlots,
     formatPrice,
   };

@@ -4,12 +4,13 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Button } from "@/components/ui/button";
 import { useBookingData } from "@/hooks/useBookingData";
 import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
+import { CategoryFilter } from "@/components/booking/CategoryFilter";
 import { Employee } from "@/types/booking";
 
 export const ServicesSection = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const { bookableItems, formatPrice, employees } = useBookingData();
+  const { bookableItems, categories, selectedCategory, setSelectedCategory, formatPrice, employees } = useBookingData();
 
   useEffect(() => {
     if (bookableItems.length > 0) {
@@ -45,8 +46,18 @@ export const ServicesSection = () => {
           </p>
         </div>
 
-        <Carousel className="w-full">
-          <CarouselContent className="-ml-2 md:-ml-4">
+        {/* Category Filter */}
+        <CategoryFilter
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategorySelect={setSelectedCategory}
+          className="mb-8"
+        />
+
+        {/* Services Display - Carousel or Grid based on category selection */}
+        {selectedCategory ? (
+          // Vertical grid when category is selected
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {bookableItems.map((service) => {
               const comboServices = service.combo_services?.map(cs => ({
                 name: cs.services.name,
@@ -54,31 +65,64 @@ export const ServicesSection = () => {
               })) || [];
 
               return (
-                <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3">
-                  <StandardServiceCard
-                    id={service.id}
-                    name={service.name}
-                    description={service.description}
-                    originalPrice={service.original_price_cents}
-                    finalPrice={service.final_price_cents}
-                    savings={service.savings_cents}
-                    duration={service.duration_minutes}
-                    imageUrl={service.image_url}
-                    type={service.type}
-                    discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
-                    discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
-                    comboServices={comboServices}
-                    onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
-                    variant="landing"
-                    showExpandable={true}
-                  />
-                </CarouselItem>
+                <StandardServiceCard
+                  key={service.id}
+                  id={service.id}
+                  name={service.name}
+                  description={service.description}
+                  originalPrice={service.original_price_cents}
+                  finalPrice={service.final_price_cents}
+                  savings={service.savings_cents}
+                  duration={service.duration_minutes}
+                  imageUrl={service.image_url}
+                  type={service.type}
+                  discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
+                  discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
+                  comboServices={comboServices}
+                  onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
+                  variant="landing"
+                  showExpandable={true}
+                />
               );
             })}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+          </div>
+        ) : (
+          // Carousel when all services are shown
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {bookableItems.slice(0, 12).map((service) => {
+                const comboServices = service.combo_services?.map(cs => ({
+                  name: cs.services.name,
+                  quantity: cs.quantity
+                })) || [];
+
+                return (
+                  <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3">
+                    <StandardServiceCard
+                      id={service.id}
+                      name={service.name}
+                      description={service.description}
+                      originalPrice={service.original_price_cents}
+                      finalPrice={service.final_price_cents}
+                      savings={service.savings_cents}
+                      duration={service.duration_minutes}
+                      imageUrl={service.image_url}
+                      type={service.type}
+                      discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
+                      discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
+                      comboServices={comboServices}
+                      onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
+                      variant="landing"
+                      showExpandable={true}
+                    />
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        )}
 
         <div className="text-center mt-8">
           <Button 

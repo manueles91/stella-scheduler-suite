@@ -1,7 +1,3 @@
-import { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 import { BookableItem, Employee } from "@/types/booking";
 
@@ -26,17 +22,6 @@ export const ServiceCard = ({
   allowEmployeeSelection = true,
   formatPrice
 }: ServiceCardProps) => {
-  const availableEmployees = employees.filter(emp => {
-    if (service.type === 'service') {
-      return emp.employee_services.some(es => es.service_id === service.id);
-    } else {
-      // For combos, check if employee can perform all services in the combo
-      return service.combo_services?.every(cs => 
-        emp.employee_services.some(es => es.service_id === cs.service_id)
-      ) || false;
-    }
-  });
-
   const hasDiscount = service.savings_cents > 0;
 
   const handleSelect = () => {
@@ -45,7 +30,8 @@ export const ServiceCard = ({
 
   const comboServices = service.combo_services?.map(cs => ({
     name: cs.services.name,
-    quantity: cs.quantity
+    quantity: cs.quantity,
+    service_id: cs.service_id
   })) || [];
 
   return (
@@ -63,48 +49,15 @@ export const ServiceCard = ({
         discountType={hasDiscount ? service.appliedDiscount?.discount_type : undefined}
         discountValue={hasDiscount ? service.appliedDiscount?.discount_value : undefined}
         comboServices={comboServices}
+        employees={employees}
+        selectedEmployee={isSelected ? selectedEmployee : null}
+        onEmployeeSelect={onEmployeeSelect}
+        allowEmployeeSelection={allowEmployeeSelection && isSelected}
         onSelect={handleSelect}
         variant="reservation"
         showExpandable={true}
         className={`${isSelected ? 'border-primary' : ''}`}
       />
-      
-      {/* Employee selection - separate from card for better UX */}
-      {allowEmployeeSelection && (
-        <div className="p-4 bg-card border-t space-y-2">
-          <Label className="text-sm">Estilista</Label>
-          <Select 
-            value={isSelected ? selectedEmployee?.id || "any" : "any"} 
-            onValueChange={(value) => {
-              if (value === "any") {
-                onEmployeeSelect(null);
-              } else {
-                const employee = availableEmployees.find(emp => emp.id === value);
-                onEmployeeSelect(employee || null);
-              }
-            }}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Cualquier estilista" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquier estilista</SelectItem>
-              {availableEmployees.map((employee) => (
-                <SelectItem key={employee.id} value={employee.id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-4 w-4">
-                      <AvatarFallback className="text-xs">
-                        {employee.full_name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    {employee.full_name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
     </div>
   );
 };
