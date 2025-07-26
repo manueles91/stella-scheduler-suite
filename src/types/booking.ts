@@ -87,6 +87,8 @@ export interface BookingState {
   notes: string;
   loading: boolean;
   submitting: boolean;
+  customerEmail: string;
+  customerName: string;
 }
 
 export interface BookingConfig {

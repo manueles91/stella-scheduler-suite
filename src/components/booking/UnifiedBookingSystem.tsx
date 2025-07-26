@@ -27,6 +27,7 @@ import {
   BookingState, 
   BookingConfig 
 } from "@/types/booking";
+import { GuestCustomerInfo } from "./GuestCustomerInfo";
 
 interface UnifiedBookingSystemProps {
   config: BookingConfig;
@@ -42,6 +43,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
     notes: "",
     loading: false,
     submitting: false,
+    customerEmail: "",
+    customerName: "",
   });
 
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -66,6 +69,16 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
 
   // Define steps based on config
   const getSteps = (): BookingStep[] => {
+    if (config.isGuest) {
+      return [
+        { id: 1, title: "Servicio", description: "Elige tu servicio" },
+        { id: 2, title: "Fecha", description: "Selecciona una fecha" },
+        { id: 3, title: "Hora", description: "Elige tu horario" },
+        { id: 4, title: "Confirmación", description: "Revisa y confirma" },
+        { id: 5, title: "Información", description: "Datos de contacto" },
+      ];
+    }
+
     const baseSteps = [
       { id: 1, title: "Servicio", description: "Elige tu servicio" },
       { id: 2, title: "Fecha", description: "Selecciona una fecha" },
@@ -344,6 +357,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
           notes: "",
           loading: false,
           submitting: false,
+          customerEmail: "",
+          customerName: "",
         });
       }
     } else {
@@ -386,6 +401,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
           notes: "",
           loading: false,
           submitting: false,
+          customerEmail: "",
+          customerName: "",
         });
       }
     }
@@ -623,6 +640,26 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         );
 
       case 5:
+        if (config.isGuest) {
+          return (
+            <GuestCustomerInfo
+              selectedService={state.selectedService}
+              selectedEmployee={state.selectedEmployee}
+              selectedDate={state.selectedDate}
+              selectedSlot={state.selectedSlot}
+              customerName={state.customerName}
+              customerEmail={state.customerEmail}
+              notes={state.notes}
+              onCustomerNameChange={(name) => setState(prev => ({ ...prev, customerName: name }))}
+              onCustomerEmailChange={(email) => setState(prev => ({ ...prev, customerEmail: email }))}
+              onNotesChange={(notes) => setState(prev => ({ ...prev, notes }))}
+              onBack={handlePrevious}
+              onConfirm={handleGuestBooking}
+              submitting={state.submitting}
+            />
+          );
+        }
+        
         return (
           <Card>
             <CardHeader>
@@ -651,9 +688,110 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
     }
   };
 
+  // Handler for guest booking confirmation
+  const handleGuestBooking = async () => {
+    if (!state.selectedService || !state.selectedDate || !state.selectedSlot || !state.customerEmail || !state.customerName) return;
+
+    setState(prev => ({ ...prev, submitting: true }));
+
+    try {
+      const startTime = state.selectedSlot.start_time;
+      const endTime = format(
+        addMinutes(
+          parseISO(`${format(state.selectedDate, 'yyyy-MM-dd')}T${startTime}`), 
+          state.selectedService.duration_minutes
+        ), 
+        'HH:mm'
+      );
+
+      // Create guest reservation - client_id is required so we'll need to create a placeholder
+      // For now, we'll use a special guest user approach or make client_id nullable in migration
+      const reservationData = {
+        client_id: '00000000-0000-0000-0000-000000000000', // Placeholder for guest bookings
+        service_id: state.selectedService.id,
+        appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+        start_time: startTime,
+        end_time: endTime,
+        customer_email: state.customerEmail,
+        customer_name: state.customerName,
+        notes: state.notes || null,
+        is_guest_booking: true,
+        employee_id: state.selectedSlot.employee_id,
+        status: 'confirmed'
+      };
+
+      const { data: reservation, error } = await supabase
+        .from('reservations')
+        .insert(reservationData)
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al crear la reserva. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Send confirmation email
+      const emailResponse = await supabase.functions.invoke('send-booking-confirmation', {
+        body: {
+          customerEmail: state.customerEmail,
+          customerName: state.customerName,
+          serviceName: state.selectedService.name,
+          appointmentDate: format(state.selectedDate, 'yyyy-MM-dd'),
+          appointmentTime: startTime,
+          employeeName: state.selectedSlot?.employee_name,
+          registrationToken: reservation.registration_token,
+          isGuestBooking: true,
+          notes: state.notes
+        }
+      });
+
+      if (emailResponse.error) {
+        console.error('Error sending email:', emailResponse.error);
+        // Still show success since booking was created
+      }
+
+      toast({
+        title: "¡Reserva confirmada!",
+        description: "Tu cita ha sido reservada exitosamente. Revisa tu email para los detalles.",
+      });
+
+      // Reset form
+      setState({
+        currentStep: 1,
+        selectedService: null,
+        selectedDate: new Date(),
+        selectedSlot: null,
+        selectedEmployee: null,
+        notes: "",
+        loading: false,
+        submitting: false,
+        customerEmail: "",
+        customerName: "",
+      });
+
+      // Redirect to landing page
+      navigate('/');
+
+    } catch (error) {
+      console.error('Guest booking error:', error);
+      toast({
+        title: "Error",
+        description: "Error al procesar la reserva. Por favor intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setState(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
   const handleNext = () => {
     if (state.currentStep === 4 && config.isGuest) {
-      handleProceedToAuth();
+      setState(prev => ({ ...prev, currentStep: 5 }));
     } else if (state.currentStep === 4) {
       handleBooking();
     } else if (canGoNext()) {
