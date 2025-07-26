@@ -310,6 +310,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           created_at: string | null
           email: string
           full_name: string
@@ -319,6 +320,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_status?: string | null
           created_at?: string | null
           email: string
           full_name: string
@@ -328,6 +330,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_status?: string | null
           created_at?: string | null
           email?: string
           full_name?: string
@@ -343,10 +346,15 @@ export type Database = {
           appointment_date: string
           client_id: string
           created_at: string | null
+          created_by_admin: string | null
+          customer_email: string | null
+          customer_name: string | null
           employee_id: string | null
           end_time: string
           id: string
+          is_guest_booking: boolean | null
           notes: string | null
+          registration_token: string | null
           service_id: string
           start_time: string
           status: string
@@ -356,10 +364,15 @@ export type Database = {
           appointment_date: string
           client_id: string
           created_at?: string | null
+          created_by_admin?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
           employee_id?: string | null
           end_time: string
           id?: string
+          is_guest_booking?: boolean | null
           notes?: string | null
+          registration_token?: string | null
           service_id: string
           start_time: string
           status?: string
@@ -369,10 +382,15 @@ export type Database = {
           appointment_date?: string
           client_id?: string
           created_at?: string | null
+          created_by_admin?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
           employee_id?: string | null
           end_time?: string
           id?: string
+          is_guest_booking?: boolean | null
           notes?: string | null
+          registration_token?: string | null
           service_id?: string
           start_time?: string
           status?: string
@@ -382,6 +400,13 @@ export type Database = {
           {
             foreignKeyName: "reservations_client_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_created_by_admin_fkey"
+            columns: ["created_by_admin"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -525,6 +550,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_registration_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
