@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const baseUrl = "https://eygyyswmlsqyvfdbmwfw.supabase.co";
     const registrationUrl = registrationToken 
-      ? `${baseUrl}/auth?token=${registrationToken}`
+      ? `${baseUrl}/register?token=${registrationToken}`
       : `${baseUrl}/auth`;
 
     // Create calendar event

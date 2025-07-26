@@ -421,6 +421,9 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
       case 4:
         return true;
       case 5:
+        if (config.isGuest) {
+          return !!state.customerName.trim() && !!state.customerEmail.trim() && state.customerEmail.includes('@');
+        }
         return !!user;
       default:
         return false;
@@ -704,10 +707,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         'HH:mm'
       );
 
-      // Create guest reservation - client_id is required so we'll need to create a placeholder
-      // For now, we'll use a special guest user approach or make client_id nullable in migration
+      // Create guest reservation
       const reservationData = {
-        client_id: '00000000-0000-0000-0000-000000000000', // Placeholder for guest bookings
         service_id: state.selectedService.id,
         appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
         start_time: startTime,
@@ -848,6 +849,9 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
                   </>
                 )}
               </>
+            ) : state.currentStep === 5 && config.isGuest ? (
+              // This case is handled by GuestCustomerInfo component's onConfirm
+              null
             ) : (
               <>
                 Siguiente

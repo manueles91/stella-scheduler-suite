@@ -344,7 +344,7 @@ export type Database = {
       reservations: {
         Row: {
           appointment_date: string
-          client_id: string
+          client_id: string | null
           created_at: string | null
           created_by_admin: string | null
           customer_email: string | null
@@ -362,7 +362,7 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
-          client_id: string
+          client_id?: string | null
           created_at?: string | null
           created_by_admin?: string | null
           customer_email?: string | null
@@ -380,7 +380,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
-          client_id?: string
+          client_id?: string | null
           created_at?: string | null
           created_by_admin?: string | null
           customer_email?: string | null
