@@ -7,6 +7,8 @@ import { AdminReservations } from "@/components/admin/AdminReservations";
 import { AdminServices } from "@/components/admin/AdminServices";
 import { AdminStaff } from "@/components/admin/AdminStaff";
 import AdminDiscounts from "@/components/admin/AdminDiscounts";
+import { AdminBookingSystem } from "@/components/admin/AdminBookingSystem";
+import { AdminCustomers } from "@/components/admin/AdminCustomers";
 import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { TimeTracking } from "@/components/employee/TimeTracking";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
@@ -161,6 +163,12 @@ const Dashboard = () => {
         
       case 'admin-staff':
         return <AdminStaff />;
+        
+      case 'admin-booking':
+        return <AdminBookingSystem />;
+        
+      case 'admin-customers':
+        return <AdminCustomers />;
         
       default:
         return null;

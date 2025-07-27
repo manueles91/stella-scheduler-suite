@@ -31,9 +31,15 @@ import { GuestCustomerInfo } from "./GuestCustomerInfo";
 
 interface UnifiedBookingSystemProps {
   config: BookingConfig;
+  selectedCustomer?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+  };
 }
 
-export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
+export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookingSystemProps) => {
   const [state, setState] = useState<BookingState>({
     currentStep: 1,
     selectedService: null,
@@ -43,8 +49,8 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
     notes: "",
     loading: false,
     submitting: false,
-    customerEmail: "",
-    customerName: "",
+    customerEmail: selectedCustomer?.email || "",
+    customerName: selectedCustomer?.full_name || "",
   });
 
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -707,17 +713,18 @@ export const UnifiedBookingSystem = ({ config }: UnifiedBookingSystemProps) => {
         'HH:mm'
       );
 
-      // Create guest reservation
+      // Create reservation
       const reservationData = {
         service_id: state.selectedService.id,
         appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
         start_time: startTime,
         end_time: endTime,
-        customer_email: state.customerEmail,
-        customer_name: state.customerName,
+        customer_email: config.isGuest ? state.customerEmail : (selectedCustomer?.email || null),
+        customer_name: config.isGuest ? state.customerName : (selectedCustomer?.full_name || null),
         notes: state.notes || null,
-        is_guest_booking: true,
+        is_guest_booking: config.isGuest,
         employee_id: state.selectedSlot.employee_id,
+        client_id: selectedCustomer?.id || (!config.isGuest ? user?.id : null),
         status: 'confirmed'
       };
 
