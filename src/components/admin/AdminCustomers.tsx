@@ -47,7 +47,7 @@ export const AdminCustomers = () => {
         .from('profiles')
         .select(`
           *,
-          reservations(count)
+          reservations!reservations_client_id_fkey(count)
         `)
         .order('full_name');
 
