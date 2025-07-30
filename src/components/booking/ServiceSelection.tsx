@@ -78,7 +78,7 @@ export const ServiceSelection = ({ selectedService, onServiceSelect, onNext }: S
         <p className="text-muted-foreground">Elige el tratamiento que más te guste</p>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {services.map((service) => (
           <Card 
             key={service.id} 

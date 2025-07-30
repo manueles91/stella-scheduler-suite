@@ -155,26 +155,26 @@ export const CustomerSelector = ({ onSelect }: CustomerSelectorProps) => {
           filteredCustomers.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className="p-3 rounded-full bg-primary/10 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-full bg-primary/10">
                       <User className="h-6 w-6 text-primary" />
                     </div>
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <h3 className="font-semibold text-lg truncate">{customer.full_name}</h3>
-                        <Badge className={`${getRoleBadgeColor(customer.role)} w-fit`} variant="secondary">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{customer.full_name}</h3>
+                        <Badge className={getRoleBadgeColor(customer.role)} variant="secondary">
                           {getRoleText(customer.role)}
                         </Badge>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <Mail className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{customer.email}</span>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          <span>{customer.email}</span>
                         </div>
                         {customer.phone && (
                           <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 flex-shrink-0" />
+                            <Phone className="h-3 w-3" />
                             <span>{customer.phone}</span>
                           </div>
                         )}
@@ -184,7 +184,7 @@ export const CustomerSelector = ({ onSelect }: CustomerSelectorProps) => {
                       </p>
                     </div>
                   </div>
-                  <Button onClick={() => onSelect(customer)} className="w-full sm:w-auto flex-shrink-0">
+                  <Button onClick={() => onSelect(customer)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Seleccionar
                   </Button>

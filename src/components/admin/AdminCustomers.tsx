@@ -255,8 +255,7 @@ export const AdminCustomers = () => {
       {/* Customers Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
@@ -286,25 +285,25 @@ export const AdminCustomers = () => {
               ) : (
                 filteredCustomers.map((customer) => (
                   <TableRow key={customer.id}>
-                     <TableCell className="min-w-[200px]">
+                    <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
+                        <div className="p-2 rounded-full bg-primary/10">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{customer.full_name}</div>
+                        <div>
+                          <div className="font-medium">{customer.full_name}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="min-w-[250px]">
+                    <TableCell>
                       <div className="space-y-1 text-sm">
                         <div className="flex items-center gap-1">
-                          <Mail className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{customer.email}</span>
+                          <Mail className="h-3 w-3" />
+                          <span>{customer.email}</span>
                         </div>
                         {customer.phone && (
                           <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 flex-shrink-0" />
+                            <Phone className="h-3 w-3" />
                             <span>{customer.phone}</span>
                           </div>
                         )}
@@ -359,7 +358,6 @@ export const AdminCustomers = () => {
               )}
             </TableBody>
           </Table>
-          </div>
         </CardContent>
       </Card>
     </div>
