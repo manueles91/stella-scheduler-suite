@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, X } from "lucide-react";
+import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 interface Discount {
   id: string;
   service_id: string;
@@ -881,84 +882,40 @@ const AdminDiscounts: React.FC = () => {
             </Dialog>
           </div>
 
-          <div className="grid gap-4">
-            {combos.length === 0 ? <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {combos.length === 0 ? (
+              <Card className="col-span-full">
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-lg font-medium text-muted-foreground">No hay combos creados</p>
                   <p className="text-sm text-muted-foreground">Crea tu primer combo para comenzar</p>
                 </CardContent>
-              </Card> : combos.map(combo => <Card key={combo.id} className="transition-shadow hover:shadow-md">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="flex items-center space-x-2">
-                      <CardTitle className="text-lg">{combo.name}</CardTitle>
-                      <Badge variant={combo.is_active ? "default" : "secondary"}>
-                        {combo.is_active ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditCombo(combo)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteCombo(combo.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="font-medium text-muted-foreground">Precio Original</p>
-                          <p className="line-through text-muted-foreground">₡{Math.round(combo.original_price_cents / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Precio Final</p>
-                          <p className="font-bold text-primary">₡{Math.round(combo.total_price_cents / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Ahorro</p>
-                          <p className="font-bold text-green-600">₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">% Descuento</p>
-                          <p className="font-bold text-green-600">{Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}%</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="font-medium text-muted-foreground mb-2">Servicios incluidos:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {combo.combo_services.map((cs, index) => <div key={index} className="flex justify-between items-center bg-muted p-2 rounded">
-                              <span className="text-sm">{cs.services.name}</span>
-                              <Badge variant="outline">x{cs.quantity}</Badge>
-                            </div>)}
-                        </div>
-                      </div>
-
-                      {combo.description && <div>
-                          <p className="text-sm text-muted-foreground">{combo.description}</p>
-                        </div>}
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="font-medium text-muted-foreground">Válido desde</p>
-                          <p className="flex items-center">
-                            <Calendar className="mr-1 h-4 w-4" />
-                            {format(new Date(combo.start_date), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Válido hasta</p>
-                          <p className="flex items-center">
-                            <Calendar className="mr-1 h-4 w-4" />
-                            {format(new Date(combo.end_date), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>)}
+              </Card>
+            ) : (
+              combos.map(combo => (
+                <StandardServiceCard
+                  key={combo.id}
+                  id={combo.id}
+                  name={combo.name}
+                  description={combo.description}
+                  originalPrice={combo.original_price_cents}
+                  finalPrice={combo.total_price_cents}
+                  savings={combo.original_price_cents - combo.total_price_cents}
+                  type="combo"
+                  discountType="combo"
+                  comboServices={combo.combo_services.map(cs => ({
+                    name: cs.services.name,
+                    quantity: cs.quantity,
+                    service_id: cs.service_id
+                  }))}
+                  variant="admin"
+                  onEdit={() => handleEditCombo(combo)}
+                  onDelete={() => handleDeleteCombo(combo.id)}
+                  isActive={combo.is_active}
+                  showExpandable={true}
+                />
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AdminCategories } from "./AdminCategories";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 interface Service {
   id: string;
   name: string;
@@ -771,47 +772,26 @@ export const AdminServices = () => {
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.map(service => <Card key={service.id} className={`${!service.is_active ? 'opacity-60' : ''}`}>
-            {service.image_url && <div className="relative">
-                <img src={service.image_url} alt={service.name} className="w-full h-48 object-cover rounded-t-lg" />
-              </div>}
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{service.name}</CardTitle>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(service)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(service.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              {service.description && <p className="text-sm text-muted-foreground">{service.description}</p>}
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1 text-sm">
-                  <Clock className="h-4 w-4" />
-                  {getDurationLabel(service.duration_minutes)}
-                </div>
-                <div className="font-semibold text-lg">
-                  {formatPrice(service.price_cents)}
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <Badge variant={service.is_active ? "default" : "secondary"}>
-                  {service.is_active ? "Activo" : "Inactivo"}
-                </Badge>
-                {service.service_categories && (
-                  <Badge variant="outline" className="text-xs">
-                    {service.service_categories.name}
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>)}
+        {filteredServices.map(service => (
+          <div key={service.id} className={`${!service.is_active ? 'opacity-60' : ''}`}>
+            <StandardServiceCard
+              id={service.id}
+              name={service.name}
+              description={service.description}
+              originalPrice={service.price_cents}
+              finalPrice={service.price_cents}
+              savings={0}
+              duration={service.duration_minutes}
+              imageUrl={service.image_url}
+              type="service"
+              variant="admin"
+              onEdit={() => handleEdit(service)}
+              onDelete={() => handleDelete(service.id)}
+              isActive={service.is_active}
+              category={service.service_categories?.name}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Category Manager Modal */}
