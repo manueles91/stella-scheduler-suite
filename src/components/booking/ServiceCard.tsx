@@ -1,4 +1,4 @@
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
+import { ServiceCard as ServiceCardComponent, ComboCard } from "@/components/cards";
 import { BookableItem, Employee } from "@/types/booking";
 
 interface ServiceCardProps {
@@ -34,30 +34,52 @@ export const ServiceCard = ({
     service_id: cs.service_id
   })) || [];
 
-  return (
-    <div className={`${isSelected ? 'ring-2 ring-primary shadow-lg' : ''} rounded-lg overflow-hidden`}>
-      <StandardServiceCard
-        id={service.id}
-        name={service.name}
-        description={service.description}
-        originalPrice={service.original_price_cents}
-        finalPrice={service.final_price_cents}
-        savings={service.savings_cents}
-        duration={service.duration_minutes}
-        imageUrl={service.image_url}
-        type={service.type}
-        discountType={hasDiscount ? service.appliedDiscount?.discount_type : undefined}
-        discountValue={hasDiscount ? service.appliedDiscount?.discount_value : undefined}
+  // Convert Employee types
+  const convertedEmployees = employees.map(emp => ({
+    id: emp.id,
+    full_name: emp.full_name,
+    employee_services: emp.employee_services
+  }));
+
+  const convertedSelectedEmployee = selectedEmployee ? {
+    id: selectedEmployee.id,
+    full_name: selectedEmployee.full_name,
+    employee_services: selectedEmployee.employee_services
+  } : null;
+
+  const cardProps = {
+    id: service.id,
+    name: service.name,
+    description: service.description,
+    originalPrice: service.original_price_cents,
+    finalPrice: service.final_price_cents,
+    savings: service.savings_cents,
+    duration: service.duration_minutes,
+    imageUrl: service.image_url,
+    onSelect: handleSelect,
+    employees: convertedEmployees,
+    selectedEmployee: isSelected ? convertedSelectedEmployee : null,
+    onEmployeeSelect,
+    allowEmployeeSelection: allowEmployeeSelection && isSelected,
+    variant: 'reservation' as const,
+    showExpandable: true,
+    className: `${isSelected ? 'border-primary ring-2 ring-primary shadow-lg' : ''}`
+  };
+
+  if (service.type === 'combo') {
+    return (
+      <ComboCard
+        {...cardProps}
         comboServices={comboServices}
-        employees={employees}
-        selectedEmployee={isSelected ? selectedEmployee : null}
-        onEmployeeSelect={onEmployeeSelect}
-        allowEmployeeSelection={allowEmployeeSelection && isSelected}
-        onSelect={handleSelect}
-        variant="reservation"
-        showExpandable={true}
-        className={`${isSelected ? 'border-primary' : ''}`}
       />
-    </div>
+    );
+  }
+
+  return (
+    <ServiceCardComponent
+      {...cardProps}
+      discountType={hasDiscount ? service.appliedDiscount?.discount_type : undefined}
+      discountValue={hasDiscount ? service.appliedDiscount?.discount_value : undefined}
+    />
   );
 };
