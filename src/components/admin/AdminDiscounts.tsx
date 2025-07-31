@@ -14,10 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, X } from "lucide-react";
+import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 interface Discount {
   id: string;
   service_id: string;
-  name: string;
+  name?: string; // Made optional since we're not using it
   description: string;
   discount_type: 'percentage' | 'flat';
   discount_value: number;
@@ -34,8 +35,10 @@ interface Discount {
 interface Service {
   id: string;
   name: string;
+  description?: string;
   price_cents: number;
   duration_minutes: number;
+  image_url?: string;
 }
 interface Combo {
   id: string;
@@ -72,7 +75,6 @@ const AdminDiscounts: React.FC = () => {
   } = useToast();
   const [formData, setFormData] = useState({
     service_id: "",
-    name: "",
     description: "",
     discount_type: "percentage" as 'percentage' | 'flat',
     discount_value: "",
@@ -132,7 +134,7 @@ const AdminDiscounts: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from("services").select("id, name, price_cents, duration_minutes").eq("is_active", true).order("name");
+      } = await supabase.from("services").select("id, name, description, price_cents, duration_minutes, image_url").eq("is_active", true).order("name");
       if (error) throw error;
       setServices(data || []);
     } catch (error) {
@@ -173,7 +175,7 @@ const AdminDiscounts: React.FC = () => {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.service_id || !formData.name || !formData.discount_value || !formData.start_date || !formData.end_date) {
+    if (!formData.service_id || !formData.discount_value || !formData.start_date || !formData.end_date) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos requeridos",
@@ -198,7 +200,7 @@ const AdminDiscounts: React.FC = () => {
       if (!user) throw new Error("Usuario no autenticado");
       const discountData = {
         service_id: formData.service_id,
-        name: formData.name,
+        name: services.find(s => s.id === formData.service_id)?.name || "Descuento", // Default name based on service
         description: formData.description,
         discount_type: formData.discount_type,
         discount_value: parseFloat(formData.discount_value),
@@ -243,7 +245,6 @@ const AdminDiscounts: React.FC = () => {
     setEditingDiscount(discount);
     setFormData({
       service_id: discount.service_id,
-      name: discount.name,
       description: discount.description || "",
       discount_type: discount.discount_type,
       discount_value: discount.discount_value.toString(),
@@ -281,7 +282,6 @@ const AdminDiscounts: React.FC = () => {
   const resetForm = () => {
     setFormData({
       service_id: "",
-      name: "",
       description: "",
       discount_type: "percentage",
       discount_value: "",
@@ -526,7 +526,7 @@ const AdminDiscounts: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="service_id">Servicio *</Label>
                   <Select value={formData.service_id} onValueChange={value => setFormData({
@@ -542,13 +542,6 @@ const AdminDiscounts: React.FC = () => {
                         </SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label htmlFor="name">Nombre del Descuento *</Label>
-                  <Input id="name" value={formData.name} onChange={e => setFormData({
-                      ...formData,
-                      name: e.target.value
-                    })} placeholder="Ej: Descuento de Verano" />
                 </div>
               </div>
 
@@ -650,61 +643,96 @@ const AdminDiscounts: React.FC = () => {
               <p className="text-lg font-medium text-muted-foreground">No hay descuentos creados</p>
               <p className="text-sm text-muted-foreground">Crea tu primer descuento para comenzar</p>
             </CardContent>
-          </Card> : discounts.map(discount => <Card key={discount.id} className="transition-shadow hover:shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="flex items-center space-x-2">
-                  <CardTitle className="text-lg">{discount.name}</CardTitle>
-                  <Badge variant={isDiscountActive(discount) ? "default" : "secondary"}>
-                    {isDiscountActive(discount) ? "Activo" : "Inactivo"}
-                  </Badge>
-                  {!discount.is_public && <Badge variant="outline">
-                      <Code className="mr-1 h-3 w-3" />
-                      {discount.discount_code}
-                    </Badge>}
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(discount)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(discount.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="font-medium text-muted-foreground">Servicio</p>
-                    <p>{discount.service?.name}</p>
+          </Card> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {discounts.map(discount => {
+                // Find the associated service to get its details
+                const service = services.find(s => s.id === discount.service_id);
+                
+                return (
+                  <div key={discount.id} className="relative group">
+                    <StandardServiceCard
+                      id={discount.id}
+                      name={service?.name || discount.name} // Use service name as primary title
+                      description={discount.description || service?.description}
+                      originalPrice={service?.price_cents || 0}
+                      finalPrice={service?.price_cents || 0}
+                      savings={0}
+                      duration={service?.duration_minutes || 0}
+                      imageUrl={service?.image_url} // Use service image
+                      type="service"
+                      variant="admin"
+                      showExpandable={false}
+                      onSelect={() => handleEdit(discount)}
+                      canEdit={true}
+                      onEdit={() => handleEdit(discount)}
+                      className={`${!isDiscountActive(discount) ? 'opacity-60' : ''}`}
+                    />
+                    
+                    {/* Admin Action Buttons - Overlay */}
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(discount);
+                        }}
+                        className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                      >
+                        <Pencil className="h-3 w-3 text-gray-700" />
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(discount.id);
+                        }}
+                        className="h-8 w-8 p-0 bg-red-600 shadow-lg hover:bg-red-700 border border-red-500"
+                      >
+                        <Trash2 className="h-3 w-3 text-white" />
+                      </Button>
+                    </div>
+                    
+                    {/* Status and Discount Badges - Overlay */}
+                    <div className="absolute bottom-2 left-2 flex gap-1">
+                      <Badge 
+                        variant={isDiscountActive(discount) ? "default" : "secondary"} 
+                        className={`text-xs font-medium shadow-lg ${
+                          isDiscountActive(discount) 
+                            ? 'bg-green-600 text-white border border-green-500' 
+                            : 'bg-gray-600 text-white border border-gray-500'
+                        }`}
+                      >
+                        {isDiscountActive(discount) ? "Activo" : "Inactivo"}
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs font-medium bg-red-500 text-white border border-red-500 shadow-lg"
+                      >
+                        <Percent className="h-2 w-2 mr-1" />
+                        {discount.discount_type === 'percentage' ? 
+                          `${discount.discount_value}%` : 
+                          `₡${discount.discount_value}`
+                        }
+                      </Badge>
+                      {!discount.is_public && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs font-medium bg-blue-50 text-blue-800 border border-blue-300 shadow-lg"
+                        >
+                          <Code className="h-2 w-2 mr-1" />
+                          {discount.discount_code}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-muted-foreground">Descuento</p>
-                    <p className="flex items-center">
-                      {discount.discount_type === 'percentage' ? <Percent className="mr-1 h-4 w-4" /> : <DollarSign className="mr-1 h-4 w-4" />}
-                      {formatDiscountValue(discount.discount_value, discount.discount_type)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-muted-foreground">Inicio</p>
-                    <p className="flex items-center">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      {format(new Date(discount.start_date), 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-muted-foreground">Fin</p>
-                    <p className="flex items-center">
-                      <Calendar className="mr-1 h-4 w-4" />
-                      {format(new Date(discount.end_date), 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                </div>
-                {discount.description && <div className="mt-3">
-                    <p className="text-sm text-muted-foreground">{discount.description}</p>
-                  </div>}
-              </CardContent>
-            </Card>)}
-          </div>
+                );
+              })}
+            </div>
+          )}
+      </div>
         </TabsContent>
 
         <TabsContent value="combos" className="space-y-6">

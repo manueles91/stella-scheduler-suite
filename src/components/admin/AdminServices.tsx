@@ -793,7 +793,7 @@ export const AdminServices = () => {
             />
             
             {/* Admin Action Buttons - Overlay */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+            <div className="absolute top-2 right-2 flex gap-1">
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -819,7 +819,7 @@ export const AdminServices = () => {
             </div>
             
             {/* Status and Category Badges - Overlay */}
-            <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+            <div className="absolute bottom-2 left-2 flex gap-1">
               <Badge 
                 variant={service.is_active ? "default" : "secondary"} 
                 className={`text-xs font-medium shadow-lg ${
