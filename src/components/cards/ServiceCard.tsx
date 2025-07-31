@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Clock, Sparkles, Package, ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface Employee {
   id: string;
@@ -86,6 +87,7 @@ export const ServiceCard = ({
   adminButtons
 }: ServiceCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   const formatPrice = (priceInCents: number) => {
     return `₡${Math.round(priceInCents / 100)}`;
@@ -134,15 +136,21 @@ export const ServiceCard = ({
       {!isExpanded && (
         hasDiscount ? (
           <div className="space-y-1">
-            <div className="text-sm text-white/80 line-through">
+            <div className={`text-white/80 line-through ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>
               {formatPrice(originalPrice)}
             </div>
-            <div className="font-bold text-2xl text-white drop-shadow-md">
+            <div className={`font-bold text-white drop-shadow-md ${
+              isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
+            }`}>
               {formatPrice(finalPrice)}
             </div>
           </div>
         ) : (
-          <div className="font-bold text-2xl text-white drop-shadow-md">
+          <div className={`font-bold text-white drop-shadow-md ${
+            isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
+          }`}>
             {formatPrice(finalPrice)}
           </div>
         )
@@ -154,7 +162,9 @@ export const ServiceCard = ({
     <div className="space-y-4">
       {/* Row 1: Service name and admin buttons + collapse button */}
       <div className="flex justify-between items-start">
-        <h3 className="font-serif text-2xl font-bold text-white drop-shadow-md">
+        <h3 className={`font-serif font-bold text-white drop-shadow-md ${
+          isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
+        }`}>
           {name}
         </h3>
         {/* Admin buttons + collapse button positioned together */}
@@ -175,71 +185,77 @@ export const ServiceCard = ({
 
       {/* Row 2: Badges (left) + Duration (right) */}
       <div className="flex justify-between items-center">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {/* Show discount badge in expanded state */}
           {variant === 'admin' && getDiscountBadge()}
           {/* Show admin badges in expanded state */}
           {adminBadges}
         </div>
-        {duration && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-            <Badge variant="secondary" className="text-xs">
-              <Clock className="h-2 w-2 mr-1" />
-              {duration} min
-            </Badge>
-          </div>
-        )}
+                 {duration && (
+           <div className="bg-white/70 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+             <Badge variant="secondary" className="text-xs">
+               <Clock className="h-2 w-2 mr-1" />
+               {duration} min
+             </Badge>
+           </div>
+         )}
       </div>
 
-      {/* Row 3: Description (left) + Price only (right) */}
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex-1">
-          {description && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-              <p className="text-sm text-gray-800">{description}</p>
-            </div>
-          )}
-        </div>
-        <div className="flex-shrink-0">
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg min-w-[200px]">
-            {/* Final price only - most prominent */}
-            <div className="text-center mb-3">
-              <div className="font-bold text-2xl text-primary">
-                {formatPrice(finalPrice)}
-              </div>
-            </div>
-            
-            {/* Nominal savings only */}
-            {hasDiscount && (
-              <div className="text-center">
-                <span className="text-sm font-medium text-green-600">
-                  Ahorra {formatPrice(savings)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+             {/* Row 3: Description and Price - Side by side */}
+       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+         {/* Description - Left side */}
+         <div className="flex-1 min-w-0">
+           {description && (
+             <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg">
+               <p className="text-xs sm:text-sm text-gray-800 leading-relaxed">{description}</p>
+             </div>
+           )}
+         </div>
+         {/* Price - Right side */}
+         <div className="flex-shrink-0 flex justify-center">
+           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg inline-block">
+             {/* Final price - responsive sizing */}
+             <div className="text-center">
+               <div className="font-bold text-lg sm:text-xl lg:text-2xl text-primary">
+                 {formatPrice(finalPrice)}
+               </div>
+             </div>
+             
+             {/* Nominal savings - responsive sizing */}
+             {hasDiscount && (
+               <div className="text-center mt-1">
+                 <span className="font-medium text-xs sm:text-sm text-green-600">
+                   Ahorra {formatPrice(savings)}
+                 </span>
+               </div>
+             )}
+           </div>
+         </div>
+       </div>
 
-      {/* Combo Services Display - Only for combo cards */}
-      {isCombo && comboServices && comboServices.length > 0 && (
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-          <Label className="text-sm text-gray-800 font-semibold">Servicios Incluidos</Label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {comboServices.map((service, index) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {service.name}
-                {service.quantity && service.quantity > 1 && ` x${service.quantity}`}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
+             {/* Combo Services Display - Only for combo cards */}
+       {isCombo && comboServices && comboServices.length > 0 && (
+         <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+           <Label className={`text-gray-800 font-semibold ${
+             isMobile ? 'text-sm' : 'text-sm'
+           }`}>Servicios Incluidos</Label>
+           <div className="flex flex-wrap gap-2 mt-2">
+             {comboServices.map((service, index) => (
+               <Badge key={index} variant="secondary" className="text-xs">
+                 {service.name}
+                 {service.quantity && service.quantity > 1 && ` x${service.quantity}`}
+               </Badge>
+             ))}
+           </div>
+         </div>
+       )}
 
-      {/* Employee Selection - Only for reservation variant */}
-      {allowEmployeeSelection && variant === 'reservation' && (
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg space-y-2">
-          <Label className="text-sm text-gray-800">Estilista</Label>
+       {/* Employee Selection - Only for reservation variant */}
+       {allowEmployeeSelection && variant === 'reservation' && (
+         <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg space-y-2">
+           <Label className={`text-gray-800 ${
+             isMobile ? 'text-sm' : 'text-sm'
+           }`}>Estilista</Label>
           <Select 
             value={selectedEmployee?.id || "any"} 
             onValueChange={(value) => {
@@ -273,33 +289,22 @@ export const ServiceCard = ({
         </div>
       )}
       
-      {/* Row 4: CTA (bottom) - smaller horizontally */}
-      <div className="flex justify-center pt-2">
-        {onSelect && (
-          <Button 
-            className="w-32 bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect();
-            }}
-          >
-            {variant === 'admin' ? 'Ver' : variant === 'reservation' ? 'Seleccionar' : 'Reservar'}
-          </Button>
-        )}
-        {canEdit && onEdit && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-24 shadow-lg bg-white/90 backdrop-blur-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-          >
-            Editar
-          </Button>
-        )}
-      </div>
+             {/* Row 4: CTA (bottom) - Only show for reservation and landing variants */}
+       {(variant === 'reservation' || variant === 'landing') && onSelect && (
+         <div className="flex justify-center pt-2">
+           <Button 
+             className={`bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg ${
+               isMobile ? 'w-1/2 sm:w-16' : 'w-16'
+             }`}
+             onClick={(e) => {
+               e.stopPropagation();
+               onSelect();
+             }}
+           >
+             {variant === 'reservation' ? 'Seleccionar' : 'Reservar'}
+           </Button>
+         </div>
+       )}
     </div>
   );
 

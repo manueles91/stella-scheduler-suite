@@ -78,7 +78,7 @@ export const ServiceSelection = ({ selectedService, onServiceSelect, onNext }: S
         <p className="text-muted-foreground">Elige el tratamiento que más te guste</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {services.map((service) => (
           <Card 
             key={service.id} 
@@ -100,20 +100,20 @@ export const ServiceSelection = ({ selectedService, onServiceSelect, onNext }: S
             )}
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg">{service.name}</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{service.name}</CardTitle>
                 {selectedService?.id === service.id && (
                   <Check className="h-5 w-5 text-primary" />
                 )}
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{service.description}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{service.description}</p>
               <div className="flex justify-between items-center">
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 text-xs">
                   <Clock className="h-3 w-3" />
                   {service.duration_minutes} min
                 </Badge>
-                <span className="font-bold text-primary">
+                <span className="font-bold text-primary text-sm sm:text-base">
                   ₡{Math.round(service.price_cents / 100)}
                 </span>
               </div>
@@ -124,7 +124,7 @@ export const ServiceSelection = ({ selectedService, onServiceSelect, onNext }: S
 
       {selectedService && (
         <div className="text-center pt-4">
-          <Button onClick={onNext} size="lg">
+          <Button onClick={onNext} size="lg" className="w-full sm:w-auto">
             Continuar con {selectedService.name}
           </Button>
         </div>
