@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMinutes, parseISO, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { useBookingData } from "@/hooks/useBookingData";
+import { useOptimizedBookingData } from "@/hooks/useOptimizedBookingData";
+import { useBookingContext } from "@/contexts/BookingContext";
 import { BookingProgress } from "./BookingProgress";
-import { ServiceCard } from "./ServiceCard";
+import { MemoizedServiceCard } from "../optimized/MemoizedServiceCard";
 import { TimeSlotGrid } from "./TimeSlotGrid";
 import { CategoryFilter } from "./CategoryFilter";
 import { 
@@ -65,13 +66,13 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   const { 
     bookableItems, 
     categories, 
-    selectedCategory,
-    setSelectedCategory,
     employees, 
     loading, 
     fetchAvailableSlots, 
     formatPrice 
-  } = useBookingData();
+  } = useOptimizedBookingData();
+  
+  const { selectedCategory, setSelectedCategory } = useBookingContext();
 
   // Define steps based on config
   const getSteps = (): BookingStep[] => {
@@ -174,14 +175,14 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }
   }, [user, pendingBooking, config.isGuest]);
 
-  const handleServiceSelect = (service: BookableItem) => {
+  const handleServiceSelect = useCallback((service: BookableItem) => {
     setState(prev => ({ 
       ...prev, 
       selectedService: service,
       selectedSlot: null,
       currentStep: 2 
     }));
-  };
+  }, []);
 
   const handleDateSelect = (date: Date | undefined) => {
     setState(prev => ({ 
@@ -200,9 +201,9 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }));
   };
 
-  const handleEmployeeSelect = (employee: Employee | null) => {
+  const handleEmployeeSelect = useCallback((employee: Employee | null) => {
     setState(prev => ({ ...prev, selectedEmployee: employee }));
-  };
+  }, []);
 
   const handleProceedToAuth = () => {
     if (!state.selectedService || !state.selectedDate || !state.selectedSlot) return;
@@ -457,7 +458,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {bookableItems.map((service) => (
-                    <ServiceCard
+                    <MemoizedServiceCard
                       key={service.id}
                       service={service}
                       isSelected={state.selectedService?.id === service.id}

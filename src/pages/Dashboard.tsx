@@ -1,18 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { EnhancedBookingSystem } from "@/components/EnhancedBookingSystem";
-import { AdminReservations } from "@/components/admin/AdminReservations";
-import { AdminServices } from "@/components/admin/AdminServices";
-import { AdminStaff } from "@/components/admin/AdminStaff";
-import AdminDiscounts from "@/components/admin/AdminDiscounts";
 import { AdminBookingSystem } from "@/components/admin/AdminBookingSystem";
-import { AdminCustomers } from "@/components/admin/AdminCustomers";
 import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { TimeTracking } from "@/components/employee/TimeTracking";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  AdminServices,
+  AdminReservations,
+  AdminCustomers,
+  AdminStaff,
+  AdminDiscounts,
+  AdminLoadingFallback
+} from "@/components/optimized/LazyAdminComponents";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -89,38 +92,39 @@ const Dashboard = () => {
     return () => observer.disconnect();
   }, [profile]);
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!effectiveProfile?.id) {
-        console.log("No effective profile ID available for fetching appointments");
-        return;
-      }
-      
-      setAppointmentsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('reservations')
-          .select('id, appointment_date, start_time, end_time, status, service_id, services(name)')
-          .eq('client_id', effectiveProfile.id)
-          .order('appointment_date', { ascending: true })
-          .order('start_time', { ascending: true });
-        
-        if (error) {
-          console.error("Error fetching appointments:", error);
-          setAppointments([]);
-        } else {
-          setAppointments(data || []);
-        }
-      } catch (error) {
-        console.error("Error in fetchAppointments:", error);
-        setAppointments([]);
-      } finally {
-        setAppointmentsLoading(false);
-      }
-    };
+  // Memoized appointment fetcher
+  const fetchAppointmentsCallback = useCallback(async () => {
+    if (!effectiveProfile?.id) {
+      console.log("No effective profile ID available for fetching appointments");
+      return;
+    }
     
-    fetchAppointments();
+    setAppointmentsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('id, appointment_date, start_time, end_time, status, service_id, services(name)')
+        .eq('client_id', effectiveProfile.id)
+        .order('appointment_date', { ascending: true })
+        .order('start_time', { ascending: true });
+      
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        setAppointments([]);
+      } else {
+        setAppointments(data || []);
+      }
+    } catch (error) {
+      console.error("Error in fetchAppointments:", error);
+      setAppointments([]);
+    } finally {
+      setAppointmentsLoading(false);
+    }
   }, [effectiveProfile?.id]);
+
+  useEffect(() => {
+    fetchAppointmentsCallback();
+  }, [fetchAppointmentsCallback]);
 
   // Show loading while checking auth
   if (loading) {
@@ -138,7 +142,8 @@ const Dashboard = () => {
     return null;
   }
 
-  const renderContent = () => {
+  // Memoized content renderer
+  const renderContent = useMemo(() => {
     switch (activeTab) {
       case 'overview':
         return <DashboardSummary effectiveProfile={effectiveProfile} />;
@@ -153,31 +158,51 @@ const Dashboard = () => {
         return <TimeTracking employeeId={effectiveProfile?.id} />;
         
       case 'admin-bookings':
-        return <AdminReservations />;
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminReservations />
+          </Suspense>
+        );
         
       case 'admin-services':
-        return <AdminServices />;
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminServices />
+          </Suspense>
+        );
         
       case 'admin-discounts':
-        return <AdminDiscounts />;
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminDiscounts />
+          </Suspense>
+        );
         
       case 'admin-staff':
-        return <AdminStaff />;
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminStaff />
+          </Suspense>
+        );
         
       case 'admin-booking':
         return <AdminBookingSystem />;
         
       case 'admin-customers':
-        return <AdminCustomers />;
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminCustomers />
+          </Suspense>
+        );
         
       default:
         return null;
     }
-  };
+  }, [activeTab, effectiveProfile?.id]);
 
   return (
     <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      {renderContent()}
+      {renderContent}
     </DashboardLayout>
   );
 };
