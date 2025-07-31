@@ -15,6 +15,9 @@ export interface BaseCardProps {
   onSelect?: () => void;
   children: ReactNode;
   expandedContent?: ReactNode;
+  adminBadges?: ReactNode;
+  discountBadge?: ReactNode;
+  adminButtons?: ReactNode; // Add admin buttons prop
 }
 
 export const BaseCard = ({
@@ -26,7 +29,10 @@ export const BaseCard = ({
   onExpandChange,
   onSelect,
   children,
-  expandedContent
+  expandedContent,
+  adminBadges,
+  discountBadge,
+  adminButtons
 }: BaseCardProps) => {
   const CardWrapper = showExpandable ? Collapsible : 'div';
   const cardProps = showExpandable ? { 
@@ -36,7 +42,7 @@ export const BaseCard = ({
 
   const cardContent = (
     <Card 
-      className={`relative overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
+      className={`relative overflow-hidden hover:shadow-lg transition-all duration-300 ${
         isExpanded ? 'h-auto' : 'h-32'
       } ${className}`}
       onClick={!showExpandable ? onSelect : undefined}
@@ -52,35 +58,56 @@ export const BaseCard = ({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
         )}
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/20" />
+        {/* Shadow gradient from top to bottom for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-transparent" />
       </div>
 
       {/* Card Content */}
       <div className="relative z-10 p-4 h-full flex flex-col justify-between text-white">
         {/* Top Row */}
         <div className="flex justify-between items-start">
-          <h3 className="font-serif text-lg font-bold leading-tight text-white drop-shadow-md">
-            {name}
-          </h3>
-          {showExpandable && (
+          {/* Only show service name in collapsed state, not expanded */}
+          {!isExpanded && (
+            <h3 className="font-serif text-lg font-bold leading-tight text-white drop-shadow-md">
+              {name}
+            </h3>
+          )}
+          {/* Expand button for collapsed state only */}
+          {showExpandable && !isExpanded && (
             <CollapsibleTrigger asChild>
-              <div className="p-1 hover:bg-white/20 rounded-full transition-colors">
-                <ChevronDown className={`h-4 w-4 text-white transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-              </div>
+              <button 
+                className="p-1 hover:bg-white/20 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExpandChange?.(!isExpanded);
+                }}
+              >
+                <ChevronDown className="h-4 w-4 text-white" />
+              </button>
             </CollapsibleTrigger>
           )}
         </div>
 
         {/* Card-specific content */}
         {children}
+        
+        {/* Admin badges - positioned at bottom left */}
+        {(adminBadges || discountBadge) && (
+          <div className="absolute bottom-2 left-2 flex gap-1 max-w-[calc(100%-4rem)]">
+            {discountBadge}
+            {adminBadges}
+          </div>
+        )}
       </div>
 
       {/* Expandable Content */}
       {showExpandable && expandedContent && (
         <CollapsibleContent>
-          <div className="relative z-10 bg-background/95 backdrop-blur-sm border-t p-4 space-y-4">
-            {expandedContent}
+          <div className="relative">
+            {/* Content with shadow boxes - no duplicate background image */}
+            <div className="relative z-10 px-6 pb-6 pt-0">
+              {expandedContent}
+            </div>
           </div>
         </CollapsibleContent>
       )}

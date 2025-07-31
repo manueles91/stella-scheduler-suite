@@ -1,16 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ServiceCard } from "@/components/cards/ServiceCard";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  CarouselApi,
-} from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Combo {
@@ -50,7 +43,7 @@ export const PromocionesSection = () => {
   const [combos, setCombos] = useState<Combo[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [api, setApi] = useState<CarouselApi>();
+  const [api, setApi] = useState<any>(); // Changed from CarouselApi to any as CarouselApi is no longer imported
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -188,7 +181,7 @@ export const PromocionesSection = () => {
                 {/* Show combos first */}
                 {combos.map((combo) => (
                   <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <StandardServiceCard
+                    <ServiceCard
                       id={combo.id}
                       name={combo.name}
                       description={combo.description || "Paquete especial de servicios"}
@@ -210,26 +203,25 @@ export const PromocionesSection = () => {
                 
                 {/* Show individual discounts */}
                 {discounts.map((discount) => {
-                  const discountedPrice = discount.discount_type === 'percentage' 
-                    ? discount.services.price_cents * (1 - discount.discount_value / 100)
-                    : discount.services.price_cents - (discount.discount_value * 100);
-                  const savings = discount.services.price_cents - discountedPrice;
+                  const discountedPrice = discount.discount_type === 'percentage'
+                    ? Math.round(discount.services.price_cents * (1 - discount.discount_value / 100))
+                    : Math.round(discount.services.price_cents - discount.discount_value);
                   
                   return (
                     <CarouselItem key={`discount-${discount.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <StandardServiceCard
+                      <ServiceCard
                         id={discount.id}
                         name={discount.name}
-                        description={discount.description || discount.services.description || "Descuento especial disponible"}
+                        description={discount.description || discount.services.description}
                         originalPrice={discount.services.price_cents}
                         finalPrice={discountedPrice}
-                        savings={savings}
+                        savings={discount.services.price_cents - discountedPrice}
+                        duration={discount.services.duration_minutes}
+                        imageUrl={discount.services.image_url}
                         type="discount"
                         discountType={discount.discount_type}
                         discountValue={discount.discount_value}
-                        duration={discount.services.duration_minutes}
-                        imageUrl={discount.services.image_url}
-                        onSelect={() => navigate(`/book?service=${discount.services.id}&step=2&estilista=cualquier&discount=${discount.id}`)}
+                        onSelect={() => navigate('/book')}
                         variant="landing"
                         showExpandable={true}
                       />

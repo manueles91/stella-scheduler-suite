@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { useBookingData } from "@/hooks/useBookingData";
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
+import { ServiceCard } from "@/components/cards/ServiceCard";
 import { CategoryFilter } from "@/components/booking/CategoryFilter";
 import { Employee } from "@/types/booking";
 
@@ -65,7 +65,7 @@ export const ServicesSection = () => {
               })) || [];
 
               return (
-                <StandardServiceCard
+                <ServiceCard
                   key={service.id}
                   id={service.id}
                   name={service.name}
@@ -98,7 +98,7 @@ export const ServicesSection = () => {
 
                 return (
                   <CarouselItem key={service.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3">
-                    <StandardServiceCard
+                    <ServiceCard
                       id={service.id}
                       name={service.name}
                       description={service.description}

@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Percent, DollarSign, Calendar, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { ServiceCard } from "@/components/cards/ServiceCard";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, X } from "lucide-react";
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 interface Discount {
   id: string;
   service_id: string;
@@ -647,86 +648,75 @@ const AdminDiscounts: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {discounts.map(discount => {
                 // Find the associated service to get its details
-                const service = services.find(s => s.id === discount.service_id);
+                const associatedService = services.find(s => s.id === discount.service_id);
+                
+                if (!associatedService) return null;
                 
                 return (
                   <div key={discount.id} className="relative group">
-                    <StandardServiceCard
-                      id={discount.id}
-                      name={service?.name || discount.name} // Use service name as primary title
-                      description={discount.description || service?.description}
-                      originalPrice={service?.price_cents || 0}
-                      finalPrice={service?.price_cents || 0}
-                      savings={0}
-                      duration={service?.duration_minutes || 0}
-                      imageUrl={service?.image_url} // Use service image
-                      type="service"
-                      variant="admin"
-                      showExpandable={false}
+                    <ServiceCard
+                      id={associatedService.id}
+                      name={associatedService.name}
+                      description={associatedService.description}
+                      originalPrice={associatedService.price_cents}
+                      finalPrice={discount.discount_type === 'percentage'
+                        ? Math.round(associatedService.price_cents * (1 - discount.discount_value / 100))
+                        : Math.round(associatedService.price_cents - discount.discount_value)
+                      }
+                      savings={discount.discount_type === 'percentage'
+                        ? Math.round(associatedService.price_cents * (discount.discount_value / 100))
+                        : discount.discount_value
+                      }
+                      duration={associatedService.duration_minutes}
+                      imageUrl={associatedService.image_url}
+                      type="discount"
+                      discountType={discount.discount_type}
+                      discountValue={discount.discount_value}
                       onSelect={() => handleEdit(discount)}
-                      canEdit={true}
-                      onEdit={() => handleEdit(discount)}
-                      className={`${!isDiscountActive(discount) ? 'opacity-60' : ''}`}
+                      variant="admin"
+                      showExpandable={true}
+                      className="relative"
+                      adminBadges={
+                        <>
+                          <Badge 
+                            variant={isDiscountActive(discount) ? "default" : "secondary"} 
+                            className={`text-xs font-medium shadow-lg ${
+                              isDiscountActive(discount) 
+                                ? 'bg-green-600 text-white border border-green-500' 
+                                : 'bg-gray-600 text-white border border-gray-500'
+                            }`}
+                          >
+                            {isDiscountActive(discount) ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </>
+                      }
+                      adminButtons={
+                        <>
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(discount);
+                            }}
+                            className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                          >
+                            <Pencil className="h-3 w-3 text-gray-700" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(discount.id);
+                            }}
+                            className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </Button>
+                        </>
+                      }
                     />
-                    
-                    {/* Admin Action Buttons - Overlay */}
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(discount);
-                        }}
-                        className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-                      >
-                        <Pencil className="h-3 w-3 text-gray-700" />
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(discount.id);
-                        }}
-                        className="h-8 w-8 p-0 bg-red-600 shadow-lg hover:bg-red-700 border border-red-500"
-                      >
-                        <Trash2 className="h-3 w-3 text-white" />
-                      </Button>
-                    </div>
-                    
-                    {/* Status and Discount Badges - Overlay */}
-                    <div className="absolute bottom-2 left-2 flex gap-1">
-                      <Badge 
-                        variant={isDiscountActive(discount) ? "default" : "secondary"} 
-                        className={`text-xs font-medium shadow-lg ${
-                          isDiscountActive(discount) 
-                            ? 'bg-green-600 text-white border border-green-500' 
-                            : 'bg-gray-600 text-white border border-gray-500'
-                        }`}
-                      >
-                        {isDiscountActive(discount) ? "Activo" : "Inactivo"}
-                      </Badge>
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs font-medium bg-red-500 text-white border border-red-500 shadow-lg"
-                      >
-                        <Percent className="h-2 w-2 mr-1" />
-                        {discount.discount_type === 'percentage' ? 
-                          `${discount.discount_value}%` : 
-                          `₡${discount.discount_value}`
-                        }
-                      </Badge>
-                      {!discount.is_public && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs font-medium bg-blue-50 text-blue-800 border border-blue-300 shadow-lg"
-                        >
-                          <Code className="h-2 w-2 mr-1" />
-                          {discount.discount_code}
-                        </Badge>
-                      )}
-                    </div>
                   </div>
                 );
               })}

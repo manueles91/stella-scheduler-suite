@@ -9,13 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Clock, DollarSign, Upload, X, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2, Filter, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, DollarSign, Image, Tag, Users, Calendar, Upload, X, AlertTriangle, CheckCircle, Loader2, Filter, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { ServiceCard } from "@/components/cards/ServiceCard";
 import { useToast } from "@/hooks/use-toast";
 import { AdminCategories } from "./AdminCategories";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
 interface Service {
   id: string;
   name: string;
@@ -774,7 +775,8 @@ export const AdminServices = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredServices.map(service => (
           <div key={service.id} className="relative group">
-            <StandardServiceCard
+            
+            <ServiceCard
               id={service.id}
               name={service.name}
               description={service.description}
@@ -784,61 +786,57 @@ export const AdminServices = () => {
               duration={service.duration_minutes}
               imageUrl={service.image_url}
               type="service"
-              variant="admin"
-              showExpandable={false}
               onSelect={() => handleEdit(service)}
-              canEdit={true}
-              onEdit={() => handleEdit(service)}
-              className={`${!service.is_active ? 'opacity-60' : ''}`}
+              variant="admin"
+              showExpandable={true}
+              className="relative"
+              adminBadges={
+                <>
+                  <Badge 
+                    variant={service.is_active ? "default" : "secondary"} 
+                    className={`text-xs font-medium shadow-lg ${
+                      service.is_active 
+                        ? 'bg-green-600 text-white border border-green-500' 
+                        : 'bg-gray-600 text-white border border-gray-500'
+                    }`}
+                  >
+                    {service.is_active ? "Activo" : "Inactivo"}
+                  </Badge>
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs font-medium shadow-lg bg-gray-500 text-white border border-gray-400"
+                  >
+                    {service.service_categories?.name || "Sin categoría"}
+                  </Badge>
+                </>
+              }
+              adminButtons={
+                <>
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(service);
+                    }}
+                    className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                  >
+                    <Pencil className="h-3 w-3 text-gray-700" />
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(service.id);
+                    }}
+                    className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                  >
+                    <Trash2 className="h-3 w-3 text-white" />
+                  </Button>
+                </>
+              }
             />
-            
-            {/* Admin Action Buttons - Overlay */}
-            <div className="absolute top-2 right-2 flex gap-1">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(service);
-                }}
-                className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-              >
-                <Pencil className="h-3 w-3 text-gray-700" />
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(service.id);
-                }}
-                className="h-8 w-8 p-0 bg-red-600 shadow-lg hover:bg-red-700 border border-red-500"
-              >
-                <Trash2 className="h-3 w-3 text-white" />
-              </Button>
-            </div>
-            
-            {/* Status and Category Badges - Overlay */}
-            <div className="absolute bottom-2 left-2 flex gap-1">
-              <Badge 
-                variant={service.is_active ? "default" : "secondary"} 
-                className={`text-xs font-medium shadow-lg ${
-                  service.is_active 
-                    ? 'bg-green-600 text-white border border-green-500' 
-                    : 'bg-gray-600 text-white border border-gray-500'
-                }`}
-              >
-                {service.is_active ? "Activo" : "Inactivo"}
-              </Badge>
-              {service.service_categories && (
-                <Badge 
-                  variant="outline" 
-                  className="text-xs font-medium bg-white/95 text-gray-800 border border-gray-300 shadow-lg"
-                >
-                  {service.service_categories.name}
-                </Badge>
-              )}
-            </div>
           </div>
         ))}
       </div>
@@ -853,7 +851,7 @@ export const AdminServices = () => {
       {filteredServices.length === 0 && services.length > 0 && <Card>
           <CardContent className="p-8 text-center">
             <div className="space-y-4">
-              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+              <Image className="h-12 w-12 mx-auto text-muted-foreground" />
               <p className="text-muted-foreground">No hay servicios en esta categoría.</p>
               <p className="text-sm text-muted-foreground">
                 Cambia el filtro para ver otros servicios o crea un nuevo servicio.
@@ -864,12 +862,10 @@ export const AdminServices = () => {
 
       {services.length === 0 && <Card>
           <CardContent className="p-8 text-center">
-            <div className="space-y-4">
-              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
-              <p className="text-muted-foreground">No hay servicios creados aún.</p>
-              <p className="text-sm text-muted-foreground">
-                Crea tu primer servicio para empezar.
-              </p>
+            <div className="text-center py-8">
+              <Image className="h-12 w-12 mx-auto text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground mt-4">No hay servicios creados</p>
+              <p className="text-sm text-muted-foreground">Crea tu primer servicio para comenzar</p>
             </div>
           </CardContent>
         </Card>}
