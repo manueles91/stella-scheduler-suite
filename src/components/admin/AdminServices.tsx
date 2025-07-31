@@ -801,9 +801,9 @@ export const AdminServices = () => {
                   e.stopPropagation();
                   handleEdit(service);
                 }}
-                className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
               >
-                <Pencil className="h-3 w-3" />
+                <Pencil className="h-3 w-3 text-gray-700" />
               </Button>
               <Button 
                 variant="destructive" 
@@ -812,19 +812,29 @@ export const AdminServices = () => {
                   e.stopPropagation();
                   handleDelete(service.id);
                 }}
-                className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-500"
+                className="h-8 w-8 p-0 bg-red-600 shadow-lg hover:bg-red-700 border border-red-500"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3 text-white" />
               </Button>
             </div>
             
             {/* Status and Category Badges - Overlay */}
             <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-              <Badge variant={service.is_active ? "default" : "secondary"} className="text-xs">
+              <Badge 
+                variant={service.is_active ? "default" : "secondary"} 
+                className={`text-xs font-medium shadow-lg ${
+                  service.is_active 
+                    ? 'bg-green-600 text-white border border-green-500' 
+                    : 'bg-gray-600 text-white border border-gray-500'
+                }`}
+              >
                 {service.is_active ? "Activo" : "Inactivo"}
               </Badge>
               {service.service_categories && (
-                <Badge variant="outline" className="text-xs">
+                <Badge 
+                  variant="outline" 
+                  className="text-xs font-medium bg-white/95 text-gray-800 border border-gray-300 shadow-lg"
+                >
                   {service.service_categories.name}
                 </Badge>
               )}
