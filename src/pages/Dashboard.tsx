@@ -14,6 +14,7 @@ import {
   AdminCustomers,
   AdminStaff,
   AdminDiscounts,
+  AdminCosts,
   AdminLoadingFallback
 } from "@/components/optimized/LazyAdminComponents";
 
@@ -192,6 +193,13 @@ const Dashboard = () => {
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
             <AdminCustomers />
+          </Suspense>
+        );
+        
+      case 'admin-costs':
+        return (
+          <Suspense fallback={<AdminLoadingFallback />}>
+            <AdminCosts />
           </Suspense>
         );
         

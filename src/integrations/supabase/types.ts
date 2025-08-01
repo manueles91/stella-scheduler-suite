@@ -178,6 +178,54 @@ export type Database = {
         }
         Relationships: []
       }
+      costs: {
+        Row: {
+          amount_cents: number
+          cost_category: Database["public"]["Enums"]["cost_category"]
+          cost_type: Database["public"]["Enums"]["cost_type"]
+          created_at: string
+          created_by: string
+          date_incurred: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          next_due_date: string | null
+          recurring_frequency: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          cost_category: Database["public"]["Enums"]["cost_category"]
+          cost_type: Database["public"]["Enums"]["cost_type"]
+          created_at?: string
+          created_by: string
+          date_incurred: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          next_due_date?: string | null
+          recurring_frequency?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          cost_category?: Database["public"]["Enums"]["cost_category"]
+          cost_type?: Database["public"]["Enums"]["cost_type"]
+          created_at?: string
+          created_by?: string
+          date_incurred?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          next_due_date?: string | null
+          recurring_frequency?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discounts: {
         Row: {
           created_at: string
@@ -563,6 +611,16 @@ export type Database = {
       }
     }
     Enums: {
+      cost_category:
+        | "inventory"
+        | "utilities"
+        | "rent"
+        | "supplies"
+        | "equipment"
+        | "marketing"
+        | "maintenance"
+        | "other"
+      cost_type: "fixed" | "variable" | "recurring" | "one_time"
       discount_type: "percentage" | "flat"
       user_role: "client" | "employee" | "admin"
     }
@@ -692,6 +750,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cost_category: [
+        "inventory",
+        "utilities",
+        "rent",
+        "supplies",
+        "equipment",
+        "marketing",
+        "maintenance",
+        "other",
+      ],
+      cost_type: ["fixed", "variable", "recurring", "one_time"],
       discount_type: ["percentage", "flat"],
       user_role: ["client", "employee", "admin"],
     },

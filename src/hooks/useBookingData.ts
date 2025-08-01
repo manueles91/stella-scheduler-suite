@@ -209,7 +209,7 @@ export const useBookingData = () => {
         duration_minutes: totalDuration,
         original_price_cents: combo.original_price_cents,
         final_price_cents: combo.total_price_cents,
-        image_url: combo.image_url,
+        image_url: (combo as any).image_url || null,
         type: 'combo' as const,
         savings_cents: combo.original_price_cents - combo.total_price_cents,
         combo_services: combo.combo_services,
