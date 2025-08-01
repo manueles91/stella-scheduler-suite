@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
+import { AdminCostCategories } from "./AdminCostCategories";
 
 type CostType = 'fixed' | 'variable' | 'recurring' | 'one_time';
 
@@ -56,6 +57,7 @@ export function AdminCosts() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -280,137 +282,164 @@ export function AdminCosts() {
             Administra los gastos del salón
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Costo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nombre *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ej: Electricidad mes de enero"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descripción opcional del gasto"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="amount">Monto (€) *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cost_category_id">Categoría *</Label>
-                <Select
-                  value={formData.cost_category_id}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, cost_category_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {costCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="cost_type">Tipo *</Label>
-                <Select
-                  value={formData.cost_type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, cost_type: value as CostType }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {costTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.cost_type === 'recurring' && (
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm} className="flex-1 sm:flex-none">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Costo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="recurring_frequency">Frecuencia (días)</Label>
+                  <Label htmlFor="name">Nombre *</Label>
                   <Input
-                    id="recurring_frequency"
-                    type="number"
-                    value={formData.recurring_frequency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recurring_frequency: e.target.value }))}
-                    placeholder="30 (mensual), 7 (semanal)"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ej: Electricidad mes de enero"
+                    required
                   />
                 </div>
-              )}
+                
+                <div>
+                  <Label htmlFor="description">Descripción</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Descripción opcional del gasto"
+                    rows={2}
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="date_incurred">Fecha *</Label>
-                <Input
-                  id="date_incurred"
-                  type="date"
-                  value={formData.date_incurred}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date_incurred: e.target.value }))}
-                  required
-                />
-              </div>
+                <div>
+                  <Label htmlFor="amount">Monto (€) *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="submit" className="flex-1">
-                  {editingCost ? 'Actualizar' : 'Crear'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    resetForm();
-                  }}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div>
+                  <Label htmlFor="cost_category_id">Categoría *</Label>
+                  <Select
+                    value={formData.cost_category_id}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, cost_category_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {costCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="cost_type">Tipo *</Label>
+                  <Select
+                    value={formData.cost_type}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, cost_type: value as CostType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {costTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.cost_type === 'recurring' && (
+                  <div>
+                    <Label htmlFor="recurring_frequency">Frecuencia (días)</Label>
+                    <Input
+                      id="recurring_frequency"
+                      type="number"
+                      value={formData.recurring_frequency}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurring_frequency: e.target.value }))}
+                      placeholder="30 (mensual), 7 (semanal)"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="date_incurred">Fecha *</Label>
+                  <Input
+                    id="date_incurred"
+                    type="date"
+                    value={formData.date_incurred}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date_incurred: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" className="flex-1">
+                    {editingCost ? 'Actualizar' : 'Crear'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCategoryManager(true)}
+            className="px-3"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* Category Manager Modal */}
+      <Dialog 
+        open={showCategoryManager} 
+        onOpenChange={(open) => {
+          setShowCategoryManager(open);
+          if (!open) {
+            // Refresh categories when modal is closed
+            fetchCostCategories();
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <AdminCostCategories />
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Cards - Mobile optimized */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

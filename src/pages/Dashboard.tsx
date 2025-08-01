@@ -204,13 +204,6 @@ const Dashboard = () => {
           </Suspense>
         );
         
-      case 'admin-cost-categories':
-        return (
-          <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminCostCategories />
-          </Suspense>
-        );
-        
       default:
         return null;
     }

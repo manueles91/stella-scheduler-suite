@@ -89,7 +89,6 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       { id: 'admin-discounts', label: 'Descuentos', icon: Tags },
       { id: 'admin-staff', label: 'Personal', icon: UserPlus },
       { id: 'admin-costs', label: 'Costos', icon: DollarSign },
-      { id: 'admin-cost-categories', label: 'Categorías de Costos', icon: Tags },
     ] : []),
   ];
 
