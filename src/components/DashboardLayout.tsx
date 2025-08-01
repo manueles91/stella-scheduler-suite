@@ -130,7 +130,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       <div className="flex">
         {/* Sidebar */}
         <aside className={`fixed sm:static top-0 left-0 z-40 h-full w-64 border-r bg-card p-4 transition-transform duration-200 sm:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} sm:h-[calc(100vh-4rem)] sm:block`}>
-          <nav className="space-y-2">
+          <nav className="space-y-2 h-full overflow-y-auto">
             {/* View as dropdown for admins */}
             {profile?.role === 'admin' && (
               <div className="pb-4 border-b">
@@ -182,7 +182,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
             })}
             
             {/* Sign out button at the bottom of the sidebar */}
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t mt-auto">
               <Button
                 variant="ghost"
                 className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"

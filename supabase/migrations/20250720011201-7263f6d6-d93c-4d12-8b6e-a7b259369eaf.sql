@@ -6,6 +6,7 @@ CREATE TABLE public.combos (
   description TEXT,
   total_price_cents INTEGER NOT NULL,
   original_price_cents INTEGER NOT NULL,
+  image_url TEXT,
   is_active BOOLEAN NOT NULL DEFAULT true,
   start_date TIMESTAMP WITH TIME ZONE NOT NULL,
   end_date TIMESTAMP WITH TIME ZONE NOT NULL,

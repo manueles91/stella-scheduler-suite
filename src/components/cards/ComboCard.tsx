@@ -34,6 +34,10 @@ export interface ComboCardProps {
   variant?: 'landing' | 'dashboard' | 'reservation' | 'admin';
   showExpandable?: boolean;
   className?: string;
+  
+  // Admin-specific badges and buttons
+  adminBadges?: React.ReactNode;
+  adminButtons?: React.ReactNode;
 }
 
 export const ComboCard = (props: ComboCardProps) => {

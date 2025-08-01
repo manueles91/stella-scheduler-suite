@@ -109,7 +109,7 @@ export const ServiceCard = ({
   const getDiscountBadge = () => {
     if (isCombo) {
       return (
-        <Badge className="bg-blue-500 text-white text-xs">
+        <Badge className="bg-red-500 text-white text-xs">
           <Package className="h-2 w-2 mr-1" />
           COMBO
         </Badge>
@@ -204,9 +204,9 @@ export const ServiceCard = ({
         </div>
         {/* Badges on the right */}
         <div className="flex gap-2 flex-wrap">
-          {/* Show discount badge in expanded state */}
-          {variant === 'admin' && getDiscountBadge()}
-          {/* Show admin badges in expanded state */}
+          {/* Show discount badge for everyone in expanded state */}
+          {getDiscountBadge()}
+          {/* Show admin badges in expanded state - only for admins */}
           {adminBadges}
         </div>
       </div>
@@ -362,15 +362,14 @@ export const ServiceCard = ({
       onExpandChange={setIsExpanded}
       onSelect={onSelect}
       expandedContent={expandedContent}
-      // Admin badges in collapsed state (replacing duration)
+      // Admin badges in collapsed state (replacing duration) - only admin-specific badges
       adminBadges={!isExpanded ? (
         <div className="flex gap-1 flex-wrap">
-          {variant === 'admin' && getDiscountBadge()}
           {adminBadges}
         </div>
       ) : undefined}
-      // Discount badge only in expanded state (green rectangle)
-      discountBadge={isExpanded && variant === 'admin' ? getDiscountBadge() : undefined}
+      // Discount badge always visible (for everyone) in collapsed state
+      discountBadge={!isExpanded ? getDiscountBadge() : undefined}
       adminButtons={adminButtons}
     >
       {cardContent}

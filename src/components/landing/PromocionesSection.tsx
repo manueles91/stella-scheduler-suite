@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ServiceCard } from "@/components/cards/ServiceCard";
+import { ComboCard } from "@/components/cards/ComboCard";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -181,15 +182,13 @@ export const PromocionesSection = () => {
                 {/* Show combos first */}
                 {combos.map((combo) => (
                   <CarouselItem key={`combo-${combo.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <ServiceCard
+                    <ComboCard
                       id={combo.id}
                       name={combo.name}
                       description={combo.description || "Paquete especial de servicios"}
                       originalPrice={combo.original_price_cents}
                       finalPrice={combo.total_price_cents}
                       savings={combo.original_price_cents - combo.total_price_cents}
-                      type="combo"
-                      discountType="combo"
                       comboServices={combo.combo_services.map(cs => ({
                         name: cs.services.name,
                         quantity: 1
@@ -210,14 +209,12 @@ export const PromocionesSection = () => {
                   return (
                     <CarouselItem key={`discount-${discount.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                       <ServiceCard
-                        id={discount.id}
-                        name={discount.name}
-                        description={discount.description || discount.services.description}
+                        id={discount.services.id}
+                        name={discount.services.name}
+                        description={discount.description || "Servicio con descuento especial"}
                         originalPrice={discount.services.price_cents}
                         finalPrice={discountedPrice}
                         savings={discount.services.price_cents - discountedPrice}
-                        duration={discount.services.duration_minutes}
-                        imageUrl={discount.services.image_url}
                         type="discount"
                         discountType={discount.discount_type}
                         discountValue={discount.discount_value}

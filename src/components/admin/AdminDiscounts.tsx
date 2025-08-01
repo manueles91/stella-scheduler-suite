@@ -8,14 +8,17 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Percent, DollarSign, Calendar, Code } from "lucide-react";
+import { Plus, Pencil, Trash2, Percent, DollarSign, Calendar, Code, Upload, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ServiceCard } from "@/components/cards/ServiceCard";
+import { ComboCard } from "@/components/cards/ComboCard";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
 interface Discount {
   id: string;
   service_id: string;
@@ -47,6 +50,7 @@ interface Combo {
   description: string;
   total_price_cents: number;
   original_price_cents: number;
+  image_url?: string;
   is_active: boolean;
   start_date: string;
   end_date: string;
@@ -99,11 +103,150 @@ const AdminDiscounts: React.FC = () => {
     discount_percentage: "20",
     fixed_price: ""
   });
+  
+  // Image upload state for combos
+  const [comboImageFile, setComboImageFile] = useState<File | null>(null);
+  const [comboImagePreview, setComboImagePreview] = useState<string | null>(null);
+  const [uploadingComboImage, setUploadingComboImage] = useState(false);
+  const [comboImageValidationError, setComboImageValidationError] = useState<string | null>(null);
+  
+  // Image upload constants
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  
   useEffect(() => {
     fetchDiscounts();
     fetchCombos();
     fetchServices();
   }, []);
+  
+  // Image validation function for combos
+  const validateComboImageFile = (file: File): string | null => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)}MB). El tamaño máximo permitido es ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
+    }
+
+    // Check file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return `Tipo de archivo no permitido (${file.type}). Solo se permiten archivos de imagen: JPG, PNG, WebP, GIF.`;
+    }
+
+    return null;
+  };
+  
+  // Image change handler for combos
+  const handleComboImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setComboImageValidationError(null);
+    if (!file) {
+      setComboImageFile(null);
+      setComboImagePreview(null);
+      return;
+    }
+    const validationError = validateComboImageFile(file);
+    if (validationError) {
+      setComboImageValidationError(validationError);
+      setComboImageFile(null);
+      setComboImagePreview(null);
+      // Clear the input
+      e.target.value = '';
+      return;
+    }
+    setComboImageFile(file);
+
+    // Create preview with better error handling
+    const reader = new FileReader();
+    
+    // Add timeout for slow file reading
+    const timeoutId = setTimeout(() => {
+      if (reader.readyState !== FileReader.DONE) {
+        reader.abort();
+        setComboImageValidationError("Tiempo de espera agotado. Intenta con una imagen más pequeña.");
+        setComboImageFile(null);
+        setComboImagePreview(null);
+      }
+    }, 5000);
+    
+    reader.onloadend = () => {
+      clearTimeout(timeoutId);
+      if (reader.result && reader.error === null) {
+        setComboImagePreview(reader.result as string);
+        setComboImageValidationError(null);
+      }
+    };
+    
+    reader.onerror = () => {
+      clearTimeout(timeoutId);
+      // Only show error after a brief delay to avoid race conditions
+      setTimeout(() => {
+        setComboImageValidationError("Error al leer el archivo. Asegúrate de que sea una imagen válida.");
+        setComboImageFile(null);
+        setComboImagePreview(null);
+      }, 100);
+    };
+    
+    reader.readAsDataURL(file);
+  };
+  
+  // Upload image function for combos
+  const uploadComboImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingComboImage(true);
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `combo-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      console.log('Starting combo image upload:', fileName);
+
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await supabase.storage.from('service-images').upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+        if (uploadResult.error) {
+          console.error('Upload error:', uploadResult.error);
+          throw new Error(`Error al subir la imagen: ${uploadResult.error.message}`);
+        }
+
+        if (!uploadResult.data) {
+          throw new Error('No se recibió respuesta del servidor al subir la imagen');
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage.from('service-images').getPublicUrl(fileName);
+        
+        if (!publicUrl) {
+          throw new Error('No se pudo obtener la URL pública de la imagen');
+        }
+        
+        console.log('Combo image uploaded successfully:', publicUrl);
+        return publicUrl;
+      } catch (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Combo image upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir la imagen';
+      return null;
+    } finally {
+      setUploadingComboImage(false);
+    }
+  };
+  
+  // Remove combo image function
+  const removeComboImage = () => {
+    setComboImageFile(null);
+    setComboImagePreview(null);
+    setComboImageValidationError(null);
+    // Clear the file input
+    const fileInput = document.getElementById('combo-image') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
   const fetchDiscounts = async () => {
     try {
       const {
@@ -307,6 +450,9 @@ const AdminDiscounts: React.FC = () => {
       fixed_price: ""
     });
     setEditingCombo(null);
+    setComboImageFile(null);
+    setComboImagePreview(null);
+    setComboImageValidationError(null);
   };
   const handleComboSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,6 +472,25 @@ const AdminDiscounts: React.FC = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      // Handle image upload
+      let imageUrl = editingCombo?.image_url || "";
+      if (comboImageFile) {
+        const uploadedUrl = await uploadComboImage(comboImageFile);
+        if (!uploadedUrl) {
+          // Show option to save without image
+          const continueWithoutImage = confirm(
+            "La subida de la imagen falló. ¿Deseas guardar el combo sin imagen?"
+          );
+          if (!continueWithoutImage) {
+            return;
+          }
+          // Keep existing image URL or set to empty
+          imageUrl = editingCombo?.image_url || "";
+        } else {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       // Calculate original and total prices
       const originalPrice = comboFormData.services.reduce((total, comboService) => {
         const service = services.find(s => s.id === comboService.service_id);
@@ -343,6 +508,7 @@ const AdminDiscounts: React.FC = () => {
       const comboData = {
         name: comboFormData.name,
         description: comboFormData.description,
+        image_url: imageUrl,
         total_price_cents: totalPrice,
         original_price_cents: originalPrice,
         start_date: new Date(comboFormData.start_date).toISOString(),
@@ -421,6 +587,12 @@ const AdminDiscounts: React.FC = () => {
       discount_percentage: discountPercent.toString(),
       fixed_price: (totalPrice / 100).toString()
     });
+    
+    // Set image preview for editing
+    setComboImagePreview(combo.image_url || null);
+    setComboImageFile(null);
+    setComboImageValidationError(null);
+    
     setComboDialogOpen(true);
   };
   const handleDeleteCombo = async (id: string) => {
@@ -770,6 +942,42 @@ const AdminDiscounts: React.FC = () => {
                   })} placeholder="Descripción del combo" />
                   </div>
 
+                  {/* Combo Image Upload Section */}
+                  <div>
+                    <Label htmlFor="combo-image">Imagen del Combo</Label>
+                    <div className="space-y-4">
+                      {comboImageValidationError && <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>{comboImageValidationError}</AlertDescription>
+                        </Alert>}
+                      
+                      {comboImagePreview && <div className="relative">
+                          <img src={comboImagePreview} alt="Vista previa" className="w-full h-48 object-cover rounded-lg border" />
+                          <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={removeComboImage} disabled={uploadingComboImage}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>}
+                      
+                      {uploadingComboImage && <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Subiendo imagen...</span>
+                          </div>
+                        </div>}
+                      
+                      <Input id="combo-image" type="file" accept="image/*" onChange={handleComboImageChange} className="hidden" disabled={uploadingComboImage} />
+                      <Button type="button" variant="outline" onClick={() => document.getElementById('combo-image')?.click()} className="w-full" disabled={uploadingComboImage}>
+                        {uploadingComboImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                        {comboImagePreview ? "Cambiar imagen" : "Subir imagen"}
+                      </Button>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>Formatos soportados: JPG, PNG, WebP, GIF</p>
+                        <p>Tamaño máximo: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                        <p>Recomendado: Imágenes de alta calidad, ratio 16:9 o cuadradas</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="combo_start_date">Fecha de Inicio *</Label>
@@ -906,77 +1114,84 @@ const AdminDiscounts: React.FC = () => {
                   <p className="text-lg font-medium text-muted-foreground">No hay combos creados</p>
                   <p className="text-sm text-muted-foreground">Crea tu primer combo para comenzar</p>
                 </CardContent>
-              </Card> : combos.map(combo => <Card key={combo.id} className="transition-shadow hover:shadow-md">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="flex items-center space-x-2">
-                      <CardTitle className="text-lg">{combo.name}</CardTitle>
-                      <Badge variant={combo.is_active ? "default" : "secondary"}>
-                        {combo.is_active ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditCombo(combo)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteCombo(combo.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="font-medium text-muted-foreground">Precio Original</p>
-                          <p className="line-through text-muted-foreground">₡{Math.round(combo.original_price_cents / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Precio Final</p>
-                          <p className="font-bold text-primary">₡{Math.round(combo.total_price_cents / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Ahorro</p>
-                          <p className="font-bold text-green-600">₡{Math.round((combo.original_price_cents - combo.total_price_cents) / 100)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">% Descuento</p>
-                          <p className="font-bold text-green-600">{Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100)}%</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="font-medium text-muted-foreground mb-2">Servicios incluidos:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {combo.combo_services.map((cs, index) => <div key={index} className="flex justify-between items-center bg-muted p-2 rounded">
-                              <span className="text-sm">{cs.services.name}</span>
-                              <Badge variant="outline">x{cs.quantity}</Badge>
-                            </div>)}
-                        </div>
-                      </div>
+              </Card> : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {combos.map(combo => {
+                  const comboServices = combo.combo_services.map(cs => ({
+                    name: cs.services.name,
+                    quantity: cs.quantity,
+                    service_id: cs.service_id
+                  }));
 
-                      {combo.description && <div>
-                          <p className="text-sm text-muted-foreground">{combo.description}</p>
-                        </div>}
+                  const discountPercentage = Math.round((1 - combo.total_price_cents / combo.original_price_cents) * 100);
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="font-medium text-muted-foreground">Válido desde</p>
-                          <p className="flex items-center">
-                            <Calendar className="mr-1 h-4 w-4" />
-                            {format(new Date(combo.start_date), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">Válido hasta</p>
-                          <p className="flex items-center">
-                            <Calendar className="mr-1 h-4 w-4" />
-                            {format(new Date(combo.end_date), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                      </div>
+                  return (
+                    <div key={combo.id} className="relative group">
+                      <ComboCard
+                        id={combo.id}
+                        name={combo.name}
+                        description={combo.description}
+                        originalPrice={combo.original_price_cents}
+                        finalPrice={combo.total_price_cents}
+                        savings={combo.original_price_cents - combo.total_price_cents}
+                        imageUrl={combo.image_url}
+                        comboServices={comboServices}
+                        onSelect={() => handleEditCombo(combo)}
+                        variant="admin"
+                        showExpandable={true}
+                        className="relative"
+                        adminBadges={
+                          <>
+                            <Badge 
+                              variant={combo.is_active ? "default" : "secondary"} 
+                              className={`text-xs font-medium shadow-lg ${
+                                combo.is_active 
+                                  ? 'bg-green-600 text-white border border-green-500' 
+                                  : 'bg-gray-600 text-white border border-gray-500'
+                              }`}
+                            >
+                              {combo.is_active ? "Activo" : "Inactivo"}
+                            </Badge>
+                            <Badge 
+                              variant="secondary" 
+                              className="text-xs font-medium shadow-lg bg-red-500 text-white border border-red-400"
+                            >
+                              {discountPercentage}% OFF
+                            </Badge>
+                          </>
+                        }
+                        adminButtons={
+                          <>
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditCombo(combo);
+                              }}
+                              className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                            >
+                              <Pencil className="h-3 w-3 text-gray-700" />
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCombo(combo.id);
+                              }}
+                              className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                            >
+                              <Trash2 className="h-3 w-3 text-white" />
+                            </Button>
+                          </>
+                        }
+                      />
                     </div>
-                  </CardContent>
-                </Card>)}
+                  );
+                })}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
