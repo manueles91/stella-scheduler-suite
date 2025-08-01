@@ -215,7 +215,7 @@ export const AdminIngresos = () => {
       .insert({
         client_id: isGuestCustomer ? null : selectedCustomer.id,
         service_id: appointmentData.serviceId,
-        employee_id: appointmentData.employeeId || null,
+        employee_id: appointmentData.employeeId === "unassigned" ? null : appointmentData.employeeId || null,
         appointment_date: appointmentData.date,
         start_time: appointmentData.time,
         end_time: format(endTime, 'HH:mm'),
@@ -266,7 +266,7 @@ export const AdminIngresos = () => {
       .insert({
         client_id: isGuestCustomer ? null : selectedCustomer.id,
         service_id: saleData.serviceId,
-        employee_id: saleData.employeeId || null,
+        employee_id: saleData.employeeId === "unassigned" ? null : saleData.employeeId || null,
         appointment_date: format(today, 'yyyy-MM-dd'),
         start_time: format(today, 'HH:mm'),
         end_time: format(new Date(today.getTime() + service.duration_minutes * 60000), 'HH:mm'),
@@ -417,7 +417,7 @@ export const AdminIngresos = () => {
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="unassigned">Sin asignar</SelectItem>
                       {employees.map(employee => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}
@@ -502,7 +502,7 @@ export const AdminIngresos = () => {
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="unassigned">Sin asignar</SelectItem>
                       {employees.map(employee => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}
