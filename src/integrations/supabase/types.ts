@@ -140,6 +140,7 @@ export type Database = {
           description: string | null
           end_date: string
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           original_price_cents: number
@@ -153,6 +154,7 @@ export type Database = {
           description?: string | null
           end_date: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           original_price_cents: number
@@ -166,6 +168,7 @@ export type Database = {
           description?: string | null
           end_date?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           original_price_cents?: number
