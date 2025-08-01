@@ -76,19 +76,22 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
 
   const menuItems = [
     { id: 'overview', label: 'Inicio', icon: Calendar },
-    { id: 'bookings', label: 'Reservar', icon: Calendar },
+    ...(effectiveProfile?.role === 'admin' ? [
+      { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
+      { id: 'admin-costs', label: 'Costos', icon: Receipt },
+      { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
+    ] : []),
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
-      { id: 'schedule', label: 'Mi horario', icon: Clock },
       { id: 'time-tracking', label: 'Mi agenda', icon: Users },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
-      { id: 'admin-customers', label: 'Clientes', icon: UsersIcon },
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
       { id: 'admin-discounts', label: 'Descuentos', icon: Tags },
-      { id: 'admin-staff', label: 'Personal', icon: UserPlus },
-      { id: 'admin-costs', label: 'Costos', icon: Receipt },
     ] : []),
+    ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
+      { id: 'schedule', label: 'Mi horario', icon: Clock },
+    ] : []),
+    { id: 'bookings', label: 'Reservar', icon: Calendar },
   ];
 
   return (

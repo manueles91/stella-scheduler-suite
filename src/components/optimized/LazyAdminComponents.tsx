@@ -18,6 +18,10 @@ export const AdminStaff = lazy(() =>
   import("../admin/AdminStaff").then(module => ({ default: module.AdminStaff }))
 );
 
+export const AdminUsers = lazy(() => 
+  import("../admin/AdminUsers").then(module => ({ default: module.AdminUsers }))
+);
+
 export const AdminDiscounts = lazy(() => 
   import("../admin/AdminDiscounts")
 );

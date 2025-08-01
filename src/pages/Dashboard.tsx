@@ -11,8 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminIngresos } from "@/components/admin/AdminIngresos";
 import { 
   AdminServices,
-  AdminCustomers,
-  AdminStaff,
+  AdminUsers,
   AdminDiscounts,
   AdminCosts,
   AdminCostCategories,
@@ -176,18 +175,10 @@ const Dashboard = () => {
           </Suspense>
         );
         
-      case 'admin-staff':
+      case 'admin-users':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminStaff />
-          </Suspense>
-        );
-        
-        
-      case 'admin-customers':
-        return (
-          <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminCustomers />
+            <AdminUsers />
           </Suspense>
         );
         
