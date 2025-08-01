@@ -30,6 +30,10 @@ export const AdminCosts = lazy(() =>
   import("../admin/AdminCosts").then(module => ({ default: module.AdminCosts }))
 );
 
+export const AdminCostCategories = lazy(() => 
+  import("../admin/AdminCostCategories").then(module => ({ default: module.AdminCostCategories }))
+);
+
 // Optimized loading fallback component
 export const AdminLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-[400px]">

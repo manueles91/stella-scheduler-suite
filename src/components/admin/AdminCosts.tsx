@@ -14,7 +14,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 type CostType = 'fixed' | 'variable' | 'recurring' | 'one_time';
-type CostCategory = 'inventory' | 'utilities' | 'rent' | 'supplies' | 'equipment' | 'marketing' | 'maintenance' | 'other';
+
+interface CostCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface Cost {
   id: string;
@@ -22,7 +27,8 @@ interface Cost {
   description?: string;
   amount_cents: number;
   cost_type: CostType;
-  cost_category: CostCategory;
+  cost_category_id: string;
+  cost_categories?: CostCategory;
   recurring_frequency?: number;
   is_active: boolean;
   date_incurred: string;
@@ -37,17 +43,6 @@ const costTypes = [
   { value: 'one_time', label: 'Una vez' },
 ];
 
-const costCategories = [
-  { value: 'inventory', label: 'Inventario' },
-  { value: 'utilities', label: 'Servicios' },
-  { value: 'rent', label: 'Alquiler' },
-  { value: 'supplies', label: 'Suministros' },
-  { value: 'equipment', label: 'Equipamiento' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'maintenance', label: 'Mantenimiento' },
-  { value: 'other', label: 'Otros' },
-];
-
 const formatCurrency = (amountCents: number) => {
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
@@ -57,6 +52,7 @@ const formatCurrency = (amountCents: number) => {
 
 export function AdminCosts() {
   const [costs, setCosts] = useState<Cost[]>([]);
+  const [costCategories, setCostCategories] = useState<CostCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
@@ -68,20 +64,43 @@ export function AdminCosts() {
     description: '',
     amount: '',
     cost_type: '' as CostType | '',
-    cost_category: '' as CostCategory | '',
+    cost_category_id: '',
     recurring_frequency: '',
     date_incurred: new Date().toISOString().split('T')[0],
   });
 
   useEffect(() => {
     fetchCosts();
+    fetchCostCategories();
   }, []);
+
+  const fetchCostCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cost_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setCostCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching cost categories:', error);
+    }
+  };
 
   const fetchCosts = async () => {
     try {
       const { data, error } = await supabase
         .from('costs')
-        .select('*')
+        .select(`
+          *,
+          cost_categories (
+            id,
+            name,
+            description
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -104,7 +123,7 @@ export function AdminCosts() {
       description: '',
       amount: '',
       cost_type: '',
-      cost_category: '',
+      cost_category_id: '',
       recurring_frequency: '',
       date_incurred: new Date().toISOString().split('T')[0],
     });
@@ -114,7 +133,7 @@ export function AdminCosts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.amount || !formData.cost_type || !formData.cost_category) {
+    if (!formData.name || !formData.amount || !formData.cost_type || !formData.cost_category_id) {
       toast({
         title: "Error",
         description: "Todos los campos obligatorios deben estar completos",
@@ -138,13 +157,12 @@ export function AdminCosts() {
         description: formData.description || null,
         amount_cents: Math.round(parseFloat(formData.amount) * 100),
         cost_type: formData.cost_type as CostType,
-        cost_category: formData.cost_category as CostCategory,
+        cost_category_id: formData.cost_category_id,
         recurring_frequency: formData.recurring_frequency ? parseInt(formData.recurring_frequency) : null,
         date_incurred: formData.date_incurred,
         next_due_date: formData.cost_type === 'recurring' && formData.recurring_frequency
           ? new Date(new Date(formData.date_incurred).getTime() + parseInt(formData.recurring_frequency) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
           : null,
-        ...(editingCost ? {} : { created_by: profile.id }),
       };
 
       if (editingCost) {
@@ -162,6 +180,7 @@ export function AdminCosts() {
         const insertData = {
           ...costData,
           created_by: profile.id,
+          cost_category: 'other' as any, // Temporary workaround for legacy field
         };
         
         const { error } = await supabase
@@ -195,7 +214,7 @@ export function AdminCosts() {
       description: cost.description || '',
       amount: (cost.amount_cents / 100).toString(),
       cost_type: cost.cost_type,
-      cost_category: cost.cost_category,
+      cost_category_id: cost.cost_category_id,
       recurring_frequency: cost.recurring_frequency?.toString() || '',
       date_incurred: cost.date_incurred,
     });
@@ -229,8 +248,9 @@ export function AdminCosts() {
     }
   };
 
-  const getCategoryLabel = (category: string) => {
-    return costCategories.find(c => c.value === category)?.label || category;
+  const getCategoryLabel = (categoryId: string) => {
+    const category = costCategories.find(c => c.id === categoryId);
+    return category?.name || 'Sin categoría';
   };
 
   const getTypeLabel = (type: string) => {
@@ -251,22 +271,23 @@ export function AdminCosts() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Gestión de Costos</h1>
-          <p className="text-muted-foreground">
-            Administra los gastos del salón: inventario, servicios, alquiler y más
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="w-full sm:w-auto">
+          <h1 className="text-xl sm:text-2xl font-bold">Gestión de Costos</h1>
+          <p className="text-sm text-muted-foreground">
+            Administra los gastos del salón
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={resetForm} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Costo
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
@@ -291,6 +312,7 @@ export function AdminCosts() {
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Descripción opcional del gasto"
+                  rows={2}
                 />
               </div>
 
@@ -308,18 +330,18 @@ export function AdminCosts() {
               </div>
 
               <div>
-                <Label htmlFor="cost_category">Categoría *</Label>
+                <Label htmlFor="cost_category_id">Categoría *</Label>
                 <Select
-                  value={formData.cost_category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, cost_category: value as CostCategory }))}
+                  value={formData.cost_category_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, cost_category_id: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent>
                     {costCategories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -369,13 +391,14 @@ export function AdminCosts() {
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button type="submit" className="flex-1">
                   {editingCost ? 'Actualizar' : 'Crear'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
+                  className="flex-1"
                   onClick={() => {
                     setIsDialogOpen(false);
                     resetForm();
@@ -389,15 +412,15 @@ export function AdminCosts() {
         </Dialog>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Summary Cards - Mobile optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Costos Mensuales</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalMonthly)}</div>
+            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalMonthly)}</div>
             <p className="text-xs text-muted-foreground">
               Estimado para este mes
             </p>
@@ -410,20 +433,20 @@ export function AdminCosts() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{costs.length}</div>
+            <div className="text-xl sm:text-2xl font-bold">{costs.length}</div>
             <p className="text-xs text-muted-foreground">
               Costos registrados
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="sm:col-span-2 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Costos Activos</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {costs.filter(c => c.is_active).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -433,66 +456,72 @@ export function AdminCosts() {
         </Card>
       </div>
 
-      {/* Costs List */}
-      <div className="grid gap-4">
+      {/* Costs List - Mobile optimized */}
+      <div className="space-y-4">
         {costs.map((cost) => (
           <Card key={cost.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{cost.name}</h3>
-                    <Badge variant={cost.is_active ? "default" : "secondary"}>
-                      {cost.is_active ? "Activo" : "Inactivo"}
-                    </Badge>
-                    <Badge variant="outline">
-                      {getCategoryLabel(cost.cost_category)}
-                    </Badge>
-                    <Badge variant="outline">
-                      {getTypeLabel(cost.cost_type)}
-                    </Badge>
-                  </div>
-                  
-                  {cost.description && (
-                    <p className="text-muted-foreground text-sm mb-2">
-                      {cost.description}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Fecha: {format(new Date(cost.date_incurred), 'dd/MM/yyyy')}</span>
-                    {cost.recurring_frequency && (
-                      <span>Cada {cost.recurring_frequency} días</span>
-                    )}
-                    {cost.next_due_date && (
-                      <span>Próximo: {format(new Date(cost.next_due_date), 'dd/MM/yyyy')}</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <div className="text-lg font-bold">
-                      {formatCurrency(cost.amount_cents)}
+            <CardContent className="p-4">
+              {/* Mobile Layout */}
+              <div className="flex flex-col space-y-3">
+                {/* Header with title and badges */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold text-lg break-words">{cost.name}</h3>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={cost.is_active ? "default" : "secondary"} className="text-xs">
+                        {cost.is_active ? "Activo" : "Inactivo"}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {cost.cost_categories?.name || getCategoryLabel(cost.cost_category_id)}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(cost.cost_type)}
+                      </Badge>
                     </div>
                   </div>
                   
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(cost)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(cost.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center justify-between sm:justify-end gap-2">
+                    <div className="text-right">
+                      <div className="text-lg sm:text-xl font-bold">
+                        {formatCurrency(cost.amount_cents)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(cost)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(cost.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
+                </div>
+                
+                {/* Description */}
+                {cost.description && (
+                  <p className="text-muted-foreground text-sm break-words">
+                    {cost.description}
+                  </p>
+                )}
+                
+                {/* Date info */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                  <span>Fecha: {format(new Date(cost.date_incurred), 'dd/MM/yyyy')}</span>
+                  {cost.recurring_frequency && (
+                    <span>Cada {cost.recurring_frequency} días</span>
+                  )}
+                  {cost.next_due_date && (
+                    <span>Próximo: {format(new Date(cost.next_due_date), 'dd/MM/yyyy')}</span>
+                  )}
                 </div>
               </div>
             </CardContent>

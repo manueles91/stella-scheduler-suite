@@ -178,10 +178,41 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       costs: {
         Row: {
           amount_cents: number
           cost_category: Database["public"]["Enums"]["cost_category"]
+          cost_category_id: string
           cost_type: Database["public"]["Enums"]["cost_type"]
           created_at: string
           created_by: string
@@ -197,6 +228,7 @@ export type Database = {
         Insert: {
           amount_cents: number
           cost_category: Database["public"]["Enums"]["cost_category"]
+          cost_category_id: string
           cost_type: Database["public"]["Enums"]["cost_type"]
           created_at?: string
           created_by: string
@@ -212,6 +244,7 @@ export type Database = {
         Update: {
           amount_cents?: number
           cost_category?: Database["public"]["Enums"]["cost_category"]
+          cost_category_id?: string
           cost_type?: Database["public"]["Enums"]["cost_type"]
           created_at?: string
           created_by?: string
@@ -224,7 +257,15 @@ export type Database = {
           recurring_frequency?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "costs_cost_category_id_fkey"
+            columns: ["cost_category_id"]
+            isOneToOne: false
+            referencedRelation: "cost_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discounts: {
         Row: {
