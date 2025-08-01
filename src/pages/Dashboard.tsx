@@ -8,9 +8,9 @@ import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { TimeTracking } from "@/components/employee/TimeTracking";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminIngresos } from "@/components/admin/AdminIngresos";
 import { 
   AdminServices,
-  AdminReservations,
   AdminCustomers,
   AdminStaff,
   AdminDiscounts,
@@ -160,11 +160,7 @@ const Dashboard = () => {
         return <TimeTracking employeeId={effectiveProfile?.id} />;
         
       case 'admin-bookings':
-        return (
-          <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminReservations />
-          </Suspense>
-        );
+        return <AdminIngresos />;
         
       case 'admin-services':
         return (
@@ -187,8 +183,6 @@ const Dashboard = () => {
           </Suspense>
         );
         
-      case 'admin-booking':
-        return <AdminBookingSystem />;
         
       case 'admin-customers':
         return (
