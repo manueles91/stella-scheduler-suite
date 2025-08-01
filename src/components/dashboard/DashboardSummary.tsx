@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
-import { StandardServiceCard } from "@/components/cards/StandardServiceCard";
+import { ServiceCard } from "@/components/cards/ServiceCard";
 import { Appointment } from "@/types/appointment";
 interface DashboardSummaryProps {
   effectiveProfile: any;
@@ -283,8 +283,10 @@ export const DashboardSummary = ({
         </div>
       </div>;
   }
-  return <div className="space-y-6">
-      
+  
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
       
       {/* Próximas Citas */}
       <Card>
@@ -330,7 +332,7 @@ export const DashboardSummary = ({
             <div className="space-y-4">
               {/* Display Combos */}
               {activeCombos.map((combo) => (
-                <StandardServiceCard
+                <ServiceCard
                   key={`combo-${combo.id}`}
                   id={combo.id}
                   name={combo.name}
@@ -355,7 +357,7 @@ export const DashboardSummary = ({
               
               {/* Display Individual Discounts */}
               {activePromotions.map((promo) => (
-                <StandardServiceCard
+                <ServiceCard
                   key={`discount-${promo.id}`}
                   id={promo.services.id}
                   name={promo.services.name}
@@ -410,5 +412,6 @@ export const DashboardSummary = ({
           )}
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };

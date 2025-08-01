@@ -1,4 +1,4 @@
-import { ServiceCard as ServiceCardComponent, ComboCard } from "@/components/cards";
+import { ServiceCard as ServiceCardComponent } from "@/components/cards/ServiceCard";
 import { BookableItem, Employee } from "@/types/booking";
 
 interface ServiceCardProps {
@@ -63,23 +63,12 @@ export const ServiceCard = ({
     allowEmployeeSelection: allowEmployeeSelection && isSelected,
     variant: 'reservation' as const,
     showExpandable: true,
-    className: `${isSelected ? 'border-primary ring-2 ring-primary shadow-lg' : ''}`
+    className: `${isSelected ? 'border-primary ring-2 ring-primary shadow-lg' : ''}`,
+    type: service.type,
+    comboServices: service.type === 'combo' ? comboServices : undefined,
+    discountType: hasDiscount ? service.appliedDiscount?.discount_type : undefined,
+    discountValue: hasDiscount ? service.appliedDiscount?.discount_value : undefined
   };
 
-  if (service.type === 'combo') {
-    return (
-      <ComboCard
-        {...cardProps}
-        comboServices={comboServices}
-      />
-    );
-  }
-
-  return (
-    <ServiceCardComponent
-      {...cardProps}
-      discountType={hasDiscount ? service.appliedDiscount?.discount_type : undefined}
-      discountValue={hasDiscount ? service.appliedDiscount?.discount_value : undefined}
-    />
-  );
+  return <ServiceCardComponent {...cardProps} />;
 };

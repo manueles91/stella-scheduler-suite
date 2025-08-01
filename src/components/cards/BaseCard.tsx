@@ -72,14 +72,14 @@ export const BaseCard = ({
       <div className="relative z-10 p-3 sm:p-4 h-full flex flex-col justify-between text-white">
         {/* Top Row */}
         <div className="flex justify-between items-start">
-          {/* Only show service name in collapsed state, not expanded */}
-          {!isExpanded && (
-            <h3 className={`font-serif font-bold leading-tight text-white drop-shadow-md ${
-              isMobile ? 'text-sm sm:text-lg' : 'text-lg'
-            }`}>
-              {name}
-            </h3>
-          )}
+                     {/* Only show service name in collapsed state, not expanded */}
+           {!isExpanded && (
+             <h3 className={`font-serif font-bold leading-tight text-white drop-shadow-md ${
+               isMobile ? 'text-base sm:text-xl' : 'text-xl'
+             }`}>
+               {name}
+             </h3>
+           )}
           {/* Expand button for collapsed state only */}
           {showExpandable && !isExpanded && (
             <CollapsibleTrigger asChild>
@@ -99,8 +99,8 @@ export const BaseCard = ({
         {/* Card-specific content */}
         {children}
         
-        {/* Admin badges - positioned at bottom left */}
-        {(adminBadges || discountBadge) && (
+        {/* Admin badges - positioned at bottom left in collapsed state */}
+        {(adminBadges || discountBadge) && !isExpanded && (
           <div className="absolute bottom-2 left-2 flex gap-1 max-w-[calc(100%-4rem)]">
             {discountBadge}
             {adminBadges}

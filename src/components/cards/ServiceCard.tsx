@@ -130,6 +130,19 @@ export const ServiceCard = ({
     );
   };
 
+  // Duration display for expanded state
+  const getDurationDisplay = () => {
+    if (!duration) return null;
+    return (
+      <div className="bg-white/70 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+        <div className="flex items-center gap-1 text-gray-800 text-sm">
+          <Clock className="h-3 w-3" />
+          <span>{duration} min</span>
+        </div>
+      </div>
+    );
+  };
+
   const cardContent = (
     <div className="absolute bottom-4 right-4">
       {/* Only show price if not expanded to avoid redundancy */}
@@ -162,11 +175,11 @@ export const ServiceCard = ({
     <div className="space-y-4">
       {/* Row 1: Service name and admin buttons + collapse button */}
       <div className="flex justify-between items-start">
-        <h3 className={`font-serif font-bold text-white drop-shadow-md ${
-          isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
-        }`}>
-          {name}
-        </h3>
+                 <h3 className={`font-serif font-bold text-white drop-shadow-md ${
+           isMobile ? 'text-xl sm:text-3xl' : 'text-3xl'
+         }`}>
+           {name}
+         </h3>
         {/* Admin buttons + collapse button positioned together */}
         <div className="flex gap-1 items-center">
           {adminButtons}
@@ -183,60 +196,59 @@ export const ServiceCard = ({
         </div>
       </div>
 
-      {/* Row 2: Badges (left) + Duration (right) */}
+      {/* Row 2: Duration and Badges */}
       <div className="flex justify-between items-center">
+        {/* Duration on the left */}
+        <div className="flex justify-start">
+          {getDurationDisplay()}
+        </div>
+        {/* Badges on the right */}
         <div className="flex gap-2 flex-wrap">
           {/* Show discount badge in expanded state */}
           {variant === 'admin' && getDiscountBadge()}
           {/* Show admin badges in expanded state */}
           {adminBadges}
         </div>
-                 {duration && (
-           <div className="bg-white/70 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-             <Badge variant="secondary" className="text-xs">
-               <Clock className="h-2 w-2 mr-1" />
-               {duration} min
-             </Badge>
-           </div>
-         )}
       </div>
 
-             {/* Row 3: Description and Price - Side by side */}
-       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-         {/* Description - Left side */}
-         <div className="flex-1 min-w-0">
-           {description && (
-             <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg">
-               <p className="text-xs sm:text-sm text-gray-800 leading-relaxed">{description}</p>
-             </div>
-           )}
-         </div>
-         {/* Price - Right side */}
-         <div className="flex-shrink-0 flex justify-center">
-           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg inline-block">
-             {/* Final price - responsive sizing */}
-             <div className="text-center">
-               <div className="font-bold text-lg sm:text-xl lg:text-2xl text-primary">
-                 {formatPrice(finalPrice)}
+             {/* Row 3: Description and Price - Side by side (for non-combo cards) */}
+       {!isCombo && (
+         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+           {/* Description - Left side */}
+           <div className="flex-1 min-w-0">
+                           {description && (
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg">
+                  <p className="text-xs sm:text-sm text-gray-900 leading-relaxed">{description}</p>
+                </div>
+              )}
+           </div>
+           {/* Price - Right side */}
+           <div className="flex-shrink-0 flex justify-center">
+             <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg inline-block">
+               {/* Final price - responsive sizing */}
+               <div className="text-center">
+                 <div className="font-bold text-lg sm:text-xl lg:text-2xl text-gray-900">
+                   {formatPrice(finalPrice)}
+                 </div>
                </div>
+               
+               {/* Nominal savings - responsive sizing */}
+               {hasDiscount && (
+                 <div className="text-center mt-1">
+                   <span className="font-medium text-xs sm:text-sm text-green-700">
+                     Ahorra {formatPrice(savings)}
+                   </span>
+                 </div>
+               )}
              </div>
-             
-             {/* Nominal savings - responsive sizing */}
-             {hasDiscount && (
-               <div className="text-center mt-1">
-                 <span className="font-medium text-xs sm:text-sm text-green-600">
-                   Ahorra {formatPrice(savings)}
-                 </span>
-               </div>
-             )}
            </div>
          </div>
-       </div>
+       )}
 
-             {/* Combo Services Display - Only for combo cards */}
+       {/* Combo Services Display - Only for combo cards */}
        {isCombo && comboServices && comboServices.length > 0 && (
          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-           <Label className={`text-gray-800 font-semibold ${
+           <Label className={`text-gray-900 font-semibold ${
              isMobile ? 'text-sm' : 'text-sm'
            }`}>Servicios Incluidos</Label>
            <div className="flex flex-wrap gap-2 mt-2">
@@ -250,12 +262,42 @@ export const ServiceCard = ({
          </div>
        )}
 
-       {/* Employee Selection - Only for reservation variant */}
-       {allowEmployeeSelection && variant === 'reservation' && (
-         <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg space-y-2">
-           <Label className={`text-gray-800 ${
-             isMobile ? 'text-sm' : 'text-sm'
-           }`}>Estilista</Label>
+       {/* Duration for combo cards - positioned after Servicios Incluidos */}
+       {isCombo && getDurationDisplay() && (
+         <div className="flex justify-start">
+           {getDurationDisplay()}
+         </div>
+       )}
+
+       {/* Price section for combo cards - positioned below Servicios Incluidos */}
+       {isCombo && (
+         <div className="flex justify-center">
+           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg inline-block">
+             {/* Final price - responsive sizing */}
+             <div className="text-center">
+               <div className="font-bold text-lg sm:text-xl lg:text-2xl text-gray-900">
+                 {formatPrice(finalPrice)}
+               </div>
+             </div>
+             
+             {/* Nominal savings - responsive sizing */}
+             {hasDiscount && (
+               <div className="text-center mt-1">
+                 <span className="font-medium text-xs sm:text-sm text-green-700">
+                   Ahorra {formatPrice(savings)}
+                 </span>
+               </div>
+             )}
+           </div>
+         </div>
+       )}
+
+      {/* Employee Selection - Only for reservation variant */}
+      {allowEmployeeSelection && variant === 'reservation' && (
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg space-y-2">
+          <Label className={`text-gray-900 ${
+            isMobile ? 'text-sm' : 'text-sm'
+          }`}>Estilista</Label>
           <Select 
             value={selectedEmployee?.id || "any"} 
             onValueChange={(value) => {
@@ -289,22 +331,22 @@ export const ServiceCard = ({
         </div>
       )}
       
-             {/* Row 4: CTA (bottom) - Only show for reservation and landing variants */}
-       {(variant === 'reservation' || variant === 'landing') && onSelect && (
-         <div className="flex justify-center pt-2">
-           <Button 
-             className={`bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg ${
-               isMobile ? 'w-1/2 sm:w-16' : 'w-16'
-             }`}
-             onClick={(e) => {
-               e.stopPropagation();
-               onSelect();
-             }}
-           >
-             {variant === 'reservation' ? 'Seleccionar' : 'Reservar'}
-           </Button>
-         </div>
-       )}
+      {/* Row 4: CTA (bottom) - Only show for reservation and landing variants */}
+      {(variant === 'reservation' || variant === 'landing') && onSelect && (
+        <div className="flex justify-center pt-2">
+          <Button 
+            className={`bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg ${
+              isMobile ? 'w-1/2 sm:w-16' : 'w-16'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect();
+            }}
+          >
+            {variant === 'reservation' ? 'Seleccionar' : 'Reservar'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -320,8 +362,15 @@ export const ServiceCard = ({
       onExpandChange={setIsExpanded}
       onSelect={onSelect}
       expandedContent={expandedContent}
-      adminBadges={!isExpanded ? adminBadges : undefined} // Only show admin badges in collapsed state
-      discountBadge={!isExpanded && variant === 'admin' ? getDiscountBadge() : undefined} // Show discount badge in collapsed state
+      // Admin badges in collapsed state (replacing duration)
+      adminBadges={!isExpanded ? (
+        <div className="flex gap-1 flex-wrap">
+          {variant === 'admin' && getDiscountBadge()}
+          {adminBadges}
+        </div>
+      ) : undefined}
+      // Discount badge only in expanded state (green rectangle)
+      discountBadge={isExpanded && variant === 'admin' ? getDiscountBadge() : undefined}
       adminButtons={adminButtons}
     >
       {cardContent}
