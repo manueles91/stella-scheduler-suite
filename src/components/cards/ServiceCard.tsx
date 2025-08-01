@@ -108,8 +108,9 @@ export const ServiceCard = ({
 
   const getDiscountBadge = () => {
     if (isCombo) {
+      const percentage = getDiscountPercentage();
       return (
-        <Badge className="bg-red-500 text-white text-xs">
+        <Badge className="bg-blue-500 text-white text-xs">
           <Package className="h-2 w-2 mr-1" />
           COMBO
         </Badge>
@@ -198,14 +199,30 @@ export const ServiceCard = ({
 
       {/* Row 2: Duration and Badges */}
       <div className="flex justify-between items-center">
-        {/* Duration on the left */}
-        <div className="flex justify-start">
-          {getDurationDisplay()}
-        </div>
+        {/* Duration on the left - only for non-combo cards */}
+        {!isCombo && (
+          <div className="flex justify-start">
+            {getDurationDisplay()}
+          </div>
+        )}
         {/* Badges on the right */}
         <div className="flex gap-2 flex-wrap">
-          {/* Show discount badge for everyone in expanded state */}
-          {getDiscountBadge()}
+          {/* Show combo badge for combos */}
+          {isCombo && (
+            <Badge className="bg-blue-500 text-white text-xs">
+              <Package className="h-2 w-2 mr-1" />
+              COMBO
+            </Badge>
+          )}
+          {/* Show discount percentage badge for combos */}
+          {isCombo && hasDiscount && (
+            <Badge className="bg-red-500 text-white text-xs">
+              <Sparkles className="h-2 w-2 mr-1" />
+              {getDiscountPercentage()}% OFF
+            </Badge>
+          )}
+          {/* Show discount badge for non-combo items */}
+          {!isCombo && getDiscountBadge()}
           {/* Show admin badges in expanded state - only for admins */}
           {adminBadges}
         </div>
@@ -245,6 +262,13 @@ export const ServiceCard = ({
          </div>
        )}
 
+       {/* Description for combo cards - positioned before Servicios Incluidos */}
+       {isCombo && description && (
+         <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg">
+           <p className="text-xs sm:text-sm text-gray-900 leading-relaxed">{description}</p>
+         </div>
+       )}
+
        {/* Combo Services Display - Only for combo cards */}
        {isCombo && comboServices && comboServices.length > 0 && (
          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg">
@@ -262,12 +286,7 @@ export const ServiceCard = ({
          </div>
        )}
 
-       {/* Duration for combo cards - positioned after Servicios Incluidos */}
-       {isCombo && getDurationDisplay() && (
-         <div className="flex justify-start">
-           {getDurationDisplay()}
-         </div>
-       )}
+
 
        {/* Price section for combo cards - positioned below Servicios Incluidos */}
        {isCombo && (
@@ -368,8 +387,23 @@ export const ServiceCard = ({
           {adminBadges}
         </div>
       ) : undefined}
-      // Discount badge always visible (for everyone) in collapsed state
-      discountBadge={!isExpanded ? getDiscountBadge() : undefined}
+             // Discount badge always visible (for everyone) in collapsed state
+       discountBadge={!isExpanded ? (
+         isCombo ? (
+           <div className="flex gap-1 flex-wrap">
+             <Badge className="bg-blue-500 text-white text-xs">
+               <Package className="h-2 w-2 mr-1" />
+               COMBO
+             </Badge>
+             {hasDiscount && (
+               <Badge className="bg-red-500 text-white text-xs">
+                 <Sparkles className="h-2 w-2 mr-1" />
+                 {getDiscountPercentage()}% OFF
+               </Badge>
+             )}
+           </div>
+         ) : getDiscountBadge()
+       ) : undefined}
       adminButtons={adminButtons}
     >
       {cardContent}

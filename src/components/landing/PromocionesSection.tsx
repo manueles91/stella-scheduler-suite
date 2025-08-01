@@ -13,7 +13,9 @@ interface Combo {
   description: string;
   total_price_cents: number;
   original_price_cents: number;
+  image_url?: string;
   combo_services: {
+    quantity: number;
     services: {
       name: string;
     };
@@ -85,7 +87,9 @@ export const PromocionesSection = () => {
           description,
           total_price_cents,
           original_price_cents,
+          image_url,
           combo_services (
+            quantity,
             services (
               name
             )
@@ -189,9 +193,10 @@ export const PromocionesSection = () => {
                       originalPrice={combo.original_price_cents}
                       finalPrice={combo.total_price_cents}
                       savings={combo.original_price_cents - combo.total_price_cents}
+                      imageUrl={combo.image_url}
                       comboServices={combo.combo_services.map(cs => ({
                         name: cs.services.name,
-                        quantity: 1
+                        quantity: cs.quantity
                       }))}
                       onSelect={() => navigate('/book')}
                       variant="landing"
@@ -215,6 +220,7 @@ export const PromocionesSection = () => {
                         originalPrice={discount.services.price_cents}
                         finalPrice={discountedPrice}
                         savings={discount.services.price_cents - discountedPrice}
+                        imageUrl={discount.services.image_url}
                         type="discount"
                         discountType={discount.discount_type}
                         discountValue={discount.discount_value}
