@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CollapsibleFilter } from "./CollapsibleFilter";
 
 interface User {
   id: string;
@@ -212,16 +213,18 @@ export const AdminUsers = () => {
           description: "Usuario actualizado correctamente"
         });
       } else {
-        // Create new user
+        // Create new user - Note: This creates a profile without authentication
+        // In a real app, you'd want to use Supabase Auth to create users properly
         const { error } = await supabase
           .from('profiles')
-          .insert([{
+          .insert({
+            id: crypto.randomUUID(), // Generate a UUID for the profile
             email: formData.email,
             full_name: formData.full_name,
             phone: formData.phone || null,
             role: formData.role,
             account_status: 'active'
-          }]);
+          });
 
         if (error) throw error;
 
@@ -470,59 +473,49 @@ export const AdminUsers = () => {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar usuario..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardContent className="p-4">
+          <CollapsibleFilter
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            placeholder="Buscar usuario..."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los roles</SelectItem>
+                  <SelectItem value="client">Cliente</SelectItem>
+                  <SelectItem value="employee">Empleado</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="active">Activo</SelectItem>
+                  <SelectItem value="inactive">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm("");
+                  setRoleFilter("all");
+                  setStatusFilter("all");
+                }}
+                className="w-full"
+              >
+                Limpiar filtros
+              </Button>
             </div>
-            
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Rol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los roles</SelectItem>
-                <SelectItem value="client">Cliente</SelectItem>
-                <SelectItem value="employee">Empleado</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="active">Activo</SelectItem>
-                <SelectItem value="inactive">Inactivo</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm("");
-                setRoleFilter("all");
-                setStatusFilter("all");
-              }}
-              className="w-full"
-            >
-              Limpiar filtros
-            </Button>
-          </div>
+          </CollapsibleFilter>
         </CardContent>
       </Card>
 

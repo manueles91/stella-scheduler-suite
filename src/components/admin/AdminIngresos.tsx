@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerSelectorModal } from "./CustomerSelectorModal";
+import { CollapsibleFilter } from "./CollapsibleFilter";
 
 interface Reservation {
   id: string;
@@ -85,6 +86,9 @@ export const AdminIngresos = () => {
   const [saleData, setSaleData] = useState({
     serviceId: "",
     employeeId: "",
+    date: format(new Date(), 'yyyy-MM-dd'),
+    time: format(new Date(), 'HH:mm'),
+    chargedPrice: "",
     notes: ""
   });
 
@@ -245,10 +249,10 @@ export const AdminIngresos = () => {
   };
 
   const createNewSale = async () => {
-    if (!selectedCustomer || !saleData.serviceId) {
+    if (!selectedCustomer || !saleData.serviceId || !saleData.date || !saleData.time) {
       toast({
         title: "Error",
-        description: "Por favor selecciona cliente y servicio",
+        description: "Por favor completa todos los campos requeridos",
         variant: "destructive"
       });
       return;
@@ -260,16 +264,23 @@ export const AdminIngresos = () => {
     // Check if this is a guest customer (temporary ID)
     const isGuestCustomer = selectedCustomer.id.startsWith('temp-');
 
-    const today = new Date();
+    // Calculate end time
+    const [hours, minutes] = saleData.time.split(':');
+    const startTime = new Date();
+    startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const endTime = new Date(startTime.getTime() + service.duration_minutes * 60000);
+
+    const finalPrice = saleData.chargedPrice ? parseFloat(saleData.chargedPrice) * 100 : service.price_cents;
+
     const { error } = await supabase
       .from('reservations')
       .insert({
         client_id: isGuestCustomer ? null : selectedCustomer.id,
         service_id: saleData.serviceId,
         employee_id: saleData.employeeId === "unassigned" ? null : saleData.employeeId || null,
-        appointment_date: format(today, 'yyyy-MM-dd'),
-        start_time: format(today, 'HH:mm'),
-        end_time: format(new Date(today.getTime() + service.duration_minutes * 60000), 'HH:mm'),
+        appointment_date: saleData.date,
+        start_time: saleData.time,
+        end_time: format(endTime, 'HH:mm'),
         status: 'completed',
         notes: saleData.notes,
         customer_name: selectedCustomer.full_name,
@@ -290,7 +301,14 @@ export const AdminIngresos = () => {
       });
       setShowNewSale(false);
       setSelectedCustomer(null);
-      setSaleData({ serviceId: "", employeeId: "", notes: "" });
+      setSaleData({ 
+        serviceId: "", 
+        employeeId: "", 
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: format(new Date(), 'HH:mm'),
+        chargedPrice: "",
+        notes: "" 
+      });
       fetchReservations();
     }
   };
@@ -371,10 +389,10 @@ export const AdminIngresos = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-3xl font-serif font-bold">Ingresos</h2>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-row gap-2 w-full sm:w-auto">
           <Dialog open={showNewAppointment} onOpenChange={setShowNewAppointment}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
+              <Button className="flex-1 sm:flex-initial">
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Nueva Cita
               </Button>
@@ -459,7 +477,7 @@ export const AdminIngresos = () => {
 
           <Dialog open={showNewSale} onOpenChange={setShowNewSale}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto">
+              <Button variant="outline" className="flex-1 sm:flex-initial">
                 <DollarSign className="h-4 w-4 mr-2" />
                 Registrar Venta
               </Button>
@@ -492,6 +510,34 @@ export const AdminIngresos = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>Precio cobrado</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder={saleData.serviceId ? formatPrice(services.find(s => s.id === saleData.serviceId)?.price_cents || 0) : "Precio del servicio"}
+                    value={saleData.chargedPrice}
+                    onChange={(e) => setSaleData(prev => ({ ...prev, chargedPrice: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Fecha</Label>
+                    <Input
+                      type="date"
+                      value={saleData.date}
+                      onChange={(e) => setSaleData(prev => ({ ...prev, date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Hora</Label>
+                    <Input
+                      type="time"
+                      value={saleData.time}
+                      onChange={(e) => setSaleData(prev => ({ ...prev, time: e.target.value }))}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label>Empleado que realizó el servicio (opcional)</Label>
@@ -536,76 +582,66 @@ export const AdminIngresos = () => {
 
         {/* Filters */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Buscar cliente o servicio..." 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                  className="pl-10" 
-                />
+          <CardContent className="p-4">
+            <CollapsibleFilter
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              placeholder="Buscar cliente o servicio..."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="confirmed">En pie</SelectItem>
+                    <SelectItem value="completed">Completado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                    <SelectItem value="no_show">No se presentó</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
+                    <SelectItem value="none">Sin categoría</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFilter ? format(dateFilter, "PPP") : "Seleccionar fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} initialFocus />
+                  </PopoverContent>
+                </Popover>
+
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setCategoryFilter("all");
+                    setDateFilter(undefined);
+                    setSearchTerm("");
+                  }}
+                >
+                  Limpiar filtros
+                </Button>
               </div>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="confirmed">En pie</SelectItem>
-                  <SelectItem value="completed">Completado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="no_show">No se presentó</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  <SelectItem value="none">Sin categoría</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFilter ? format(dateFilter, "PPP") : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} initialFocus />
-                </PopoverContent>
-              </Popover>
-
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setStatusFilter("all");
-                  setCategoryFilter("all");
-                  setDateFilter(undefined);
-                  setSearchTerm("");
-                }}
-              >
-                Limpiar filtros
-              </Button>
-            </div>
+            </CollapsibleFilter>
           </CardContent>
         </Card>
 
