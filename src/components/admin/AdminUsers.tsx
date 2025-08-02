@@ -98,7 +98,8 @@ export const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch authenticated users from profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           *,
@@ -106,16 +107,36 @@ export const AdminUsers = () => {
         `)
         .order('full_name');
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
-      const usersWithCount = data?.map(user => ({
-        ...user,
-        _count: {
-          reservations: user.reservations?.length || 0
-        }
-      })) || [];
+      // Fetch invited users from invited_users
+      const { data: invitedData, error: invitedError } = await supabase
+        .from('invited_users')
+        .select('*')
+        .order('full_name');
 
-      setUsers(usersWithCount);
+      if (invitedError) throw invitedError;
+
+      // Combine both datasets
+      const allUsers = [
+        ...(profilesData || []).map(user => ({
+          ...user,
+          _count: {
+            reservations: user.reservations?.length || 0
+          },
+          user_type: 'authenticated' as const
+        })),
+        ...(invitedData || []).map(invited => ({
+          ...invited,
+          created_at: invited.invited_at,
+          _count: {
+            reservations: 0
+          },
+          user_type: 'invited' as const
+        }))
+      ];
+
+      setUsers(allUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -213,24 +234,25 @@ export const AdminUsers = () => {
           description: "Usuario actualizado correctamente"
         });
       } else {
-        // Create new user - Note: This creates a profile without authentication
-        // In a real app, you'd want to use Supabase Auth to create users properly
+        // Create new invited user that can later claim their account
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
         const { error } = await supabase
-          .from('profiles')
+          .from('invited_users')
           .insert({
-            id: crypto.randomUUID(), // Generate a UUID for the profile
             email: formData.email,
             full_name: formData.full_name,
             phone: formData.phone || null,
             role: formData.role,
-            account_status: 'active'
+            account_status: 'invited',
+            invited_by: currentUser?.id || ''
           });
 
         if (error) throw error;
 
         toast({
           title: "Éxito",
-          description: "Usuario creado correctamente"
+          description: "Usuario invitado creado correctamente. Podrán reclamar su cuenta al registrarse."
         });
       }
 

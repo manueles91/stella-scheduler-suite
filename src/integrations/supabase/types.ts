@@ -400,6 +400,48 @@ export type Database = {
           },
         ]
       }
+      invited_users: {
+        Row: {
+          account_status: string
+          claimed_at: string | null
+          claimed_by: string | null
+          email: string
+          full_name: string
+          id: string
+          invited_at: string
+          invited_by: string
+          notes: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          account_status?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          invited_at?: string
+          invited_by: string
+          notes?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          account_status?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          notes?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_status: string | null
