@@ -1,34 +1,29 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, ArrowRight, UserPlus, CheckCircle, Sparkles, Package } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { format, addMinutes, parseISO, startOfDay } from "date-fns";
-import { es } from "date-fns/locale";
 import { useOptimizedBookingData } from "@/hooks/useOptimizedBookingData";
 import { useBookingContext } from "@/contexts/BookingContext";
 import { BookingProgress } from "./BookingProgress";
-import { MemoizedServiceCard } from "../optimized/MemoizedServiceCard";
-import { TimeSlotGrid } from "./TimeSlotGrid";
-import { CategoryFilter } from "./CategoryFilter";
 import { 
   BookableItem, 
   Employee, 
   TimeSlot, 
   BookingStep, 
-  BookingState, 
   BookingConfig 
 } from "@/types/booking";
-import { GuestCustomerInfo } from "./GuestCustomerInfo";
+
+// Import step components
+import { ServiceSelectionStep } from "./steps/ServiceSelectionStep";
+import { DateSelectionStep } from "./steps/DateSelectionStep";
+import { TimeSlotSelectionStep } from "./steps/TimeSlotSelectionStep";
+import { ConfirmationStep } from "./steps/ConfirmationStep";
+import { AuthenticationStep } from "./steps/AuthenticationStep";
+
+// Import hooks
+import { useBookingState } from "./hooks/useBookingState";
+import { useBookingHandlers } from "./hooks/useBookingHandlers";
 
 interface UnifiedBookingSystemProps {
   config: BookingConfig;
@@ -41,27 +36,38 @@ interface UnifiedBookingSystemProps {
 }
 
 export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookingSystemProps) => {
-  const [state, setState] = useState<BookingState>({
-    currentStep: 1,
-    selectedService: null,
-    selectedDate: new Date(),
-    selectedSlot: null,
-    selectedEmployee: null,
-    notes: "",
-    loading: false,
-    submitting: false,
-    customerEmail: selectedCustomer?.email || "",
-    customerName: selectedCustomer?.full_name || "",
-  });
-
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [pendingBooking, setPendingBooking] = useState<any>(null);
 
   const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
+  // Use custom hooks for state management
+  const {
+    state,
+    updateState,
+    handleServiceSelect,
+    handleDateSelect,
+    handleSlotSelect,
+    handleEmployeeSelect,
+    handleNotesChange,
+    resetForm,
+    canGoNext,
+  } = useBookingState({ selectedCustomer });
+
+  const {
+    handleProceedToAuth,
+    handleFinalBooking,
+    handleBooking,
+    handleGuestBooking,
+  } = useBookingHandlers({
+    user,
+    config,
+    state,
+    updateState,
+    resetForm,
+  });
   
   const { 
     bookableItems, 
@@ -113,20 +119,20 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       if (serviceId) {
         const service = bookableItems.find(s => s.id === serviceId);
         if (service) {
-          setState(prev => ({ ...prev, selectedService: service }));
+          updateState({ selectedService: service });
           
           if (estilista === 'cualquier') {
-            setState(prev => ({ ...prev, selectedEmployee: null }));
+            updateState({ selectedEmployee: null });
           }
           
           const targetStep = step ? parseInt(step) : 2;
           if (targetStep >= 1 && targetStep <= config.maxSteps) {
-            setState(prev => ({ ...prev, currentStep: targetStep }));
+            updateState({ currentStep: targetStep });
           }
         }
       }
     }
-  }, [bookableItems, searchParams, config.maxSteps]);
+  }, [bookableItems, searchParams, config.maxSteps, updateState]);
 
   // Fetch available slots when service/date/employee changes
   useEffect(() => {
@@ -160,537 +166,89 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         setPendingBooking(bookingData);
         
         if (user) {
-          handleFinalBooking();
+          handleFinalBooking(bookingData);
         } else {
-          setState(prev => ({ ...prev, currentStep: config.maxSteps }));
+          updateState({ currentStep: config.maxSteps });
         }
       }
     }
-  }, [config.isGuest, config.maxSteps, user]);
+  }, [config.isGuest, config.maxSteps, user, handleFinalBooking, updateState]);
 
   // Complete pending booking when user gets authenticated
   useEffect(() => {
     if (user && pendingBooking && config.isGuest) {
-      handleFinalBooking();
+      handleFinalBooking(pendingBooking);
     }
-  }, [user, pendingBooking, config.isGuest]);
+  }, [user, pendingBooking, config.isGuest, handleFinalBooking]);
 
-  const handleServiceSelect = useCallback((service: BookableItem) => {
-    setState(prev => ({ 
-      ...prev, 
-      selectedService: service,
-      selectedSlot: null,
-      currentStep: 2 
-    }));
-  }, []);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setState(prev => ({ 
-      ...prev, 
-      selectedDate: date,
-      selectedSlot: null,
-      currentStep: date ? 3 : prev.currentStep 
-    }));
-  };
 
-  const handleSlotSelect = (slot: TimeSlot) => {
-    setState(prev => ({ 
-      ...prev, 
-      selectedSlot: slot,
-      currentStep: 4 
-    }));
-  };
 
-  const handleEmployeeSelect = useCallback((employee: Employee | null) => {
-    setState(prev => ({ ...prev, selectedEmployee: employee }));
-  }, []);
-
-  const handleProceedToAuth = () => {
-    if (!state.selectedService || !state.selectedDate || !state.selectedSlot) return;
-    
-    const bookingData = {
-      service: state.selectedService,
-      date: state.selectedDate.toISOString(),
-      slot: state.selectedSlot,
-      employee: state.selectedEmployee,
-      notes: state.notes
-    };
-    
-    localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-    setPendingBooking(bookingData);
-    setState(prev => ({ ...prev, currentStep: config.maxSteps }));
-  };
-
-  const handleFinalBooking = async () => {
-    if (!user || !pendingBooking) return;
-
-    setState(prev => ({ ...prev, submitting: true }));
-
-    const { service, date, slot, notes: bookingNotes } = pendingBooking;
-    const bookingDate = typeof date === 'string' ? new Date(date) : date;
-    const startTime = slot.start_time;
-    const endTime = format(
-      addMinutes(parseISO(`${format(bookingDate, 'yyyy-MM-dd')}T${startTime}`), service.duration_minutes), 
-      'HH:mm'
-    );
-
-    // Handle combo booking
-    if (service.type === 'combo') {
-      // Create multiple reservations for combo services
-      const reservations = service.combo_services?.map(cs => ({
-        client_id: user.id,
-        employee_id: slot.employee_id,
-        service_id: cs.service_id,
-        appointment_date: format(bookingDate, 'yyyy-MM-dd'),
-        start_time: startTime,
-        end_time: endTime,
-        notes: bookingNotes || null,
-        original_price_cents: service.original_price_cents,
-        final_price_cents: service.final_price_cents,
-        savings_cents: service.savings_cents
-      })) || [];
-
-      const { error } = await supabase
-        .from('reservations')
-        .insert(reservations);
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Error al crear la reserva del combo. Por favor intenta de nuevo.",
-          variant: "destructive",
-        });
-        setState(prev => ({ ...prev, submitting: false }));
-      } else {
-        toast({
-          title: "¡Reserva confirmada!",
-          description: "Tu combo ha sido reservado exitosamente.",
-        });
-
-        localStorage.removeItem('pendingBooking');
-        setPendingBooking(null);
-        navigate('/dashboard');
-      }
-    } else {
-      // Handle single service booking
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
-          client_id: user.id,
-          employee_id: slot.employee_id,
-          service_id: service.id,
-          appointment_date: format(bookingDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: bookingNotes || null,
-          applied_discount_id: service.appliedDiscount?.id,
-          original_price_cents: service.original_price_cents,
-          final_price_cents: service.final_price_cents,
-          savings_cents: service.savings_cents
-        });
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Error al crear la reserva. Por favor intenta de nuevo.",
-          variant: "destructive",
-        });
-        setState(prev => ({ ...prev, submitting: false }));
-      } else {
-        toast({
-          title: "¡Reserva confirmada!",
-          description: "Tu cita ha sido reservada exitosamente.",
-        });
-
-        localStorage.removeItem('pendingBooking');
-        setPendingBooking(null);
-        navigate('/dashboard');
-      }
-    }
-  };
-
-  const handleBooking = async () => {
-    if (!user || !state.selectedService || !state.selectedDate || !state.selectedSlot) return;
-
-    setState(prev => ({ ...prev, submitting: true }));
-
-    const startTime = state.selectedSlot.start_time;
-    const endTime = format(
-      addMinutes(
-        parseISO(`${format(state.selectedDate, 'yyyy-MM-dd')}T${startTime}`), 
-        state.selectedService.duration_minutes
-      ), 
-      'HH:mm'
-    );
-
-    // Handle combo booking
-    if (state.selectedService.type === 'combo') {
-      const reservations = state.selectedService.combo_services?.map(cs => ({
-        client_id: user.id,
-        employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
-        service_id: cs.service_id,
-        appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-        start_time: startTime,
-        end_time: endTime,
-        notes: state.notes || null,
-        original_price_cents: state.selectedService.original_price_cents,
-        final_price_cents: state.selectedService.final_price_cents,
-        savings_cents: state.selectedService.savings_cents
-      })) || [];
-
-      const { error } = await supabase
-        .from('reservations')
-        .insert(reservations);
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to create combo booking",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "¡Reserva confirmada!",
-          description: "Tu combo ha sido reservado exitosamente.",
-        });
-
-        // Reset form
-        setState({
-          currentStep: 1,
-          selectedService: null,
-          selectedDate: new Date(),
-          selectedSlot: null,
-          selectedEmployee: null,
-          notes: "",
-          loading: false,
-          submitting: false,
-          customerEmail: "",
-          customerName: "",
-        });
-      }
-    } else {
-      // Handle single service booking
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
-          client_id: user.id,
-          employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
-          service_id: state.selectedService.id,
-          appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: state.notes || null,
-          applied_discount_id: state.selectedService.appliedDiscount?.id,
-          original_price_cents: state.selectedService.original_price_cents,
-          final_price_cents: state.selectedService.final_price_cents,
-          savings_cents: state.selectedService.savings_cents
-        });
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to create booking",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "¡Reserva confirmada!",
-          description: "Tu cita ha sido reservada exitosamente.",
-        });
-
-        // Reset form
-        setState({
-          currentStep: 1,
-          selectedService: null,
-          selectedDate: new Date(),
-          selectedSlot: null,
-          selectedEmployee: null,
-          notes: "",
-          loading: false,
-          submitting: false,
-          customerEmail: "",
-          customerName: "",
-        });
-      }
-    }
-
-    setState(prev => ({ ...prev, submitting: false }));
-  };
-
-  const canGoNext = () => {
-    switch (state.currentStep) {
-      case 1:
-        return !!state.selectedService;
-      case 2:
-        return !!state.selectedDate;
-      case 3:
-        return !!state.selectedSlot;
-      case 4:
-        return true;
-      case 5:
-        if (config.isGuest) {
-          return !!state.customerName.trim() && !!state.customerEmail.trim() && state.customerEmail.includes('@');
-        }
-        return !!user;
-      default:
-        return false;
-    }
-  };
 
   const renderStepContent = () => {
     switch (state.currentStep) {
       case 1:
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Elige tu servicio</CardTitle>
-              <CardDescription>Selecciona el servicio o combo que deseas reservar</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {config.showCategories && (
-                <CategoryFilter
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onCategorySelect={setSelectedCategory}
-                  className="mb-6"
-                />
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bookableItems.map((service) => (
-                    <MemoizedServiceCard
-                      key={service.id}
-                      service={service}
-                      isSelected={state.selectedService?.id === service.id}
-                      onSelect={handleServiceSelect}
-                      employees={employees}
-                      selectedEmployee={state.selectedEmployee}
-                      onEmployeeSelect={handleEmployeeSelect}
-                      allowEmployeeSelection={config.allowEmployeeSelection}
-                      formatPrice={formatPrice}
-                    />
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ServiceSelectionStep
+            bookableItems={bookableItems}
+            categories={categories}
+            employees={employees}
+            selectedService={state.selectedService}
+            selectedEmployee={state.selectedEmployee}
+            selectedCategory={selectedCategory}
+            showCategories={config.showCategories}
+            allowEmployeeSelection={config.allowEmployeeSelection}
+            onServiceSelect={handleServiceSelect}
+            onEmployeeSelect={handleEmployeeSelect}
+            onCategorySelect={setSelectedCategory}
+            formatPrice={formatPrice}
+          />
         );
 
       case 2:
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Selecciona una fecha</CardTitle>
-              <CardDescription>
-                Elige la fecha para tu {state.selectedService?.type === 'combo' ? 'combo' : 'servicio'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={state.selectedDate}
-                onSelect={handleDateSelect}
-                disabled={(date) => {
-                  const today = startOfDay(new Date());
-                  const selectedDate = startOfDay(date);
-                  return selectedDate < today || date.getDay() === 0; // Disable Sundays
-                }}
-                className="rounded-md border"
-                locale={es}
-              />
-            </CardContent>
-          </Card>
+          <DateSelectionStep
+            selectedService={state.selectedService}
+            selectedDate={state.selectedDate}
+            onDateSelect={handleDateSelect}
+          />
         );
 
       case 3:
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Elige tu horario</CardTitle>
-              <CardDescription>
-                Horarios disponibles para {format(state.selectedDate!, 'EEEE, d MMMM', { locale: es })}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TimeSlotGrid
-                slots={availableSlots}
-                loading={slotsLoading}
-                selectedSlot={state.selectedSlot}
-                onSlotSelect={handleSlotSelect}
-              />
-            </CardContent>
-          </Card>
+          <TimeSlotSelectionStep
+            selectedService={state.selectedService}
+            selectedDate={state.selectedDate}
+            selectedSlot={state.selectedSlot}
+            availableSlots={availableSlots}
+            slotsLoading={slotsLoading}
+            onSlotSelect={handleSlotSelect}
+          />
         );
 
       case 4:
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Confirma tu reserva</CardTitle>
-              <CardDescription>Revisa los detalles antes de confirmar</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {state.selectedService && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      {state.selectedService.image_url && (
-                        <img
-                          src={state.selectedService.image_url}
-                          alt={state.selectedService.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-                      <div>
-                        <h3 className="font-semibold text-lg">{state.selectedService.name}</h3>
-                        <p className="text-sm text-muted-foreground">{state.selectedService.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary">
-                            {state.selectedService.duration_minutes} min
-                          </Badge>
-                          {state.selectedService.type === 'combo' && state.selectedService.combo_services && state.selectedService.combo_services.length > 1 && (
-                            <Badge className="bg-blue-500 text-white">
-                              <Package className="h-3 w-3 mr-1" />
-                              COMBO
-                            </Badge>
-                          )}
-                          {state.selectedService.savings_cents > 0 && (
-                            <Badge className="bg-red-500 text-white">
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              {state.selectedService.appliedDiscount?.discount_type === 'percentage' 
-                                ? `${Math.round((state.selectedService.savings_cents / state.selectedService.original_price_cents) * 100)}%` 
-                                : `${formatPrice(state.selectedService.appliedDiscount?.discount_value || 0)}`} OFF
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {state.selectedService.savings_cents > 0 ? (
-                        <div className="space-y-1">
-                          <div className="text-sm text-muted-foreground line-through">
-                            {formatPrice(state.selectedService.original_price_cents)}
-                          </div>
-                          <div className="text-lg font-bold text-primary">
-                            {formatPrice(state.selectedService.final_price_cents)}
-                          </div>
-                          <div className="text-xs text-green-600">
-                            Ahorras {formatPrice(state.selectedService.savings_cents)}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-lg font-bold text-primary">
-                          {formatPrice(state.selectedService.final_price_cents)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {state.selectedService.type === 'combo' && state.selectedService.combo_services && state.selectedService.combo_services.length > 1 && (
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Servicios incluidos:</h4>
-                      <div className="space-y-2">
-                        {state.selectedService.combo_services.map((cs, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <span className="text-sm">
-                              • {cs.services.name} {cs.quantity > 1 && `(x${cs.quantity})`}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              {cs.services.duration_minutes} min
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Fecha y hora</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {format(state.selectedDate!, 'EEEE, d MMMM yyyy', { locale: es })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {state.selectedSlot?.start_time} - {format(
-                          addMinutes(
-                            parseISO(`${format(state.selectedDate!, 'yyyy-MM-dd')}T${state.selectedSlot?.start_time}`),
-                            state.selectedService.duration_minutes
-                          ),
-                          'HH:mm'
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Estilista</h4>
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-xs">
-                            {state.selectedSlot?.employee_name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{state.selectedSlot?.employee_name}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Notas adicionales (opcional)</Label>
-                    <Textarea
-                      id="notes"
-                      placeholder="Agrega cualquier nota especial o requerimiento..."
-                      value={state.notes}
-                      onChange={(e) => setState(prev => ({ ...prev, notes: e.target.value }))}
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ConfirmationStep
+            selectedService={state.selectedService}
+            selectedDate={state.selectedDate}
+            selectedSlot={state.selectedSlot}
+            selectedEmployee={state.selectedEmployee}
+            notes={state.notes}
+            formatPrice={formatPrice}
+            onNotesChange={handleNotesChange}
+          />
         );
 
       case 5:
-        if (config.isGuest) {
-          return (
-            <GuestCustomerInfo
-              selectedService={state.selectedService}
-              selectedEmployee={state.selectedEmployee}
-              selectedDate={state.selectedDate}
-              selectedSlot={state.selectedSlot}
-              customerName={state.customerName}
-              customerEmail={state.customerEmail}
-              notes={state.notes}
-              onCustomerNameChange={(name) => setState(prev => ({ ...prev, customerName: name }))}
-              onCustomerEmailChange={(email) => setState(prev => ({ ...prev, customerEmail: email }))}
-              onNotesChange={(notes) => setState(prev => ({ ...prev, notes }))}
-              onBack={handlePrevious}
-              onConfirm={handleGuestBooking}
-              submitting={state.submitting}
-            />
-          );
-        }
-        
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Autenticación requerida</CardTitle>
-              <CardDescription>
-                Necesitas iniciar sesión para completar tu reserva
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  Para completar tu reserva, necesitas tener una cuenta. 
-                  Puedes iniciar sesión o crear una cuenta nueva.
-                </p>
-                <Button onClick={() => navigate('/auth')} className="w-full">
-                  Ir a autenticación
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AuthenticationStep
+            isGuest={config.isGuest}
+            user={user}
+            customerEmail={state.customerEmail}
+            customerName={state.customerName}
+            onCustomerEmailChange={(email) => updateState({ customerEmail: email })}
+            onCustomerNameChange={(name) => updateState({ customerName: name })}
+          />
         );
 
       default:
@@ -698,119 +256,22 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }
   };
 
-  // Handler for guest booking confirmation
-  const handleGuestBooking = async () => {
-    if (!state.selectedService || !state.selectedDate || !state.selectedSlot || !state.customerEmail || !state.customerName) return;
-
-    setState(prev => ({ ...prev, submitting: true }));
-
-    try {
-      const startTime = state.selectedSlot.start_time;
-      const endTime = format(
-        addMinutes(
-          parseISO(`${format(state.selectedDate, 'yyyy-MM-dd')}T${startTime}`), 
-          state.selectedService.duration_minutes
-        ), 
-        'HH:mm'
-      );
-
-      // Create reservation
-      const reservationData = {
-        service_id: state.selectedService.id,
-        appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-        start_time: startTime,
-        end_time: endTime,
-        customer_email: config.isGuest ? state.customerEmail : (selectedCustomer?.email || null),
-        customer_name: config.isGuest ? state.customerName : (selectedCustomer?.full_name || null),
-        notes: state.notes || null,
-        is_guest_booking: config.isGuest,
-        employee_id: state.selectedSlot.employee_id,
-        client_id: selectedCustomer?.id || (!config.isGuest ? user?.id : null),
-        status: 'confirmed'
-      };
-
-      const { data: reservation, error } = await supabase
-        .from('reservations')
-        .insert(reservationData)
-        .select()
-        .single();
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Error al crear la reserva. Por favor intenta de nuevo.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Send confirmation email
-      const emailResponse = await supabase.functions.invoke('send-booking-confirmation', {
-        body: {
-          customerEmail: state.customerEmail,
-          customerName: state.customerName,
-          serviceName: state.selectedService.name,
-          appointmentDate: format(state.selectedDate, 'yyyy-MM-dd'),
-          appointmentTime: startTime,
-          employeeName: state.selectedSlot?.employee_name,
-          registrationToken: reservation.registration_token,
-          isGuestBooking: true,
-          notes: state.notes
-        }
-      });
-
-      if (emailResponse.error) {
-        console.error('Error sending email:', emailResponse.error);
-        // Still show success since booking was created
-      }
-
-      toast({
-        title: "¡Reserva confirmada!",
-        description: "Tu cita ha sido reservada exitosamente. Revisa tu email para los detalles.",
-      });
-
-      // Reset form
-      setState({
-        currentStep: 1,
-        selectedService: null,
-        selectedDate: new Date(),
-        selectedSlot: null,
-        selectedEmployee: null,
-        notes: "",
-        loading: false,
-        submitting: false,
-        customerEmail: "",
-        customerName: "",
-      });
-
-      // Redirect to landing page
-      navigate('/');
-
-    } catch (error) {
-      console.error('Guest booking error:', error);
-      toast({
-        title: "Error",
-        description: "Error al procesar la reserva. Por favor intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setState(prev => ({ ...prev, submitting: false }));
-    }
-  };
 
   const handleNext = () => {
     if (state.currentStep === 4 && config.isGuest) {
-      setState(prev => ({ ...prev, currentStep: 5 }));
+      updateState({ currentStep: 5 });
     } else if (state.currentStep === 4) {
       handleBooking();
+    } else if (state.currentStep === 5 && config.isGuest) {
+      handleGuestBooking();
     } else if (canGoNext()) {
-      setState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+      updateState({ currentStep: state.currentStep + 1 });
     }
   };
 
   const handlePrevious = () => {
     if (state.currentStep > 1) {
-      setState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+      updateState({ currentStep: state.currentStep - 1 });
     }
   };
 
