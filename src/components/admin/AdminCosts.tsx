@@ -13,15 +13,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { AdminCostCategories } from "./AdminCostCategories";
-
 type CostType = 'fixed' | 'variable' | 'recurring' | 'one_time';
-
 interface CostCategory {
   id: string;
   name: string;
   description?: string;
 }
-
 interface Cost {
   id: string;
   name: string;
@@ -36,21 +33,25 @@ interface Cost {
   next_due_date?: string;
   created_at: string;
 }
-
-const costTypes = [
-  { value: 'fixed', label: 'Fijo' },
-  { value: 'variable', label: 'Variable' },
-  { value: 'recurring', label: 'Recurrente' },
-  { value: 'one_time', label: 'Una vez' },
-];
-
+const costTypes = [{
+  value: 'fixed',
+  label: 'Fijo'
+}, {
+  value: 'variable',
+  label: 'Variable'
+}, {
+  value: 'recurring',
+  label: 'Recurrente'
+}, {
+  value: 'one_time',
+  label: 'Una vez'
+}];
 const formatCurrency = (amountCents: number) => {
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'EUR'
   }).format(amountCents / 100);
 };
-
 export function AdminCosts() {
   const [costs, setCosts] = useState<Cost[]>([]);
   const [costCategories, setCostCategories] = useState<CostCategory[]>([]);
@@ -58,9 +59,12 @@ export function AdminCosts() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const { toast } = useToast();
-  const { profile } = useAuth();
-
+  const {
+    toast
+  } = useToast();
+  const {
+    profile
+  } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -68,43 +72,41 @@ export function AdminCosts() {
     cost_type: '' as CostType | '',
     cost_category_id: '',
     recurring_frequency: '',
-    date_incurred: new Date().toISOString().split('T')[0],
+    date_incurred: new Date().toISOString().split('T')[0]
   });
-
   useEffect(() => {
     fetchCosts();
     fetchCostCategories();
   }, []);
-
   const fetchCostCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cost_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
+      const {
+        data,
+        error
+      } = await supabase.from('cost_categories').select('*').eq('is_active', true).order('display_order', {
+        ascending: true
+      });
       if (error) throw error;
       setCostCategories(data || []);
     } catch (error) {
       console.error('Error fetching cost categories:', error);
     }
   };
-
   const fetchCosts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('costs')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('costs').select(`
           *,
           cost_categories (
             id,
             name,
             description
           )
-        `)
-        .order('created_at', { ascending: false });
-
+        `).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setCosts(data || []);
     } catch (error) {
@@ -112,13 +114,12 @@ export function AdminCosts() {
       toast({
         title: "Error",
         description: "No se pudieron cargar los costos",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -127,32 +128,28 @@ export function AdminCosts() {
       cost_type: '',
       cost_category_id: '',
       recurring_frequency: '',
-      date_incurred: new Date().toISOString().split('T')[0],
+      date_incurred: new Date().toISOString().split('T')[0]
     });
     setEditingCost(null);
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.name || !formData.amount || !formData.cost_type || !formData.cost_category_id) {
       toast({
         title: "Error",
         description: "Todos los campos obligatorios deben estar completos",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (!profile?.id) {
       toast({
         title: "Error",
         description: "No se pudo identificar el usuario",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       const costData = {
         name: formData.name,
@@ -162,40 +159,32 @@ export function AdminCosts() {
         cost_category_id: formData.cost_category_id,
         recurring_frequency: formData.recurring_frequency ? parseInt(formData.recurring_frequency) : null,
         date_incurred: formData.date_incurred,
-        next_due_date: formData.cost_type === 'recurring' && formData.recurring_frequency
-          ? new Date(new Date(formData.date_incurred).getTime() + parseInt(formData.recurring_frequency) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          : null,
+        next_due_date: formData.cost_type === 'recurring' && formData.recurring_frequency ? new Date(new Date(formData.date_incurred).getTime() + parseInt(formData.recurring_frequency) * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null
       };
-
       if (editingCost) {
-        const { error } = await supabase
-          .from('costs')
-          .update(costData)
-          .eq('id', editingCost.id);
-
+        const {
+          error
+        } = await supabase.from('costs').update(costData).eq('id', editingCost.id);
         if (error) throw error;
         toast({
           title: "Éxito",
-          description: "Costo actualizado correctamente",
+          description: "Costo actualizado correctamente"
         });
       } else {
         const insertData = {
           ...costData,
           created_by: profile.id,
-          cost_category: 'other' as any, // Temporary workaround for legacy field
+          cost_category: 'other' as any // Temporary workaround for legacy field
         };
-        
-        const { error } = await supabase
-          .from('costs')
-          .insert([insertData]);
-
+        const {
+          error
+        } = await supabase.from('costs').insert([insertData]);
         if (error) throw error;
         toast({
           title: "Éxito",
-          description: "Costo creado correctamente",
+          description: "Costo creado correctamente"
         });
       }
-
       await fetchCosts();
       setIsDialogOpen(false);
       resetForm();
@@ -204,11 +193,10 @@ export function AdminCosts() {
       toast({
         title: "Error",
         description: "No se pudo guardar el costo",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleEdit = (cost: Cost) => {
     setEditingCost(cost);
     setFormData({
@@ -218,69 +206,53 @@ export function AdminCosts() {
       cost_type: cost.cost_type,
       cost_category_id: cost.cost_category_id,
       recurring_frequency: cost.recurring_frequency?.toString() || '',
-      date_incurred: cost.date_incurred,
+      date_incurred: cost.date_incurred
     });
     setIsDialogOpen(true);
   };
-
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este costo?')) return;
-
     try {
-      const { error } = await supabase
-        .from('costs')
-        .delete()
-        .eq('id', id);
-
+      const {
+        error
+      } = await supabase.from('costs').delete().eq('id', id);
       if (error) throw error;
-      
       toast({
         title: "Éxito",
-        description: "Costo eliminado correctamente",
+        description: "Costo eliminado correctamente"
       });
-      
       await fetchCosts();
     } catch (error) {
       console.error('Error deleting cost:', error);
       toast({
         title: "Error",
         description: "No se pudo eliminar el costo",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const getCategoryLabel = (categoryId: string) => {
     const category = costCategories.find(c => c.id === categoryId);
     return category?.name || 'Sin categoría';
   };
-
   const getTypeLabel = (type: string) => {
     return costTypes.find(t => t.value === type)?.label || type;
   };
-
-  const totalMonthly = costs
-    .filter(cost => cost.is_active && (cost.cost_type === 'recurring' || cost.cost_type === 'fixed'))
-    .reduce((sum, cost) => {
-      if (cost.cost_type === 'recurring' && cost.recurring_frequency) {
-        return sum + (cost.amount_cents * (30 / cost.recurring_frequency));
-      }
-      return sum + cost.amount_cents;
-    }, 0);
-
+  const totalMonthly = costs.filter(cost => cost.is_active && (cost.cost_type === 'recurring' || cost.cost_type === 'fixed')).reduce((sum, cost) => {
+    if (cost.cost_type === 'recurring' && cost.recurring_frequency) {
+      return sum + cost.amount_cents * (30 / cost.recurring_frequency);
+    }
+    return sum + cost.amount_cents;
+  }, 0);
   if (loading) {
     return <div className="flex items-center justify-center p-8">Cargando costos...</div>;
   }
-
-  return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4">
+  return <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* Header - Mobile optimized */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="w-full sm:w-auto">
-          <h1 className="text-xl sm:text-2xl font-bold">Gestión de Costos</h1>
-          <p className="text-sm text-muted-foreground">
-            Administra los gastos del salón
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold">Costos</h1>
+          
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -299,114 +271,86 @@ export function AdminCosts() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nombre *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ej: Electricidad mes de enero"
-                    required
-                  />
+                  <Input id="name" value={formData.name} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  name: e.target.value
+                }))} placeholder="Ej: Electricidad mes de enero" required />
                 </div>
                 
                 <div>
                   <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descripción opcional del gasto"
-                    rows={2}
-                  />
+                  <Textarea id="description" value={formData.description} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  description: e.target.value
+                }))} placeholder="Descripción opcional del gasto" rows={2} />
                 </div>
 
                 <div>
                   <Label htmlFor="amount">Monto (€) *</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                    placeholder="0.00"
-                    required
-                  />
+                  <Input id="amount" type="number" step="0.01" value={formData.amount} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  amount: e.target.value
+                }))} placeholder="0.00" required />
                 </div>
 
                 <div>
                   <Label htmlFor="cost_category_id">Categoría *</Label>
-                  <Select
-                    value={formData.cost_category_id}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, cost_category_id: value }))}
-                  >
+                  <Select value={formData.cost_category_id} onValueChange={value => setFormData(prev => ({
+                  ...prev,
+                  cost_category_id: value
+                }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona una categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      {costCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
+                      {costCategories.map(category => <SelectItem key={category.id} value={category.id}>
                           {category.name}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
                   <Label htmlFor="cost_type">Tipo *</Label>
-                  <Select
-                    value={formData.cost_type}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, cost_type: value as CostType }))}
-                  >
+                  <Select value={formData.cost_type} onValueChange={value => setFormData(prev => ({
+                  ...prev,
+                  cost_type: value as CostType
+                }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona un tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {costTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
+                      {costTypes.map(type => <SelectItem key={type.value} value={type.value}>
                           {type.label}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {formData.cost_type === 'recurring' && (
-                  <div>
+                {formData.cost_type === 'recurring' && <div>
                     <Label htmlFor="recurring_frequency">Frecuencia (días)</Label>
-                    <Input
-                      id="recurring_frequency"
-                      type="number"
-                      value={formData.recurring_frequency}
-                      onChange={(e) => setFormData(prev => ({ ...prev, recurring_frequency: e.target.value }))}
-                      placeholder="30 (mensual), 7 (semanal)"
-                    />
-                  </div>
-                )}
+                    <Input id="recurring_frequency" type="number" value={formData.recurring_frequency} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  recurring_frequency: e.target.value
+                }))} placeholder="30 (mensual), 7 (semanal)" />
+                  </div>}
 
                 <div>
                   <Label htmlFor="date_incurred">Fecha *</Label>
-                  <Input
-                    id="date_incurred"
-                    type="date"
-                    value={formData.date_incurred}
-                    onChange={(e) => setFormData(prev => ({ ...prev, date_incurred: e.target.value }))}
-                    required
-                  />
+                  <Input id="date_incurred" type="date" value={formData.date_incurred} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  date_incurred: e.target.value
+                }))} required />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button type="submit" className="flex-1">
                     {editingCost ? 'Actualizar' : 'Crear'}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                  setIsDialogOpen(false);
+                  resetForm();
+                }}>
                     Cancelar
                   </Button>
                 </div>
@@ -414,28 +358,20 @@ export function AdminCosts() {
             </DialogContent>
           </Dialog>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCategoryManager(true)}
-            className="px-3"
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowCategoryManager(true)} className="px-3">
             <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Category Manager Modal */}
-      <Dialog 
-        open={showCategoryManager} 
-        onOpenChange={(open) => {
-          setShowCategoryManager(open);
-          if (!open) {
-            // Refresh categories when modal is closed
-            fetchCostCategories();
-          }
-        }}
-      >
+      <Dialog open={showCategoryManager} onOpenChange={open => {
+      setShowCategoryManager(open);
+      if (!open) {
+        // Refresh categories when modal is closed
+        fetchCostCategories();
+      }
+    }}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <AdminCostCategories />
         </DialogContent>
@@ -487,8 +423,7 @@ export function AdminCosts() {
 
       {/* Costs List - Mobile optimized */}
       <div className="space-y-4">
-        {costs.map((cost) => (
-          <Card key={cost.id}>
+        {costs.map(cost => <Card key={cost.id}>
             <CardContent className="p-4">
               {/* Mobile Layout */}
               <div className="flex flex-col space-y-3">
@@ -517,18 +452,10 @@ export function AdminCosts() {
                     </div>
                     
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(cost)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(cost)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(cost.id)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(cost.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -536,37 +463,27 @@ export function AdminCosts() {
                 </div>
                 
                 {/* Description */}
-                {cost.description && (
-                  <p className="text-muted-foreground text-sm break-words">
+                {cost.description && <p className="text-muted-foreground text-sm break-words">
                     {cost.description}
-                  </p>
-                )}
+                  </p>}
                 
                 {/* Date info */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                   <span>Fecha: {format(new Date(cost.date_incurred), 'dd/MM/yyyy')}</span>
-                  {cost.recurring_frequency && (
-                    <span>Cada {cost.recurring_frequency} días</span>
-                  )}
-                  {cost.next_due_date && (
-                    <span>Próximo: {format(new Date(cost.next_due_date), 'dd/MM/yyyy')}</span>
-                  )}
+                  {cost.recurring_frequency && <span>Cada {cost.recurring_frequency} días</span>}
+                  {cost.next_due_date && <span>Próximo: {format(new Date(cost.next_due_date), 'dd/MM/yyyy')}</span>}
                 </div>
               </div>
             </CardContent>
-          </Card>
-        ))}
+          </Card>)}
         
-        {costs.length === 0 && (
-          <Card>
+        {costs.length === 0 && <Card>
             <CardContent className="p-6 text-center">
               <p className="text-muted-foreground">
                 No hay costos registrados. ¡Crea el primero!
               </p>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
       </div>
-    </div>
-  );
+    </div>;
 }
