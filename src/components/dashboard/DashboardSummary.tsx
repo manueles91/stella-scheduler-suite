@@ -16,7 +16,9 @@ interface DashboardSummaryProps {
 export const DashboardSummary = ({
   effectiveProfile
 }: DashboardSummaryProps) => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
@@ -30,48 +32,36 @@ export const DashboardSummary = ({
   }, [effectiveProfile?.id, effectiveProfile?.role]);
   const fetchActivePromotions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('discounts')
-        .select('*, services(id, name, description, duration_minutes, price_cents, image_url)')
-        .eq('is_active', true)
-        .eq('is_public', true)
-        .lte('start_date', new Date().toISOString())
-        .gte('end_date', new Date().toISOString())
-        .limit(3);
-
+      const {
+        data,
+        error
+      } = await supabase.from('discounts').select('*, services(id, name, description, duration_minutes, price_cents, image_url)').eq('is_active', true).eq('is_public', true).lte('start_date', new Date().toISOString()).gte('end_date', new Date().toISOString()).limit(3);
       if (error) {
         console.error('Error fetching active promotions:', error);
         return;
       }
-
       setActivePromotions(data || []);
     } catch (error) {
       console.error('Error fetching active promotions:', error);
     }
   };
-
   const fetchActiveCombos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('combos')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('combos').select(`
           *,
           combo_services(
             service_id,
             quantity,
             services(id, name, description, duration_minutes, price_cents, image_url)
           )
-        `)
-        .eq('is_active', true)
-        .lte('start_date', new Date().toISOString())
-        .gte('end_date', new Date().toISOString())
-        .limit(3);
-
+        `).eq('is_active', true).lte('start_date', new Date().toISOString()).gte('end_date', new Date().toISOString()).limit(3);
       if (error) {
         console.error('Error fetching active combos:', error);
         return;
       }
-
       setActiveCombos(data || []);
     } catch (error) {
       console.error('Error fetching active combos:', error);
@@ -131,7 +121,6 @@ export const DashboardSummary = ({
         ...appt,
         services: appt.appointment_services?.map(as => as.services).flat() || []
       })) || [];
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const upcoming = transformedAppointments?.filter(appt => {
@@ -194,8 +183,7 @@ export const DashboardSummary = ({
   const canEditDiscount = () => {
     return effectiveProfile?.role === 'admin';
   };
-  const renderAppointment = (appt: Appointment) => (
-    <div key={appt.id} className="border border-border rounded-lg p-4 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
+  const renderAppointment = (appt: Appointment) => <div key={appt.id} className="border border-border rounded-lg p-4 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
       {/* Top row with service and status */}
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -204,10 +192,7 @@ export const DashboardSummary = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-foreground text-base leading-tight mb-1">
-              {appt.services && appt.services.length > 0 
-                ? appt.services.map(service => service.name).join(', ')
-                : 'Servicio'
-              }
+              {appt.services && appt.services.length > 0 ? appt.services.map(service => service.name).join(', ') : 'Servicio'}
             </div>
           </div>
         </div>
@@ -231,10 +216,10 @@ export const DashboardSummary = ({
           {/* Date */}
           <div className="text-sm text-muted-foreground">
             {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
-              weekday: 'short',
-              day: 'numeric',
-              month: 'short'
-            })}
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short'
+          })}
           </div>
         </div>
         
@@ -243,38 +228,27 @@ export const DashboardSummary = ({
       </div>
       
       {/* Client/Employee info - full width at bottom */}
-      {(effectiveProfile?.role === 'admin' || effectiveProfile?.role === 'employee' || appt.employee_profile) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-3 mt-3 border-t border-border/50">
-          {effectiveProfile?.role === 'admin' && (
-            <>
+      {(effectiveProfile?.role === 'admin' || effectiveProfile?.role === 'employee' || appt.employee_profile) && <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-3 mt-3 border-t border-border/50">
+          {effectiveProfile?.role === 'admin' && <>
               <div className="flex items-center gap-1 min-w-0">
                 <User className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{appt.client_profile?.full_name}</span>
               </div>
-              {appt.employee_profile && (
-                <div className="flex items-center gap-1 min-w-0">
+              {appt.employee_profile && <div className="flex items-center gap-1 min-w-0">
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate">{appt.employee_profile.full_name}</span>
-                </div>
-              )}
-            </>
-          )}
-          {effectiveProfile?.role === 'employee' && (
-            <div className="flex items-center gap-1 min-w-0">
+                </div>}
+            </>}
+          {effectiveProfile?.role === 'employee' && <div className="flex items-center gap-1 min-w-0">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{appt.client_profile?.full_name}</span>
-            </div>
-          )}
-          {effectiveProfile?.role === 'client' && appt.employee_profile && (
-            <div className="flex items-center gap-1 min-w-0">
+            </div>}
+          {effectiveProfile?.role === 'client' && appt.employee_profile && <div className="flex items-center gap-1 min-w-0">
               <Sparkles className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{appt.employee_profile.full_name}</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+            </div>}
+        </div>}
+    </div>;
   if (loading) {
     return <div className="space-y-6">
         <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
@@ -283,10 +257,8 @@ export const DashboardSummary = ({
         </div>
       </div>;
   }
-  
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl sm:text-3xl font-serif font-bold">¡Bienvenido de nuevo, {effectiveProfile?.full_name}!</h2>
+  return <div className="space-y-6">
+      
       
       {/* Próximas Citas */}
       <Card>
@@ -294,28 +266,20 @@ export const DashboardSummary = ({
           <CardTitle>Próximas Citas</CardTitle>
         </CardHeader>
         <CardContent>
-          {upcomingAppointments.length === 0 ? (
-            <div className="text-center py-8">
+          {upcomingAppointments.length === 0 ? <div className="text-center py-8">
               <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
                 <Calendar className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground mb-4">No hay citas próximas</p>
-              {effectiveProfile?.role === 'client' && (
-                <Button onClick={() => window.location.href = '#bookings'} className="bg-primary hover:bg-primary/90">
+              {effectiveProfile?.role === 'client' && <Button onClick={() => window.location.href = '#bookings'} className="bg-primary hover:bg-primary/90">
                   Reservar una cita
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
+                </Button>}
+            </div> : <div className="space-y-4">
               {upcomingAppointments.slice(0, 5).map(renderAppointment)}
-              {upcomingAppointments.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center">
+              {upcomingAppointments.length > 5 && <p className="text-sm text-muted-foreground text-center">
                   Y {upcomingAppointments.length - 5} citas más...
-                </p>
-              )}
-            </div>
-          )}
+                </p>}
+            </div>}
         </CardContent>
       </Card>
 
@@ -328,67 +292,23 @@ export const DashboardSummary = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {(activePromotions.length > 0 || activeCombos.length > 0) ? (
-            <div className="space-y-4">
+          {activePromotions.length > 0 || activeCombos.length > 0 ? <div className="space-y-4">
               {/* Display Combos */}
-              {activeCombos.map((combo) => (
-                <ServiceCard
-                  key={`combo-${combo.id}`}
-                  id={combo.id}
-                  name={combo.name}
-                  description={combo.description}
-                  originalPrice={combo.original_price_cents}
-                  finalPrice={combo.total_price_cents}
-                  savings={combo.original_price_cents - combo.total_price_cents}
-                  duration={combo.combo_services?.reduce((total: number, cs: any) => 
-                    total + cs.services.duration_minutes, 0) || 0}
-                  imageUrl={combo.combo_services?.[0]?.services?.image_url}
-                  type="combo"
-                  comboServices={combo.combo_services?.map((cs: any) => ({
-                    name: cs.services.name,
-                    quantity: cs.quantity,
-                    service_id: cs.service_id
-                  })) || []}
-                  variant="dashboard"
-                  onSelect={() => navigate(`/book?service=${combo.id}&step=2`)}
-                  showExpandable={false}
-                />
-              ))}
+              {activeCombos.map(combo => <ServiceCard key={`combo-${combo.id}`} id={combo.id} name={combo.name} description={combo.description} originalPrice={combo.original_price_cents} finalPrice={combo.total_price_cents} savings={combo.original_price_cents - combo.total_price_cents} duration={combo.combo_services?.reduce((total: number, cs: any) => total + cs.services.duration_minutes, 0) || 0} imageUrl={combo.combo_services?.[0]?.services?.image_url} type="combo" comboServices={combo.combo_services?.map((cs: any) => ({
+            name: cs.services.name,
+            quantity: cs.quantity,
+            service_id: cs.service_id
+          })) || []} variant="dashboard" onSelect={() => navigate(`/book?service=${combo.id}&step=2`)} showExpandable={false} />)}
               
               {/* Display Individual Discounts */}
-              {activePromotions.map((promo) => (
-                <ServiceCard
-                  key={`discount-${promo.id}`}
-                  id={promo.services.id}
-                  name={promo.services.name}
-                  description={promo.services.description}
-                  originalPrice={promo.services.price_cents}
-                  finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' 
-                    ? (promo.services.price_cents * promo.discount_value) / 100 
-                    : promo.discount_value * 100)}
-                  savings={promo.discount_type === 'percentage' 
-                    ? (promo.services.price_cents * promo.discount_value) / 100 
-                    : promo.discount_value * 100}
-                  duration={promo.services.duration_minutes}
-                  imageUrl={promo.services.image_url}
-                  type="service"
-                  discountType={promo.discount_type}
-                  discountValue={promo.discount_value}
-                  variant="dashboard"
-                  onSelect={() => navigate(`/book?service=${promo.services.id}&step=2`)}
-                  showExpandable={false}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
+              {activePromotions.map(promo => <ServiceCard key={`discount-${promo.id}`} id={promo.services.id} name={promo.services.name} description={promo.services.description} originalPrice={promo.services.price_cents} finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100)} savings={promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100} duration={promo.services.duration_minutes} imageUrl={promo.services.image_url} type="service" discountType={promo.discount_type} discountValue={promo.discount_value} variant="dashboard" onSelect={() => navigate(`/book?service=${promo.services.id}&step=2`)} showExpandable={false} />)}
+            </div> : <div className="text-center py-8 text-muted-foreground">
               <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
                 <Sparkles className="h-8 w-8 text-muted-foreground" />
               </div>
               <p>No hay promociones activas en este momento</p>
               <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -398,20 +318,13 @@ export const DashboardSummary = ({
           <CardTitle>Últimas Citas</CardTitle>
         </CardHeader>
         <CardContent>
-          {pastAppointments.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No hay citas anteriores</p>
-          ) : (
-            <div className="space-y-4">
+          {pastAppointments.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay citas anteriores</p> : <div className="space-y-4">
               {pastAppointments.slice(0, 5).map(renderAppointment)}
-              {pastAppointments.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center">
+              {pastAppointments.length > 5 && <p className="text-sm text-muted-foreground text-center">
                   Y {pastAppointments.length - 5} citas más en el historial...
-                </p>
-              )}
-            </div>
-          )}
+                </p>}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
