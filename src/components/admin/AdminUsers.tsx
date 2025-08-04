@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Search, 
   User, 
@@ -22,7 +23,8 @@ import {
   UserCheck,
   Filter,
   MoreVertical,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CollapsibleFilter } from "./CollapsibleFilter";
+import { useInvitedUsers } from "./hooks/useInvitedUsers";
+import { InvitedUserData } from "@/lib/validation/userSchemas";
 
 interface User {
   id: string;
@@ -80,7 +84,9 @@ export const AdminUsers = () => {
     phone: "",
     role: "client" as "client" | "employee" | "admin"
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { createInvitedUser, loading: creatingUser, checkEmailExists } = useInvitedUsers();
 
   useEffect(() => {
     fetchData();
@@ -202,15 +208,43 @@ export const AdminUsers = () => {
     setFilteredUsers(filtered);
   };
 
+  const validateForm = async (): Promise<boolean> => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.full_name.trim()) {
+      errors.full_name = "El nombre es requerido";
+    } else if (formData.full_name.trim().length < 2) {
+      errors.full_name = "El nombre debe tener al menos 2 caracteres";
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = "El email es requerido";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Formato de email inválido";
+    } else if (!editingUser) {
+      // Only check for existing email when creating new users
+      const emailExists = await checkEmailExists(formData.email);
+      if (emailExists) {
+        errors.email = "Ya existe un usuario con este email";
+      }
+    }
+    
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      if (!phoneRegex.test(formData.phone.replace(/\s+/g, ""))) {
+        errors.phone = "Formato de teléfono inválido (ej: +34 123 456 789)";
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.full_name) {
-      toast({
-        title: "Error",
-        description: "Email y nombre son requeridos",
-        variant: "destructive"
-      });
+    const isValid = await validateForm();
+    if (!isValid) {
       return;
     }
 
@@ -220,9 +254,9 @@ export const AdminUsers = () => {
         const { error } = await supabase
           .from('profiles')
           .update({
-            email: formData.email,
-            full_name: formData.full_name,
-            phone: formData.phone || null,
+            email: formData.email.toLowerCase().trim(),
+            full_name: formData.full_name.trim(),
+            phone: formData.phone?.trim() || null,
             role: formData.role
           })
           .eq('id', editingUser.id);
@@ -234,26 +268,17 @@ export const AdminUsers = () => {
           description: "Usuario actualizado correctamente"
         });
       } else {
-        // Create new invited user that can later claim their account
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        
-        const { error } = await supabase
-          .from('invited_users')
-          .insert({
-            email: formData.email,
-            full_name: formData.full_name,
-            phone: formData.phone || null,
-            role: formData.role,
-            account_status: 'invited',
-            invited_by: currentUser?.id || ''
-          });
+        // Create new invited user
+        const success = await createInvitedUser({
+          email: formData.email,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          role: formData.role
+        } as InvitedUserData);
 
-        if (error) throw error;
-
-        toast({
-          title: "Éxito",
-          description: "Usuario invitado creado correctamente. Podrán reclamar su cuenta al registrarse."
-        });
+        if (!success) {
+          return;
+        }
       }
 
       setDialogOpen(false);
@@ -288,6 +313,7 @@ export const AdminUsers = () => {
       phone: "",
       role: "client"
     });
+    setFormErrors({});
   };
 
   const updateUserStatus = async (userId: string, newStatus: string) => {
@@ -439,33 +465,75 @@ export const AdminUsers = () => {
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {Object.keys(formErrors).length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Por favor corrige los errores en el formulario
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, email: e.target.value.toLowerCase()});
+                      if (formErrors.email) {
+                        setFormErrors(prev => ({ ...prev, email: "" }));
+                      }
+                    }}
+                    placeholder="correo@ejemplo.com"
+                    className={formErrors.email ? "border-destructive" : ""}
                     required
                   />
+                  {formErrors.email && (
+                    <p className="text-sm text-destructive">{formErrors.email}</p>
+                  )}
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Nombre Completo</Label>
                   <Input
                     id="full_name"
                     value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, full_name: e.target.value});
+                      if (formErrors.full_name) {
+                        setFormErrors(prev => ({ ...prev, full_name: "" }));
+                      }
+                    }}
+                    placeholder="Nombre completo"
+                    className={formErrors.full_name ? "border-destructive" : ""}
                     required
                   />
+                  {formErrors.full_name && (
+                    <p className="text-sm text-destructive">{formErrors.full_name}</p>
+                  )}
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono (opcional)</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, phone: e.target.value});
+                      if (formErrors.phone) {
+                        setFormErrors(prev => ({ ...prev, phone: "" }));
+                      }
+                    }}
+                    placeholder="Ej: +34 123 456 789"
+                    className={formErrors.phone ? "border-destructive" : ""}
                   />
+                  {formErrors.phone && (
+                    <p className="text-sm text-destructive">{formErrors.phone}</p>
+                  )}
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="role">Rol</Label>
                   <Select value={formData.role} onValueChange={(value: "client" | "employee" | "admin") => setFormData({...formData, role: value})}>
@@ -479,11 +547,21 @@ export const AdminUsers = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingUser ? 'Actualizar' : 'Crear'}
+                  <Button 
+                    type="submit" 
+                    className="flex-1"
+                    disabled={creatingUser}
+                  >
+                    {creatingUser ? 'Procesando...' : editingUser ? 'Actualizar' : 'Crear'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setDialogOpen(false)}
+                    disabled={creatingUser}
+                  >
                     Cancelar
                   </Button>
                 </div>

@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, User, Mail, Phone, Plus, Check } from "lucide-react";
+import { Search, User, Mail, Phone, Plus, Check, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useInvitedUsers } from "./hooks/useInvitedUsers";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Customer {
   id: string;
@@ -40,7 +42,9 @@ export const CustomerSelectorModal = ({
     email: "",
     phone: ""
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { createGuestCustomerForBooking, loading: creatingGuest } = useInvitedUsers();
 
   useEffect(() => {
     if (open) {
@@ -55,15 +59,36 @@ export const CustomerSelectorModal = ({
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['client', 'employee'])
-        .eq('account_status', 'active')
-        .order('full_name');
+      // Fetch both authenticated users and invited users who haven't been claimed
+      const [profilesResponse, invitedResponse] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .in('role', ['client', 'employee'])
+          .eq('account_status', 'active')
+          .order('full_name'),
+        supabase
+          .from('invited_users')
+          .select('*')
+          .in('role', ['client', 'employee'])
+          .eq('account_status', 'invited')
+          .is('claimed_at', null)
+          .order('full_name')
+      ]);
 
-      if (error) throw error;
-      setCustomers(data || []);
+      if (profilesResponse.error) throw profilesResponse.error;
+      if (invitedResponse.error) throw invitedResponse.error;
+
+      // Combine both datasets
+      const allCustomers = [
+        ...(profilesResponse.data || []),
+        ...(invitedResponse.data || []).map(invited => ({
+          ...invited,
+          created_at: invited.invited_at
+        }))
+      ];
+
+      setCustomers(allCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast({
@@ -90,37 +115,61 @@ export const CustomerSelectorModal = ({
     setFilteredCustomers(filtered);
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newCustomer.full_name.trim()) {
+      errors.full_name = "El nombre es requerido";
+    } else if (newCustomer.full_name.trim().length < 2) {
+      errors.full_name = "El nombre debe tener al menos 2 caracteres";
+    }
+    
+    if (!newCustomer.email.trim()) {
+      errors.email = "El email es requerido";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomer.email)) {
+      errors.email = "Formato de email inválido";
+    }
+    
+    if (newCustomer.phone && newCustomer.phone.trim()) {
+      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      if (!phoneRegex.test(newCustomer.phone.replace(/\s+/g, ""))) {
+        errors.phone = "Formato de teléfono inválido";
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const createNewCustomer = async () => {
-    if (!newCustomer.full_name || !newCustomer.email) {
-      toast({
-        title: "Error",
-        description: "Nombre y email son requeridos",
-        variant: "destructive"
-      });
+    if (!validateForm()) {
       return;
     }
 
-    // For now, we'll create a temporary customer object that can be used for guest bookings
-    // In a real implementation, you'd want to create a proper user account
-    const tempCustomer: Customer = {
-      id: `temp-${Date.now()}`, // Temporary ID for guest bookings
-      full_name: newCustomer.full_name,
-      email: newCustomer.email,
-      phone: newCustomer.phone || undefined,
-      role: 'client',
-      account_status: 'active',
-      created_at: new Date().toISOString()
-    };
+    const guestCustomer = await createGuestCustomerForBooking(newCustomer);
+    if (!guestCustomer) {
+      return;
+    }
 
-    toast({
-      title: "Información",
-      description: "Se usará como cliente invitado para esta reserva",
-    });
+    if (guestCustomer.isExisting) {
+      toast({
+        title: "Cliente encontrado",
+        description: "Se encontró un cliente existente con este email",
+        duration: 4000
+      });
+    } else {
+      toast({
+        title: "Cliente creado",
+        description: "Se creó un cliente invitado para esta reserva",
+        duration: 4000
+      });
+    }
 
-    onValueChange(tempCustomer);
+    onValueChange(guestCustomer);
     setOpen(false);
     setShowNewCustomer(false);
     setNewCustomer({ full_name: "", email: "", phone: "" });
+    setValidationErrors({});
   };
 
   const selectCustomer = (customer: Customer) => {
@@ -261,41 +310,87 @@ export const CustomerSelectorModal = ({
         {showNewCustomer && (
           <div className="border-t pt-4 space-y-4">
             <h4 className="font-medium">Crear Nuevo Cliente</h4>
+            
+            {Object.keys(validationErrors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Por favor corrige los errores en el formulario
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Nombre completo *</Label>
                 <Input
                   value={newCustomer.full_name}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, full_name: e.target.value }))}
+                  onChange={(e) => {
+                    setNewCustomer(prev => ({ ...prev, full_name: e.target.value }));
+                    if (validationErrors.full_name) {
+                      setValidationErrors(prev => ({ ...prev, full_name: "" }));
+                    }
+                  }}
                   placeholder="Nombre completo"
+                  className={validationErrors.full_name ? "border-destructive" : ""}
                 />
+                {validationErrors.full_name && (
+                  <p className="text-sm text-destructive mt-1">{validationErrors.full_name}</p>
+                )}
               </div>
               <div>
                 <Label>Email *</Label>
                 <Input
                   type="email"
                   value={newCustomer.email}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => {
+                    setNewCustomer(prev => ({ ...prev, email: e.target.value.toLowerCase() }));
+                    if (validationErrors.email) {
+                      setValidationErrors(prev => ({ ...prev, email: "" }));
+                    }
+                  }}
                   placeholder="correo@ejemplo.com"
+                  className={validationErrors.email ? "border-destructive" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-destructive mt-1">{validationErrors.email}</p>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <Label>Teléfono (opcional)</Label>
                 <Input
                   value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Número de teléfono"
+                  onChange={(e) => {
+                    setNewCustomer(prev => ({ ...prev, phone: e.target.value }));
+                    if (validationErrors.phone) {
+                      setValidationErrors(prev => ({ ...prev, phone: "" }));
+                    }
+                  }}
+                  placeholder="Ej: +34 123 456 789"
+                  className={validationErrors.phone ? "border-destructive" : ""}
                 />
+                {validationErrors.phone && (
+                  <p className="text-sm text-destructive mt-1">{validationErrors.phone}</p>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={createNewCustomer} size="sm">
-                Crear Cliente
+              <Button 
+                onClick={createNewCustomer} 
+                size="sm"
+                disabled={creatingGuest}
+              >
+                {creatingGuest ? "Creando..." : "Crear Cliente"}
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setShowNewCustomer(false)}
+                onClick={() => {
+                  setShowNewCustomer(false);
+                  setValidationErrors({});
+                  setNewCustomer({ full_name: "", email: "", phone: "" });
+                }}
                 size="sm"
+                disabled={creatingGuest}
               >
                 Cancelar
               </Button>
