@@ -76,11 +76,7 @@ export const ServicesSection = () => {
             <CarouselNext />
           </Carousel>}
 
-        <div className="text-center mt-8">
-          <Button onClick={() => navigate('/book')} className="bg-gradient-primary hover:bg-gradient-primary/90">
-            Ver todos los servicios
-          </Button>
-        </div>
+        
       </div>
     </section>;
 };
