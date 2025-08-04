@@ -4,7 +4,7 @@ import { MemoizedServiceCard } from "../../optimized/MemoizedServiceCard";
 import { BookableItem, Employee } from "@/types/booking";
 
 interface ServiceSelectionStepProps {
-  bookableItems: BookableItem[];
+  allBookableItems: BookableItem[];
   categories: any[];
   employees: Employee[];
   selectedService: BookableItem | null;
@@ -19,7 +19,7 @@ interface ServiceSelectionStepProps {
 }
 
 export const ServiceSelectionStep = ({
-  bookableItems,
+  allBookableItems,
   categories,
   employees,
   selectedService,
@@ -32,24 +32,42 @@ export const ServiceSelectionStep = ({
   onCategorySelect,
   formatPrice,
 }: ServiceSelectionStepProps) => {
+  // Filter items based on selected category
+  const filteredItems = selectedCategory 
+    ? allBookableItems.filter(item => {
+        if (item.type === 'service') {
+          return item.category_id === selectedCategory;
+        } else if (item.type === 'combo' && item.combo_services) {
+          return item.combo_services.some(cs => 
+            categories.some(cat => cat.id === selectedCategory && 
+              allBookableItems.some(service => 
+                service.id === cs.service_id && service.category_id === selectedCategory
+              )
+            )
+          );
+        }
+        return false;
+      })
+    : allBookableItems;
+
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Elige tu servicio</CardTitle>
         <CardDescription>Selecciona el servicio o combo que deseas reservar</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         {showCategories && (
           <CategoryFilter
             categories={categories}
             selectedCategory={selectedCategory}
             onCategorySelect={onCategorySelect}
-            className="mb-6"
+            className="w-full"
           />
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bookableItems.map((service) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredItems.map((service) => (
             <MemoizedServiceCard
               key={service.id}
               service={service}
@@ -63,6 +81,12 @@ export const ServiceSelectionStep = ({
             />
           ))}
         </div>
+        
+        {filteredItems.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            No hay servicios disponibles en esta categoría
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -155,7 +155,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       setAvailableSlots([]);
       setSlotsLoading(false);
     }
-  }, [state.selectedService, state.selectedDate, state.selectedEmployee, fetchAvailableSlots]);
+  }, [state.selectedService, state.selectedDate, state.selectedEmployee]);
 
   // Handle pending booking for guest flow
   useEffect(() => {
@@ -190,7 +190,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       case 1:
         return (
           <ServiceSelectionStep
-            bookableItems={bookableItems}
+            allBookableItems={bookableItems}
             categories={categories}
             employees={employees}
             selectedService={state.selectedService}
@@ -287,16 +287,17 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <BookingProgress steps={steps} currentStep={state.currentStep} />
       
       {renderStepContent()}
 
-      <div className="flex justify-between">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
         <Button
           variant="outline"
           onClick={handlePrevious}
           disabled={state.currentStep === 1}
+          className="w-full sm:w-auto"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Anterior
@@ -306,6 +307,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
           <Button
             onClick={handleNext}
             disabled={!canGoNext() || state.submitting}
+            className="w-full sm:w-auto"
           >
             {state.currentStep === 4 ? (
               <>
