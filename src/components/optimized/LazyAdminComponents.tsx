@@ -22,9 +22,7 @@ export const AdminUsers = lazy(() =>
   import("../admin/AdminUsers").then(module => ({ default: module.AdminUsers }))
 );
 
-export const AdminDiscounts = lazy(() => 
-  import("../admin/AdminDiscounts")
-);
+// Removed AdminDiscounts since it's now integrated into AdminServices
 
 export const AdminCategories = lazy(() => 
   import("../admin/AdminCategories").then(module => ({ default: module.AdminCategories }))

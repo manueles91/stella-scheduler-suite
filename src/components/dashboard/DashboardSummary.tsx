@@ -10,6 +10,7 @@ import { EditableAppointment } from "./EditableAppointment";
 import { EditableDiscount } from "./EditableDiscount";
 import { ServiceCard } from "@/components/cards/ServiceCard";
 import { Appointment } from "@/types/appointment";
+import { AdminQuickAccess } from "./AdminQuickAccess";
 interface DashboardSummaryProps {
   effectiveProfile: any;
 }
@@ -259,6 +260,8 @@ export const DashboardSummary = ({
   }
   return <div className="space-y-6">
       
+      {/* Admin Quick Access - Only for admins */}
+      <AdminQuickAccess effectiveProfile={effectiveProfile} />
       
       {/* Próximas Citas */}
       <Card>

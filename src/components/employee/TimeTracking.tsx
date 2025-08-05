@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Shield } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Shield, Clock } from "lucide-react";
 import { format, isToday, startOfDay, endOfDay, isSameDay, parseISO, addDays, subDays, startOfWeek, addMinutes, differenceInMinutes } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { EmployeeSchedule } from "./EmployeeSchedule";
 interface Appointment {
   id: string;
   client_name: string;
@@ -67,6 +68,7 @@ export const TimeTracking = ({
   const [editMode, setEditMode] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTime | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   // Add appointment form state
   const [appointmentForm, setAppointmentForm] = useState({
@@ -612,9 +614,25 @@ export const TimeTracking = ({
   const selectedDateAppointments = getSelectedDateAppointments();
   const selectedDateBlockedTimes = getSelectedDateBlockedTimes();
   return <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <CalendarIcon className="h-8 w-8" />
-        <h2 className="text-3xl font-serif font-bold">Mi Agenda</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="h-8 w-8" />
+          <h2 className="text-3xl font-serif font-bold">Mi Agenda</h2>
+        </div>
+        <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Mi Horario
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Mi Horario</DialogTitle>
+            </DialogHeader>
+            <EmployeeSchedule employeeId={effectiveEmployeeId} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Render only calendar view (daily view) */}

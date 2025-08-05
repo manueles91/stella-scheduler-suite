@@ -12,7 +12,6 @@ import { AdminIngresos } from "@/components/admin/AdminIngresos";
 import { 
   AdminServices,
   AdminUsers,
-  AdminDiscounts,
   AdminCosts,
   AdminCostCategories,
   AdminLoadingFallback
@@ -152,9 +151,6 @@ const Dashboard = () => {
       case 'bookings':
         return <EnhancedBookingSystem />;
         
-      case 'schedule':
-        return <EmployeeSchedule employeeId={effectiveProfile?.id} />;
-        
       case 'time-tracking':
         return <TimeTracking employeeId={effectiveProfile?.id} />;
         
@@ -168,12 +164,7 @@ const Dashboard = () => {
           </Suspense>
         );
         
-      case 'admin-discounts':
-        return (
-          <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminDiscounts />
-          </Suspense>
-        );
+      // Removed admin-discounts case since it's now integrated into admin-services
         
       case 'admin-users':
         return (

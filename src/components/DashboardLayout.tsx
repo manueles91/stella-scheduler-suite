@@ -86,10 +86,6 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
-      { id: 'admin-discounts', label: 'Descuentos', icon: Tags },
-    ] : []),
-    ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
-      { id: 'schedule', label: 'Mi horario', icon: Clock },
     ] : []),
     { id: 'bookings', label: 'Reservar', icon: Calendar },
   ];
@@ -199,7 +195,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
         </aside>
         {sidebarOpen && <div className="fixed inset-0 bg-black/30 z-30 sm:hidden" onClick={() => setSidebarOpen(false)} />}
         {/* Main Content */}
-        <main className="flex-1 p-2 sm:p-6">
+        <main className="flex-1 w-full sm:w-auto p-2 sm:p-6">
           <div data-effective-profile={JSON.stringify(effectiveProfile)} data-is-impersonating={isImpersonating}>
             {children}
           </div>
