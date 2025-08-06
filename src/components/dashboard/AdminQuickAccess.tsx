@@ -368,13 +368,12 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <DialogTitle>Nueva Cita</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label>Cliente</Label>
-                  <CustomerSelectorModal
-                    selectedCustomer={selectedCustomer}
-                    onCustomerSelect={setSelectedCustomer}
-                  />
-                </div>
+                 <div>
+                   <Label>Cliente</Label>
+                   <CustomerSelectorModal
+                     onCustomerSelect={setSelectedCustomer}
+                   />
+                 </div>
                 <div>
                   <Label>Servicio</Label>
                   <Select value={appointmentData.serviceId} onValueChange={(value) => setAppointmentData({...appointmentData, serviceId: value})}>

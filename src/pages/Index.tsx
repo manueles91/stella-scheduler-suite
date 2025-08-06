@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ServicesSection } from "@/components/landing/ServicesSection";
 import { PromocionesSection } from "@/components/landing/PromocionesSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { LocationSection } from "@/components/landing/LocationSection";
 import { ScheduleSection } from "@/components/landing/ScheduleSection";
 import { CTASection } from "@/components/landing/CTASection";
@@ -33,11 +34,14 @@ const Index = () => {
       {/* Hero Section */}
       <HeroSection />
 
-      {/* Services Section - Now First */}
+      {/* Services Section - Prominently featured */}
       <ServicesSection />
 
-      {/* Promociones Section - Now Second */}
+      {/* Promociones Section */}
       <PromocionesSection />
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
 
       {/* Map Location Section */}
       <LocationSection />
@@ -45,7 +49,7 @@ const Index = () => {
       {/* Horario Section */}
       <ScheduleSection />
 
-      {/* CTA Section */}
+      {/* Final CTA Section */}
       <CTASection />
     </div>
   );
