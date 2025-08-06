@@ -135,6 +135,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           employee_id: appointmentData.employeeId || null,
           appointment_date: appointmentData.date,
           start_time: appointmentData.time,
+          end_time: appointmentData.time, // Add required end_time
           notes: appointmentData.notes,
           status: 'confirmed'
         })
@@ -185,9 +186,9 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           employee_id: saleData.employeeId || null,
           appointment_date: saleData.date,
           start_time: saleData.time,
+          end_time: saleData.time, // Add required end_time
           notes: saleData.notes,
-          status: 'completed',
-          charged_price_cents: Math.round(parseFloat(saleData.chargedPrice) * 100)
+          status: 'completed'
         })
         .select()
         .single();
@@ -236,8 +237,10 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           description: costData.description,
           amount_cents: Math.round(parseFloat(costData.amount) * 100),
           cost_type: costData.cost_type,
+          cost_category: 'other' as const, // Add required cost_category
           cost_category_id: costData.cost_category_id,
           date_incurred: costData.date_incurred,
+          created_by: selectedCustomer?.id || '', // Add required created_by
           is_active: true
         })
         .select()
@@ -297,9 +300,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       }
 
       // Create new user profile
+      const userId = crypto.randomUUID();
       const { data, error } = await supabase
         .from('profiles')
         .insert({
+          id: userId, // Add required id field
           email: userData.email,
           full_name: userData.full_name,
           phone: userData.phone || null,
@@ -371,7 +376,8 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                  <div>
                    <Label>Cliente</Label>
                    <CustomerSelectorModal
-                     onCustomerSelect={setSelectedCustomer}
+                     value={selectedCustomer}
+                     onValueChange={setSelectedCustomer}
                    />
                  </div>
                 <div>
