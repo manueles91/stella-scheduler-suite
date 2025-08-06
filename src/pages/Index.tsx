@@ -8,6 +8,7 @@ import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { LocationSection } from "@/components/landing/LocationSection";
 import { ScheduleSection } from "@/components/landing/ScheduleSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { CategoriesSection } from "@/components/landing/CategoriesSection";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -33,6 +34,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <HeroSection />
+
+      {/* Categories Section - Prominently featured above the fold */}
+      <CategoriesSection />
 
       {/* Services Section - Prominently featured */}
       <ServicesSection />

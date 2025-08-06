@@ -27,8 +27,20 @@ export const CategoryFilter = ({
         
       </div>
       
-      <Carousel className="w-full">
-        <CarouselContent className="-ml-1 md:-ml-2">
+      <Carousel 
+        className="w-full"
+        opts={{
+          align: "start",
+          loop: false,
+          dragFree: true,
+          skipSnaps: false,
+        }}
+      >
+        <CarouselContent className="-ml-1 md:-ml-2"
+          style={{
+            transition: "transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+          }}
+        >
           {/* All Services Card */}
           <CarouselItem className="pl-1 md:pl-2 basis-[80px] md:basis-[120px]">
             <Card className={`h-16 md:h-20 cursor-pointer transition-all duration-300 relative overflow-hidden ${selectedCategory === null ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(null)}>

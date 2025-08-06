@@ -62,8 +62,6 @@ export const ServicesSection = () => {
           </div>
         </div>
 
-        {/* Category Filter */}
-        <CategoryFilter categories={categories} selectedCategory={selectedCategory} onCategorySelect={setSelectedCategory} className="mb-8" />
 
         {/* Services Display - Carousel or Grid based on category selection */}
         {selectedCategory ?
