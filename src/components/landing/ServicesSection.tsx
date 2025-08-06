@@ -4,7 +4,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Button } from "@/components/ui/button";
 import { useBookingData } from "@/hooks/useBookingData";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-
 import { Employee } from "@/types/booking";
 export const ServicesSection = () => {
   const navigate = useNavigate();
@@ -38,26 +37,11 @@ export const ServicesSection = () => {
   return <section id="services" className="py-16 sm:py-24 bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-4 sm:mb-6">
-            Nuestros Servicios
-          </h2>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Descubre nuestra amplia gama de servicios profesionales de belleza, diseñados para realzar tu belleza natural
-          </p>
+          
+          
           
           {/* Quick CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-            <Button 
-              size="lg" 
-              className="px-8 py-4 h-auto"
-              onClick={() => navigate('/book')}
-            >
-              Reservar ahora
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              ✨ Promociones especiales disponibles
-            </p>
-          </div>
+          
         </div>
 
         {/* Services Display - Carousel or Grid based on category selection */}
