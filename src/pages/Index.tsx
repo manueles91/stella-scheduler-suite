@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { CategoriesSection } from "@/components/landing/CategoriesSection";
 import { ServicesSection } from "@/components/landing/ServicesSection";
 import { PromocionesSection } from "@/components/landing/PromocionesSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
@@ -34,7 +35,10 @@ const Index = () => {
       {/* Hero Section */}
       <HeroSection />
 
-      {/* Services Section - Prominently featured */}
+      {/* Categories Section - Above the fold */}
+      <CategoriesSection />
+
+      {/* Services Section - Filtered by categories */}
       <ServicesSection />
 
       {/* Promociones Section */}

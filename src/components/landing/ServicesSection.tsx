@@ -4,16 +4,14 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Button } from "@/components/ui/button";
 import { useBookingData } from "@/hooks/useBookingData";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { CategoryFilter } from "@/components/booking/CategoryFilter";
+
 import { Employee } from "@/types/booking";
 export const ServicesSection = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const {
     bookableItems,
-    categories,
     selectedCategory,
-    setSelectedCategory,
     formatPrice,
     employees
   } = useBookingData();
@@ -61,9 +59,6 @@ export const ServicesSection = () => {
             </p>
           </div>
         </div>
-
-        {/* Category Filter */}
-        <CategoryFilter categories={categories} selectedCategory={selectedCategory} onCategorySelect={setSelectedCategory} className="mb-8" />
 
         {/* Services Display - Carousel or Grid based on category selection */}
         {selectedCategory ?
