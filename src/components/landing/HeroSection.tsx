@@ -66,7 +66,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Categories Section - Integrated into hero */}
-      <div className="relative z-10 pb-8 sm:pb-12 -mt-4">
+      <div className="relative z-10 pb-8 sm:pb-12 -mt-8">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-6">
             <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
