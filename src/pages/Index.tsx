@@ -32,11 +32,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
+      {/* Hero Section with Integrated Categories */}
       <HeroSection />
-
-      {/* Categories Section - Above the fold */}
-      <CategoriesSection />
 
       {/* Services Section - Filtered by categories */}
       <ServicesSection />

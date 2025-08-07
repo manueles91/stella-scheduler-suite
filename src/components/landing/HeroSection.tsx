@@ -1,56 +1,86 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useBookingData } from "@/hooks/useBookingData";
+import { EnhancedCategoryFilter } from "@/components/landing/EnhancedCategoryFilter";
 import heroImage from "@/assets/hero-salon.jpg";
 
 export const HeroSection = () => {
   const navigate = useNavigate();
+  const { categories, selectedCategory, setSelectedCategory } = useBookingData();
+
+  const handleCategorySelect = (categoryId: string | null) => {
+    setSelectedCategory(categoryId);
+    // Auto-scroll to services section
+    setTimeout(() => {
+      document.getElementById('services')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
+  };
 
   return (
     <section 
-      className="relative h-[70vh] sm:h-[80vh] lg:min-h-screen flex items-center justify-center bg-cover bg-center"
+      className="relative min-h-screen flex flex-col bg-cover bg-center"
       style={{ backgroundImage: `url(${heroImage})` }}
     >
-      <div className="absolute inset-0 bg-gradient-hero opacity-80"></div>
-      <div className="relative z-10 text-center text-white px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="space-y-6 sm:space-y-8">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold leading-tight">
-            Tu belleza, nuestra
-            <span className="block text-primary-glow">pasión</span>
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Experimenta tratamientos de belleza personalizados con los mejores profesionales. 
-            Tu transformación comienza aquí.
-          </p>
-          
-          {/* Primary CTA */}
-          <div className="space-y-3 sm:space-y-4">
-            <Button 
-              size="lg" 
-              className="text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105" 
-              onClick={() => navigate('/book')}
-            >
-              Reserva tu cita ahora
-            </Button>
+      <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
+      
+      {/* Hero Content */}
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6">
+        <div className="text-center text-white max-w-6xl mx-auto">
+          <div className="space-y-6 sm:space-y-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
+              Tu belleza, nuestra
+              <span className="block text-primary-glow">pasión</span>
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+              Experimenta tratamientos de belleza personalizados con los mejores profesionales. 
+              Tu transformación comienza aquí.
+            </p>
             
-            {/* Secondary actions */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center">
+            {/* Primary CTA */}
+            <div className="space-y-3 sm:space-y-4">
               <Button 
-                variant="outline" 
                 size="lg" 
-                className="text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm" 
-                onClick={() => navigate('/auth')}
+                className="text-base sm:text-lg px-8 sm:px-12 py-3 sm:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105" 
+                onClick={() => navigate('/book')}
               >
-                Crear cuenta
+                Reserva tu cita ahora
               </Button>
-              <span className="text-white/60 hidden sm:block">o</span>
-              <button 
-                className="text-white/80 hover:text-white underline underline-offset-4 transition-colors"
-                onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                Ver nuestros servicios
-              </button>
+              
+              {/* Secondary actions */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-sm px-6 py-2 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm" 
+                  onClick={() => navigate('/auth')}
+                >
+                  Crear cuenta
+                </Button>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Categories Section - Integrated into hero */}
+      <div className="relative z-10 pb-8 sm:pb-12">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-6">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
+              ¿Qué buscas hoy?
+            </h2>
+            <p className="text-sm sm:text-base text-white/80">
+              Explora nuestras categorías y encuentra el servicio perfecto para ti
+            </p>
+          </div>
+          <EnhancedCategoryFilter 
+            categories={categories} 
+            selectedCategory={selectedCategory} 
+            onCategorySelect={handleCategorySelect} 
+          />
         </div>
       </div>
     </section>
