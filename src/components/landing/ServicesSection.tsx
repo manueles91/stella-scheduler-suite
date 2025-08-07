@@ -10,6 +10,7 @@ export const ServicesSection = () => {
   const [loading, setLoading] = useState(true);
   const {
     bookableItems,
+    allBookableItems,
     selectedCategory,
     formatPrice,
     employees
@@ -59,7 +60,7 @@ export const ServicesSection = () => {
       // Carousel when all services are shown
       <Carousel className="w-full">
             <CarouselContent className="-ml-2 md:-ml-4">
-              {bookableItems.slice(0, 12).map(service => {
+              {allBookableItems.slice(0, 12).map(service => {
             const comboServices = service.combo_services?.map(cs => ({
               name: cs.services.name,
               quantity: cs.quantity

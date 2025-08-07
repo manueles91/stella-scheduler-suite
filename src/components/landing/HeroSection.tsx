@@ -57,7 +57,7 @@ export const HeroSection = () => {
                   className="text-sm px-6 py-2 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm" 
                   onClick={() => navigate('/auth')}
                 >
-                  Crear cuenta
+                  Ingresar
                 </Button>
               </div>
             </div>
@@ -66,7 +66,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Categories Section - Integrated into hero */}
-      <div className="relative z-10 pb-8 sm:pb-12">
+      <div className="relative z-10 pb-8 sm:pb-12 -mt-4">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-6">
             <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">

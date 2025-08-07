@@ -96,9 +96,6 @@ export const EnhancedCategoryFilter = ({
                     <div className="text-xs sm:text-sm md:text-base font-bold text-white drop-shadow-lg">
                       {category.name}
                     </div>
-                    <div className="text-[9px] sm:text-[10px] md:text-xs text-white/90 drop-shadow-md">
-                      Explorar servicios
-                    </div>
                   </div>
                 </div>
 
