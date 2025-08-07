@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Service, Employee, TimeSlot, Combo, Discount, BookableItem } from "@/types/booking";
@@ -30,20 +30,34 @@ export const useBookingData = () => {
   }, [services, combos, discounts]);
 
   // Filter bookable items by category
-  const filteredBookableItems = selectedCategory 
-    ? bookableItems.filter(item => {
-        if (item.type === 'service') {
-          return item.category_id === selectedCategory;
-        } else if (item.type === 'combo' && item.combo_services) {
-          // For combos, check if any service in the combo belongs to the selected category
-          const serviceIds = item.combo_services.map(cs => cs.service_id);
-          return services.some(service => 
-            serviceIds.includes(service.id) && service.category_id === selectedCategory
-          );
-        }
-        return false;
-      })
-    : bookableItems;
+  const filteredBookableItems = useMemo(() => {
+    console.log('Filtering with selectedCategory:', selectedCategory);
+    console.log('All bookableItems:', bookableItems);
+    
+    if (!selectedCategory) return bookableItems;
+    
+    const filtered = bookableItems.filter(item => {
+      console.log('Checking item:', item.name, 'category_id:', item.category_id, 'type:', item.type);
+      
+      if (item.type === 'service') {
+        const matches = item.category_id === selectedCategory;
+        console.log('Service matches:', matches);
+        return matches;
+      } else if (item.type === 'combo' && item.combo_services) {
+        // For combos, check if any service in the combo belongs to the selected category
+        const serviceIds = item.combo_services.map(cs => cs.service_id);
+        const matches = services.some(service => 
+          serviceIds.includes(service.id) && service.category_id === selectedCategory
+        );
+        console.log('Combo matches:', matches);
+        return matches;
+      }
+      return false;
+    });
+    
+    console.log('Filtered result:', filtered);
+    return filtered;
+  }, [bookableItems, selectedCategory, services]);
 
   const fetchServices = async () => {
     const { data, error } = await supabase

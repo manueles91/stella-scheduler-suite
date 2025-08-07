@@ -2,6 +2,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
+import { getCategoryImage } from "./CategoryImages";
 
 interface ServiceCategory {
   id: string;
@@ -75,15 +76,18 @@ export const EnhancedCategoryFilter = ({
               >
                 {/* Background Image or Gradient */}
                 <div className="absolute inset-0">
-                  {category.image_url ? (
-                    <img 
-                      src={category.image_url} 
-                      alt={category.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-secondary/10" />
-                  )}
+                  {(() => {
+                    const imageUrl = getCategoryImage(category.name);
+                    return imageUrl ? (
+                      <img 
+                        src={imageUrl} 
+                        alt={category.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-secondary/10" />
+                    );
+                  })()}
                   {/* Enhanced overlay for better readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
                   {/* Hover glow effect */}
