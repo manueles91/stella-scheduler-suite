@@ -27,11 +27,16 @@ export const CategoryFilter = ({
         
       </div>
       
-      <Carousel className="w-full">
-        <CarouselContent className="-ml-1 md:-ml-2">
+      <Carousel className="w-full" opts={{
+        align: "start",
+        loop: false,
+        dragFree: true,
+        skipSnaps: false
+      }}>
+        <CarouselContent className="-ml-2 md:-ml-4">
           {/* All Services Card */}
-          <CarouselItem className="pl-1 md:pl-2 basis-[80px] md:basis-[120px]">
-            <Card className={`h-16 md:h-20 cursor-pointer transition-all duration-300 relative overflow-hidden ${selectedCategory === null ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(null)}>
+          <CarouselItem className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+            <Card className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${selectedCategory === null ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(null)}>
               <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-[10px] md:text-xs font-medium text-foreground">Todos</div>
@@ -42,13 +47,23 @@ export const CategoryFilter = ({
           </CarouselItem>
 
           {/* Category Cards */}
-          {categories.map(category => <CarouselItem key={category.id} className="pl-1 md:pl-2 basis-[80px] md:basis-[120px]">
-              <Card className={`h-16 md:h-20 cursor-pointer transition-all duration-300 relative overflow-hidden ${selectedCategory === category.id ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(category.id)}>
+          {categories.map(category => <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+              <Card className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${selectedCategory === category.id ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(category.id)}>
                 {/* Background Image or Gradient */}
                 <div className="absolute inset-0">
-                  {category.image_url ? <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />}
-                  {/* Overlay for text readability */}
-                  <div className="absolute inset-0 bg-black/30" />
+                  {category.image_url ? (
+                    <img
+                      src={category.image_url}
+                      alt={category.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />
+                  )}
+                  {/* Enhanced overlay for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+                  {/* Hover glow effect */}
+                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
                 {/* Content */}

@@ -1,7 +1,6 @@
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
 import { getCategoryImage } from "./CategoryImages";
 
 interface ServiceCategory {
@@ -37,33 +36,7 @@ export const EnhancedCategoryFilter = ({
         }}
       >
         <CarouselContent className="-ml-2 md:-ml-4">
-          {/* All Services Card */}
-          <CarouselItem className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
-            <Card 
-              className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
-                selectedCategory === null 
-                  ? 'ring-2 ring-white shadow-2xl bg-white/20 backdrop-blur-sm' 
-                  : 'hover:shadow-xl bg-white/10 backdrop-blur-sm border-white/30'
-              }`} 
-              onClick={() => onCategorySelect(null)}
-            >
-              <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                <div className="text-center relative z-10">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mx-auto mb-1 text-white drop-shadow-lg" />
-                  <div className="text-xs sm:text-sm md:text-base font-bold text-white drop-shadow-md">Todos</div>
-                  <div className="text-[10px] sm:text-xs text-white/90">los servicios</div>
-                </div>
-                {selectedCategory === null && (
-                  <Badge className="absolute top-1 right-1 text-[9px] h-4 bg-white text-primary">
-                    ✓
-                  </Badge>
-                )}
-              </div>
-            </Card>
-          </CarouselItem>
-
-          {/* Category Cards */}
+          {/* Category Cards (no "Todos" option displayed) */}
           {categories.map(category => (
             <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
               <Card 
