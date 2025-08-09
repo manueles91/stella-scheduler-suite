@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerSelectorModal } from "./CustomerSelectorModal";
 import { CollapsibleFilter } from "./CollapsibleFilter";
+import { Progress } from "@/components/ui/progress";
+import { formatCRC, parseCRCToCents } from "@/lib/currency";
 
 interface Reservation {
   id: string;
@@ -365,8 +367,25 @@ export const AdminIngresos = () => {
   };
 
   const formatPrice = (cents: number) => {
-    return `₡${Math.round(cents / 100).toLocaleString()}`;
+    return formatCRC(cents);
   };
+
+  // Revenue KPIs
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const isInCurrentMonth = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d >= startOfMonth && d <= endOfMonth;
+  };
+
+  const completedThisMonth = reservations.filter(r => r.status === 'completed' && isInCurrentMonth(r.appointment_date));
+  const confirmedUpcoming = reservations.filter(r => r.status === 'confirmed' && new Date(r.appointment_date) >= new Date());
+
+  const totalRevenueMTD = completedThisMonth.reduce((sum, r) => sum + (r.services?.price_cents || 0), 0);
+  const avgTicketMTD = completedThisMonth.length > 0 ? Math.round(totalRevenueMTD / completedThisMonth.length) : 0;
+  const progressTargetCents = totalRevenueMTD; // placeholder until target is defined
+  const progressPct = progressTargetCents > 0 ? 100 : 0;
 
   const formatTime12Hour = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -512,11 +531,11 @@ export const AdminIngresos = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label>Precio cobrado</Label>
+                  <Label>Precio cobrado (₡)</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder={saleData.serviceId ? formatPrice(services.find(s => s.id === saleData.serviceId)?.price_cents || 0) : "Precio del servicio"}
+                    placeholder={saleData.serviceId ? formatPrice(services.find(s => s.id === saleData.serviceId)?.price_cents || 0) : "₡0"}
                     value={saleData.chargedPrice}
                     onChange={(e) => setSaleData(prev => ({ ...prev, chargedPrice: e.target.value }))}
                   />
@@ -572,6 +591,54 @@ export const AdminIngresos = () => {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* Revenue Summary - Mobile friendly */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ingresos MTD</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl sm:text-2xl font-bold">{formatPrice(totalRevenueMTD)}</div>
+            <p className="text-xs text-muted-foreground">Mes en curso</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl sm:text-2xl font-bold">{formatPrice(avgTicketMTD)}</div>
+            <p className="text-xs text-muted-foreground">Citas completadas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Próximas</CardTitle>
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl sm:text-2xl font-bold">{confirmedUpcoming.length}</div>
+            <p className="text-xs text-muted-foreground">En pie</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Progreso del Mes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>{formatPrice(totalRevenueMTD)}</span>
+                <span className="text-muted-foreground">{progressPct}%</span>
+              </div>
+              <Progress value={progressPct} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="upcoming" className="space-y-6">

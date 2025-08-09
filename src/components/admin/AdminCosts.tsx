@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { AdminCostCategories } from "./AdminCostCategories";
+import { Progress } from "@/components/ui/progress";
+import { formatCRC } from "@/lib/currency";
 type CostType = 'fixed' | 'variable' | 'recurring' | 'one_time';
 interface CostCategory {
   id: string;
@@ -46,12 +48,12 @@ const costTypes = [{
   value: 'one_time',
   label: 'Una vez'
 }];
+
+// Replace EUR formatter with CRC
 const formatCurrency = (amountCents: number) => {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amountCents / 100);
+  return formatCRC(amountCents);
 };
+
 export function AdminCosts() {
   const [costs, setCosts] = useState<Cost[]>([]);
   const [costCategories, setCostCategories] = useState<CostCategory[]>([]);
@@ -59,12 +61,8 @@ export function AdminCosts() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const {
-    profile
-  } = useAuth();
+  const { toast } = useToast();
+  const { profile } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -238,12 +236,40 @@ export function AdminCosts() {
   const getTypeLabel = (type: string) => {
     return costTypes.find(t => t.value === type)?.label || type;
   };
-  const totalMonthly = costs.filter(cost => cost.is_active && (cost.cost_type === 'recurring' || cost.cost_type === 'fixed')).reduce((sum, cost) => {
-    if (cost.cost_type === 'recurring' && cost.recurring_frequency) {
-      return sum + cost.amount_cents * (30 / cost.recurring_frequency);
-    }
-    return sum + cost.amount_cents;
-  }, 0);
+
+  // Derived metrics for decision-making and progress tracking
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const isInCurrentMonth = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d >= startOfMonth && d <= endOfMonth;
+  };
+
+  const monthToDateSpentCents = costs
+    .filter(c => isInCurrentMonth(c.date_incurred))
+    .reduce((sum, c) => sum + c.amount_cents, 0);
+
+  const totalMonthly = costs
+    .filter(cost => cost.is_active && (cost.cost_type === 'recurring' || cost.cost_type === 'fixed'))
+    .reduce((sum, cost) => {
+      if (cost.cost_type === 'recurring' && cost.recurring_frequency) {
+        return sum + cost.amount_cents * (30 / cost.recurring_frequency);
+      }
+      return sum + cost.amount_cents;
+    }, 0);
+
+  const progressPct = totalMonthly > 0 ? Math.min(100, Math.round((monthToDateSpentCents / totalMonthly) * 100)) : 0;
+
+  const byType = costs.reduce(
+    (acc, c) => {
+      acc[c.cost_type] = (acc[c.cost_type] || 0) + c.amount_cents;
+      return acc;
+    },
+    {} as Record<CostType, number>
+  );
+
   if (loading) {
     return <div className="flex items-center justify-center p-8">Cargando costos...</div>;
   }
@@ -286,7 +312,7 @@ export function AdminCosts() {
                 </div>
 
                 <div>
-                  <Label htmlFor="amount">Monto (€) *</Label>
+                  <Label htmlFor="amount">Monto (₡) *</Label>
                   <Input id="amount" type="number" step="0.01" value={formData.amount} onChange={e => setFormData(prev => ({
                   ...prev,
                   amount: e.target.value
@@ -378,48 +404,73 @@ export function AdminCosts() {
       </Dialog>
 
       {/* Summary Cards - Mobile optimized */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Costos Mensuales</CardTitle>
+            <CardTitle className="text-sm font-medium">Gasto MTD</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(monthToDateSpentCents)}</div>
+            <p className="text-xs text-muted-foreground">Mes en curso</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gasto Mensual Estimado</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalMonthly)}</div>
-            <p className="text-xs text-muted-foreground">
-              Estimado para este mes
-            </p>
+            <p className="text-xs text-muted-foreground">Fijo + Recurrente</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Registros</CardTitle>
+            <CardTitle className="text-sm font-medium">Registros</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{costs.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Costos registrados
-            </p>
+            <p className="text-xs text-muted-foreground">Costos registrados</p>
           </CardContent>
         </Card>
 
-        <Card className="sm:col-span-2 lg:col-span-1">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Costos Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Activos</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
-              {costs.filter(c => c.is_active).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              En seguimiento
-            </p>
+            <div className="text-xl sm:text-2xl font-bold">{costs.filter(c => c.is_active).length}</div>
+            <p className="text-xs text-muted-foreground">En seguimiento</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Progreso del Mes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>{formatCurrency(monthToDateSpentCents)} / {formatCurrency(totalMonthly)}</span>
+              <span className="text-muted-foreground">{progressPct}%</span>
+            </div>
+            <Progress value={progressPct} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs text-muted-foreground">
+              <div>Fijo: <span className="font-medium text-foreground">{formatCurrency(byType['fixed' as CostType] || 0)}</span></div>
+              <div>Recurrente: <span className="font-medium text-foreground">{formatCurrency(byType['recurring' as CostType] || 0)}</span></div>
+              <div>Variable: <span className="font-medium text-foreground">{formatCurrency(byType['variable' as CostType] || 0)}</span></div>
+              <div>Único: <span className="font-medium text-foreground">{formatCurrency(byType['one_time' as CostType] || 0)}</span></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Costs List - Mobile optimized */}
       <div className="space-y-4">
