@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Service, Employee, TimeSlot, Combo, Discount, BookableItem } from "@/types/booking";
 import { format, addMinutes, parseISO, isSameDay, isAfter } from "date-fns";
-
+import { useBookingContext } from "@/contexts/BookingContext";
 export const useBookingData = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [combos, setCombos] = useState<Combo[]>([]);
@@ -12,7 +12,7 @@ export const useBookingData = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { selectedCategory, setSelectedCategory } = useBookingContext();
   const { toast } = useToast();
 
   useEffect(() => {

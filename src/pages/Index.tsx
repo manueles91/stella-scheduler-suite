@@ -9,6 +9,7 @@ import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { LocationSection } from "@/components/landing/LocationSection";
 import { ScheduleSection } from "@/components/landing/ScheduleSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { BookingProvider } from "@/contexts/BookingContext";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -31,28 +32,30 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section with Integrated Categories */}
-      <HeroSection />
+    <BookingProvider>
+      <div className="min-h-screen bg-background">
+        {/* Hero Section with Integrated Categories */}
+        <HeroSection />
 
-      {/* Services Section - Filtered by categories */}
-      <ServicesSection />
+        {/* Services Section - Filtered by categories */}
+        <ServicesSection />
 
-      {/* Promociones Section */}
-      <PromocionesSection />
+        {/* Promociones Section */}
+        <PromocionesSection />
 
-      {/* Testimonials Section */}
-      <TestimonialsSection />
+        {/* Testimonials Section */}
+        <TestimonialsSection />
 
-      {/* Map Location Section */}
-      <LocationSection />
+        {/* Map Location Section */}
+        <LocationSection />
 
-      {/* Horario Section */}
-      <ScheduleSection />
+        {/* Horario Section */}
+        <ScheduleSection />
 
-      {/* Final CTA Section */}
-      <CTASection />
-    </div>
+        {/* Final CTA Section */}
+        <CTASection />
+      </div>
+    </BookingProvider>
   );
 };
 

@@ -1391,23 +1391,55 @@ export const AdminServices = () => {
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredServices.map(service => (
-          <div key={service.id} className="relative group">
-            
-            <ServiceCard
-              id={service.id}
-              name={service.name}
-              description={service.description}
-              originalPrice={service.price_cents}
-              finalPrice={service.price_cents}
-              savings={0}
-              duration={service.duration_minutes}
-              imageUrl={service.image_url}
-              type="service"
-              onSelect={() => handleEdit(service)}
-              variant="admin"
-              showExpandable={true}
-              className="relative"
+        {filteredServices.map(service => {
+          // Find best active discount for this service
+          const now = new Date();
+          const activeForService = discounts.filter(d => {
+            const start = new Date(d.start_date);
+            const end = new Date(d.end_date);
+            return d.service_id === service.id && d.is_active && start <= now && end >= now;
+          });
+
+          const computeSavings = (disc: any) => {
+            if (!disc) return 0;
+            if (disc.discount_type === 'percentage') {
+              return Math.round(service.price_cents * (disc.discount_value / 100));
+            }
+            return Math.min(Math.round(disc.discount_value), service.price_cents);
+          };
+
+          const bestDiscount = activeForService.reduce((best: any, curr: any) => {
+            const bestSave = computeSavings(best);
+            const currSave = computeSavings(curr);
+            return currSave > bestSave ? curr : best;
+          }, null as any);
+
+          const savings = computeSavings(bestDiscount);
+          const finalPrice = Math.max(0, service.price_cents - savings);
+
+          return (
+            <div key={service.id} className="relative group">
+              <ServiceCard
+                id={service.id}
+                name={service.name}
+                description={service.description}
+                originalPrice={service.price_cents}
+                finalPrice={finalPrice}
+                savings={savings}
+                duration={service.duration_minutes}
+                imageUrl={service.image_url}
+                type="service"
+                discountType={bestDiscount?.discount_type}
+                discountValue={bestDiscount?.discount_value}
+                onSelect={() => handleEdit(service)}
+                variant="admin"
+                showExpandable={true}
+                className="relative"
+              />
+            </div>
+          );
+        })}
+      </div>
               adminBadges={
                 <>
                   <Badge 

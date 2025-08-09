@@ -33,10 +33,14 @@ export const DashboardSummary = ({
   }, [effectiveProfile?.id, effectiveProfile?.role]);
   const fetchActivePromotions = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('discounts').select('*, services(id, name, description, duration_minutes, price_cents, image_url)').eq('is_active', true).eq('is_public', true).lte('start_date', new Date().toISOString()).gte('end_date', new Date().toISOString()).limit(3);
+      const nowISO = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*, services(id, name, description, duration_minutes, price_cents, image_url)')
+        .eq('is_active', true)
+        .lte('start_date', nowISO)
+        .gte('end_date', nowISO)
+        .limit(3);
       if (error) {
         console.error('Error fetching active promotions:', error);
         return;
