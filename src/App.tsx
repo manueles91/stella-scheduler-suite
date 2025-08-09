@@ -14,6 +14,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const RegistrationClaim = lazy(() => import("./pages/RegistrationClaim"));
+const Invite = lazy(() => import("./pages/Invite"));
 const GuestBookingSystem = lazy(() => import("@/components/GuestBookingSystem").then(module => ({ default: module.GuestBookingSystem })));
 
 // Global loading fallback
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/book" element={<GuestBookingSystem />} />
                 <Route path="/register" element={<RegistrationClaim />} />
+                <Route path="/invite" element={<Invite />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

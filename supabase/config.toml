@@ -1,1 +1,4 @@
 project_id = "eygyyswmlsqyvfdbmwfw"
+
+[functions.invites-lookup]
+verify_jwt = false

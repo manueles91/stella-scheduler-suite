@@ -406,8 +406,10 @@ export type Database = {
           claimed_at: string | null
           claimed_by: string | null
           email: string
+          expires_at: string | null
           full_name: string
           id: string
+          invite_token: string | null
           invited_at: string
           invited_by: string
           notes: string | null
@@ -419,8 +421,10 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           email: string
+          expires_at?: string | null
           full_name: string
           id?: string
+          invite_token?: string | null
           invited_at?: string
           invited_by: string
           notes?: string | null
@@ -432,8 +436,10 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           email?: string
+          expires_at?: string | null
           full_name?: string
           id?: string
+          invite_token?: string | null
           invited_at?: string
           invited_by?: string
           notes?: string | null

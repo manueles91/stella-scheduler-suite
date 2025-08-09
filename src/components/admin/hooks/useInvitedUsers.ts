@@ -77,10 +77,28 @@ export const useInvitedUsers = () => {
 
       if (error) throw error;
 
+      // Fetch the invite token to build a shareable link (defaults ensure it's created)
+      const { data: inviteRow } = await supabase
+        .from('invited_users')
+        .select('invite_token')
+        .eq('email', validatedData.email.toLowerCase())
+        .order('invited_at', { ascending: false })
+        .maybeSingle();
+
+      const token = inviteRow?.invite_token;
+      const link = token ? `${window.location.origin}/invite?token=${token}` : undefined;
+
+      // Try to copy to clipboard for convenience
+      if (link && navigator?.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(link); } catch {}
+      }
+
       toast({
         title: "Éxito",
-        description: "Usuario invitado creado correctamente. Podrán reclamar su cuenta al registrarse.",
-        duration: 5000
+        description: link
+          ? `Invitación creada. Enlace copiado: ${link}`
+          : "Usuario invitado creado correctamente.",
+        duration: 6000
       });
 
       return true;
