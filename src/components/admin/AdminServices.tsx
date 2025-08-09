@@ -1440,56 +1440,6 @@ export const AdminServices = () => {
           );
         })}
       </div>
-              adminBadges={
-                <>
-                  <Badge 
-                    variant={service.is_active ? "default" : "secondary"} 
-                    className={`text-xs font-medium shadow-lg ${
-                      service.is_active 
-                        ? 'bg-green-600 text-white border border-green-500' 
-                        : 'bg-gray-600 text-white border border-gray-500'
-                    }`}
-                  >
-                    {service.is_active ? "Activo" : "Inactivo"}
-                  </Badge>
-                  <Badge 
-                    variant="secondary" 
-                    className="text-xs font-medium shadow-lg bg-gray-500 text-white border border-gray-400"
-                  >
-                    {service.service_categories?.name || "Sin categoría"}
-                  </Badge>
-                </>
-              }
-              adminButtons={
-                <>
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(service);
-                    }}
-                    className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-                  >
-                    <Pencil className="h-3 w-3 text-gray-700" />
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(service.id);
-                    }}
-                    className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
-                  >
-                    <Trash2 className="h-3 w-3 text-white" />
-                  </Button>
-                </>
-              }
-            />
-          </div>
-        ))}
-      </div>
 
       {/* Category Manager Modal */}
       <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
