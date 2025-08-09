@@ -142,52 +142,43 @@ const Dashboard = () => {
     return null;
   }
 
-  // Memoized content renderer
-  const renderContent = useMemo(() => {
+  // Content renderer (avoid hooks after conditional returns)
+  const renderedContent = (() => {
     switch (activeTab) {
       case 'overview':
         return <DashboardSummary effectiveProfile={effectiveProfile} />;
-        
       case 'bookings':
         return <EnhancedBookingSystem />;
-        
       case 'time-tracking':
         return <TimeTracking employeeId={effectiveProfile?.id} />;
-        
       case 'admin-bookings':
         return <AdminIngresos />;
-        
       case 'admin-services':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
             <AdminServices />
           </Suspense>
         );
-        
-      // Removed admin-discounts case since it's now integrated into admin-services
-        
       case 'admin-users':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
             <AdminUsers />
           </Suspense>
         );
-        
       case 'admin-costs':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
             <AdminCosts />
           </Suspense>
         );
-        
       default:
         return null;
     }
-  }, [activeTab, effectiveProfile?.id]);
+  })();
 
   return (
     <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      {renderContent}
+      {renderedContent}
     </DashboardLayout>
   );
 };
