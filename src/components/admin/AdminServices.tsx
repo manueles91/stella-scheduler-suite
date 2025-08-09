@@ -1435,6 +1435,51 @@ export const AdminServices = () => {
                 variant="admin"
                 showExpandable={true}
                 className="relative"
+                adminBadges={
+                  <>
+                    <Badge 
+                      variant={service.is_active ? "default" : "secondary"} 
+                      className={`text-xs font-medium shadow-lg ${
+                        service.is_active 
+                          ? 'bg-green-600 text-white border border-green-500' 
+                          : 'bg-gray-600 text-white border border-gray-500'
+                      }`}
+                    >
+                      {service.is_active ? "Activo" : "Inactivo"}
+                    </Badge>
+                    {service.service_categories?.name && (
+                      <Badge variant="outline" className="text-xs bg-white/80 text-gray-800 border-gray-300">
+                        {service.service_categories.name}
+                      </Badge>
+                    )}
+                  </>
+                }
+                adminButtons={
+                  <>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(service);
+                      }}
+                      className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                    >
+                      <Pencil className="h-3 w-3 text-gray-700" />
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(service.id);
+                      }}
+                      className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                    >
+                      <Trash2 className="h-3 w-3 text-white" />
+                    </Button>
+                  </>
+                }
               />
             </div>
           );
