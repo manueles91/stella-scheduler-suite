@@ -51,7 +51,15 @@ export const BaseCard = ({
             ? 'h-28 sm:h-32' // Smaller height on mobile
             : 'h-32'
       } ${className}`}
-      onClick={!showExpandable ? onSelect : undefined}
+      onClick={(e) => {
+        if (!showExpandable) {
+          onSelect?.();
+          return;
+        }
+        if (!isExpanded) {
+          onExpandChange?.(true);
+        }
+      }}
     >
       {/* Background Image */}
       <div className="absolute inset-0">
