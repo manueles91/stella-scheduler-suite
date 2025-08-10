@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Search, User, Mail, Phone, Calendar, Edit, Ban, CheckCircle, Plus, Users, UserCheck, Filter, MoreVertical, Trash2, AlertCircle } from "lucide-react";
+import { Search, User, Mail, Phone, Calendar, Edit, Ban, CheckCircle, Plus, Users, UserCheck, Filter, MoreVertical, Trash2, AlertCircle, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -24,6 +24,10 @@ interface User {
   role: 'client' | 'employee' | 'admin';
   account_status: string;
   created_at: string;
+  invite_token?: string;
+  invited_at?: string | null;
+  claimed_at?: string | null;
+  user_type?: 'authenticated' | 'invited';
   _count?: {
     reservations: number;
   };
@@ -79,41 +83,45 @@ export const AdminUsers = () => {
     await Promise.all([fetchUsers(), fetchServices(), fetchEmployeeServices()]);
     setLoading(false);
   };
-  const fetchUsers = async () => {
-    try {
-      // Fetch authenticated users from profiles
-      const {
-        data: profilesData,
-        error: profilesError
-      } = await supabase.from('profiles').select(`
+const fetchUsers = async () => {
+  try {
+    // Fetch authenticated users from profiles
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select(`
           *,
           reservations!reservations_client_id_fkey(count)
-        `).order('full_name');
-      if (profilesError) throw profilesError;
+        `)
+      .order('full_name');
+    if (profilesError) throw profilesError;
 
-      // Fetch invited users from invited_users
-      const {
-        data: invitedData,
-        error: invitedError
-      } = await supabase.from('invited_users').select('*').order('full_name');
-      if (invitedError) throw invitedError;
+    // Fetch only pending invited users
+    const { data: invitedData, error: invitedError } = await supabase
+      .from('invited_users')
+      .select('id,email,full_name,phone,role,invited_at,claimed_at,account_status,invite_token')
+      .is('claimed_at', null)
+      .order('invited_at', { ascending: false });
+    if (invitedError) throw invitedError;
 
-      // Combine both datasets
-      const allUsers = [...(profilesData || []).map(user => ({
+    // Exclude invites for emails that already have a profile
+    const profileEmails = new Set((profilesData || []).map((p: any) => (p.email || '').toLowerCase()));
+    const pendingInvites = (invitedData || []).filter((inv: any) => !profileEmails.has((inv.email || '').toLowerCase()));
+
+    // Combine both datasets
+    const allUsers = [
+      ...((profilesData || []).map((user: any) => ({
         ...user,
-        _count: {
-          reservations: user.reservations?.length || 0
-        },
+        _count: { reservations: user.reservations?.length || 0 },
         user_type: 'authenticated' as const
-      })), ...(invitedData || []).map(invited => ({
+      }))),
+      ...(pendingInvites.map((invited: any) => ({
         ...invited,
         created_at: invited.invited_at,
-        _count: {
-          reservations: 0
-        },
+        _count: { reservations: 0 },
         user_type: 'invited' as const
-      }))];
-      setUsers(allUsers);
+      })))
+    ];
+    setUsers(allUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -338,9 +346,18 @@ export const AdminUsers = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
-  const getStatusBadgeColor = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-  };
+const getStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'inactive':
+      return 'bg-red-100 text-red-800';
+    case 'invited':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
   const getRoleText = (role: string) => {
     switch (role) {
       case 'admin':
@@ -353,9 +370,18 @@ export const AdminUsers = () => {
         return role;
     }
   };
-  const getStatusText = (status: string) => {
-    return status === 'active' ? 'Activo' : 'Inactivo';
-  };
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'Activo';
+    case 'inactive':
+      return 'Inactivo';
+    case 'invited':
+      return 'Invitado';
+    default:
+      return status;
+  }
+};
   if (loading) {
     return <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -500,10 +526,11 @@ export const AdminUsers = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
-                <SelectContent>
+<SelectContent>
                   <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="active">Activo</SelectItem>
                   <SelectItem value="inactive">Inactivo</SelectItem>
+                  <SelectItem value="invited">Invitado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -537,9 +564,14 @@ export const AdminUsers = () => {
               <TableBody>
                 {filteredUsers.map(user => <TableRow key={user.id}>
                     <TableCell>
-                      <div className="flex flex-col">
+<div className="flex flex-col">
                         <div className="font-medium">{user.full_name}</div>
                         <div className="text-sm text-muted-foreground">{user.email}</div>
+                        {user.user_type === 'invited' && (
+                          <div className="mt-1">
+                            <Badge className="bg-yellow-100 text-yellow-800">Invitación pendiente</Badge>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
@@ -554,7 +586,7 @@ export const AdminUsers = () => {
                           </div>}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+<TableCell className="hidden md:table-cell">
                       <Badge className={getRoleBadgeColor(user.role)}>
                         {getRoleText(user.role)}
                       </Badge>
@@ -564,11 +596,11 @@ export const AdminUsers = () => {
                         {getStatusText(user.account_status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {user._count?.reservations || 0}
-                      </div>
+<TableCell className="hidden lg:table-cell">
+<div className="flex items-center gap-1">
+                         <Calendar className="h-4 w-4" />
+                         {user._count?.reservations || 0}
+                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -577,25 +609,53 @@ export const AdminUsers = () => {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(user)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          {user.role === 'employee' && <DropdownMenuItem onClick={() => openServicesDialog(user.id)}>
-                              <UserCheck className="h-4 w-4 mr-2" />
-                              Servicios
-                            </DropdownMenuItem>}
-                          <DropdownMenuItem onClick={() => updateUserStatus(user.id, user.account_status === 'active' ? 'inactive' : 'active')}>
-                            {user.account_status === 'active' ? <>
-                                <Ban className="h-4 w-4 mr-2" />
-                                Desactivar
-                              </> : <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Activar
-                              </>}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
+<DropdownMenuContent align="end">
+                            {user.user_type === 'invited' ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    const link = user.invite_token ? `${window.location.origin}/invite?token=${user.invite_token}` : '';
+                                    if (!link) return;
+                                    try {
+                                      await navigator.clipboard.writeText(link);
+                                      toast({ title: "Enlace copiado", description: "Se copió el enlace de invitación." });
+                                    } catch {
+                                      toast({ title: "No se pudo copiar", description: link, variant: "destructive" });
+                                    }
+                                  }}
+                                >
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Copiar enlace de invitación
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                {user.role === 'employee' && (
+                                  <DropdownMenuItem onClick={() => openServicesDialog(user.id)}>
+                                    <UserCheck className="h-4 w-4 mr-2" />
+                                    Servicios
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => updateUserStatus(user.id, user.account_status === 'active' ? 'inactive' : 'active')}>
+                                  {user.account_status === 'active' ? (
+                                    <>
+                                      <Ban className="h-4 w-4 mr-2" />
+                                      Desactivar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Activar
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>)}

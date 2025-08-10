@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface InviteData {
@@ -48,6 +48,8 @@ const InvitePage = () => {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [signingUp, setSigningUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const appUrl = useMemo(() => `${window.location.origin}/`, []);
 
@@ -74,6 +76,9 @@ const InvitePage = () => {
     fetchInvite();
   }, [token]);
 
+  useEffect(() => {
+    document.title = "Aceptar invitación | Panel";
+  }, []);
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!invite || invite.status !== "valid") return;
@@ -153,27 +158,46 @@ const InvitePage = () => {
           )}
 
           {!loading && (error || !invite) && (
-            <Alert variant="destructive">
-              <AlertTitle>No válida</AlertTitle>
-              <AlertDescription>{error || "El enlace no es válido."}</AlertDescription>
-            </Alert>
+            <> 
+              <Alert variant="destructive">
+                <AlertTitle>No válida</AlertTitle>
+                <AlertDescription>{error || "El enlace no es válido."}</AlertDescription>
+              </Alert>
+              <div className="mt-4">
+                <Button variant="outline" onClick={() => navigate("/auth")}>
+                  Ir a iniciar sesión
+                </Button>
+              </div>
+            </>
           )}
 
           {!loading && invite && invite.status !== "valid" && (
-            <Alert variant="destructive">
-              <AlertTitle>
-                {invite.status === "expired" ? "Invitación expirada" : "Invitación ya reclamada"}
-              </AlertTitle>
-              <AlertDescription>
-                {invite.status === "expired"
-                  ? "Solicita una nueva invitación al administrador."
-                  : "Ya usaste este enlace. Inicia sesión con tu email y contraseña."}
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert variant="destructive">
+                <AlertTitle>
+                  {invite.status === "expired" ? "Invitación expirada" : "Invitación ya reclamada"}
+                </AlertTitle>
+                <AlertDescription>
+                  {invite.status === "expired"
+                    ? "Solicita una nueva invitación al administrador."
+                    : "Ya usaste este enlace. Inicia sesión con tu email y contraseña."}
+                </AlertDescription>
+              </Alert>
+              <div className="mt-4">
+                <Button onClick={() => navigate("/auth")}>
+                  Ir a iniciar sesión
+                </Button>
+              </div>
+            </>
           )}
 
           {!loading && invite && invite.status === "valid" && (
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <>
+              <div className="text-sm text-muted-foreground mb-2">
+                Invitado el {invite.invited_at ? new Date(invite.invited_at).toLocaleString() : "-"} · Rol: {invite.role}
+                {invite.expires_at ? ` · Expira: ${new Date(invite.expires_at).toLocaleString()}` : ""}
+              </div>
+              <form onSubmit={handleSignUp} className="space-y-4">
               <div className="grid gap-2">
                 <Label>Email</Label>
                 <Input value={invite.email} readOnly disabled />
@@ -184,28 +208,49 @@ const InvitePage = () => {
               </div>
               <div className="grid gap-2">
                 <Label>Contraseña</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label>Confirmar contraseña</Label>
-                <Input
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={signingUp}>
                 {signingUp ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creando cuenta...</> : "Crear cuenta"}
               </Button>
             </form>
+            </>
           )}
         </CardContent>
       </Card>
