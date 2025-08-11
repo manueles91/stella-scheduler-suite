@@ -20,6 +20,7 @@ interface Reservation {
   client_id: string;
   employee_id?: string;
   service_id: string;
+  final_price_cents?: number;
   profiles: {
     full_name: string;
     email: string;
@@ -28,6 +29,7 @@ interface Reservation {
     name: string;
     duration_minutes: number;
     price_cents: number;
+    variable_price?: boolean;
     category_id?: string;
     service_categories?: {
       name: string;
@@ -45,9 +47,8 @@ export const AdminReservations = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
-  const {
-    toast
-  } = useToast();
+const { toast } = useToast();
+  const [finalPrices, setFinalPrices] = useState<Record<string, string>>({});
   useEffect(() => {
     fetchReservations();
     fetchCategories();
@@ -75,7 +76,7 @@ export const AdminReservations = () => {
     } = await supabase.from('reservations').select(`
         *,
         profiles!reservations_client_id_fkey(full_name, email),
-        services(name, duration_minutes, price_cents, category_id, service_categories(name)),
+        services(name, duration_minutes, price_cents, category_id, variable_price, service_categories(name)),
         employee:profiles!reservations_employee_id_fkey(full_name)
       `).order('appointment_date', {
       ascending: false
@@ -93,12 +94,24 @@ export const AdminReservations = () => {
     }
     setLoading(false);
   };
-  const updateReservationStatus = async (id: string, status: string) => {
-    const {
-      error
-    } = await supabase.from('reservations').update({
-      status
-    }).eq('id', id);
+  const updateReservationStatus = async (res: Reservation, status: string) => {
+    if (status === 'completed' && res.services.variable_price && !finalPrices[res.id] && !res.final_price_cents) {
+      toast({
+        title: "Precio requerido",
+        description: "Ingrese el precio final antes de completar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const payload: any = { status };
+    if (status === 'completed' && res.services.variable_price) {
+      const value = finalPrices[res.id];
+      const cents = res.final_price_cents ?? Math.round((parseFloat(value || '0') || 0) * 100);
+      payload.final_price_cents = cents;
+    }
+
+    const { error } = await supabase.from('reservations').update(payload).eq('id', res.id);
     if (error) {
       toast({
         title: "Error",
@@ -107,12 +120,31 @@ export const AdminReservations = () => {
       });
     } else {
       toast({
-        title: "Success",
-        description: "Reservation status updated"
+        title: "Éxito",
+        description: "Reserva actualizada"
       });
       fetchReservations();
     }
   };
+  const completeReservationWithPrice = async (res: Reservation) => {
+    const value = finalPrices[res.id];
+    const cents = Math.round((parseFloat(value || '0') || 0) * 100);
+    if (!(cents >= 0)) {
+      toast({ title: "Precio inválido", description: "Ingrese un precio válido", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from('reservations')
+      .update({ status: 'completed', final_price_cents: cents })
+      .eq('id', res.id);
+    if (error) {
+      toast({ title: "Error", description: error.message || 'No se pudo completar', variant: "destructive" });
+    } else {
+      toast({ title: "Éxito", description: 'Reserva completada' });
+      fetchReservations();
+    }
+  };
+
   const filteredReservations = reservations.filter(reservation => {
     const matchesStatus = statusFilter === "all" || reservation.status === statusFilter;
     const matchesCategory = categoryFilter === "all" || 
@@ -256,7 +288,14 @@ export const AdminReservations = () => {
                   
                   <div className="space-y-2">
                     <p className="text-sm">
-                      <strong>Precio:</strong> {formatPrice(reservation.services.price_cents)}
+                      <strong>Precio:</strong>{' '}
+                      {reservation.services.variable_price ? (
+                        reservation.final_price_cents != null
+                          ? `${formatPrice(reservation.final_price_cents)} (final)`
+                          : 'Precio variable'
+                      ) : (
+                        formatPrice(reservation.services.price_cents)
+                      )}
                     </p>
                     <p className="text-sm">
                       <strong>Empleado:</strong> {reservation.employee?.full_name || 'Sin asignar'}
@@ -272,7 +311,7 @@ export const AdminReservations = () => {
                     </Badge>
                     
                     <div className="flex flex-col gap-2">
-                      <Select value={reservation.status} onValueChange={value => updateReservationStatus(reservation.id, value)}>
+                      <Select value={reservation.status} onValueChange={value => updateReservationStatus(reservation, value)}>
                         <SelectTrigger className="h-8">
                           <SelectValue />
                         </SelectTrigger>
@@ -283,6 +322,22 @@ export const AdminReservations = () => {
                           <SelectItem value="no_show">No se presentó</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      {reservation.services.variable_price && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            placeholder="Precio final"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={finalPrices[reservation.id] ?? (reservation.final_price_cents != null ? (reservation.final_price_cents / 100).toFixed(2) : '')}
+                            onChange={(e) => setFinalPrices(prev => ({ ...prev, [reservation.id]: e.target.value }))}
+                          />
+                          <Button size="sm" onClick={() => completeReservationWithPrice(reservation)}>
+                            Completar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
