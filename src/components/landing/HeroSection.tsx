@@ -27,7 +27,7 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
       {/* Hero Content */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6">
+      <div className="relative z-10 flex-1 flex flex-col justify-start px-4 sm:px-6 pt-16 sm:pt-24">
         <div className="text-center text-white max-w-6xl mx-auto">
           <div className="space-y-6 sm:space-y-8">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
