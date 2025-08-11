@@ -1463,6 +1463,7 @@ export const AdminServices = () => {
                 type="service"
                 discountType={bestDiscount?.discount_type}
                 discountValue={bestDiscount?.discount_value}
+                variablePrice={service.variable_price ?? false}
                 onSelect={() => handleEdit(service)}
                 variant="admin"
                 showExpandable={true}
@@ -1729,6 +1730,7 @@ export const AdminServices = () => {
                             type="discount"
                             discountType={discount.discount_type}
                             discountValue={discount.discount_value}
+                            variablePrice={associatedService.variable_price ?? false}
                             onSelect={() => handleEditDiscount(discount)}
                             variant="admin"
                             showExpandable={true}

@@ -70,6 +70,7 @@ export const ServicesSection = () => {
                     discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
                     discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
                     comboServices={comboServices}
+                    variablePrice={service.variable_price ?? false}
                     onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
                     variant="landing"
                     showExpandable={true}
@@ -106,6 +107,7 @@ export const ServicesSection = () => {
                       discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
                       discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
                       comboServices={comboServices}
+                      variablePrice={service.variable_price ?? false}
                       onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
                       variant="landing"
                       showExpandable={true}
