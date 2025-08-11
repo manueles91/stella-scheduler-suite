@@ -527,10 +527,10 @@ export const AdminServices = () => {
       });
       return;
     }
-    if (formData.price_cents <= 0) {
+    if (!formData.variable_price && formData.price_cents <= 0) {
       toast({
         title: "Error de validación",
-        description: "El precio debe ser mayor a 0",
+        description: "El precio debe ser mayor a 0 o activa 'Precio variable'",
         variant: "destructive"
       });
       return;
@@ -618,7 +618,8 @@ export const AdminServices = () => {
       // Convert from cents
       image_url: service.image_url || "",
       is_active: service.is_active,
-      category_id: service.category_id || "none"
+      category_id: service.category_id || "none",
+      variable_price: service.variable_price ?? false,
     });
     setImagePreview(service.image_url || null);
     setImageFile(null);
@@ -659,7 +660,8 @@ export const AdminServices = () => {
       price_cents: 0,
       image_url: "",
       is_active: true,
-      category_id: "none"
+      category_id: "none",
+      variable_price: false,
     });
     setEditingService(null);
     setImageFile(null);
@@ -1252,13 +1254,41 @@ export const AdminServices = () => {
               </div>
 
               <div>
-                <Label htmlFor="price">Precio *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="variable_price">Precio variable</Label>
+                  <Switch
+                    id="variable_price"
+                    checked={formData.variable_price}
+                    onCheckedChange={(checked) => setFormData({
+                      ...formData,
+                      variable_price: checked
+                    })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Si está activado, el precio final se definirá al completar la cita.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="price">Precio {formData.variable_price ? "(referencial opcional)" : "*"}</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input id="price" type="number" step="0.01" min="0" value={formData.price_cents} onChange={e => setFormData({
-                  ...formData,
-                  price_cents: parseFloat(e.target.value) || 0
-                })} placeholder="0.00" className="pl-10" required />
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price_cents}
+                    onChange={e => setFormData({
+                      ...formData,
+                      price_cents: parseFloat(e.target.value) || 0
+                    })}
+                    placeholder="0.00"
+                    className="pl-10"
+                    required={!formData.variable_price}
+                    disabled={formData.variable_price}
+                  />
                 </div>
               </div>
 
