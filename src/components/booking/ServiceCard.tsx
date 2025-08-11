@@ -67,7 +67,8 @@ export const ServiceCard = ({
     type: service.type,
     comboServices: service.type === 'combo' ? comboServices : undefined,
     discountType: hasDiscount ? service.appliedDiscount?.discount_type : undefined,
-    discountValue: hasDiscount ? service.appliedDiscount?.discount_value : undefined
+    discountValue: hasDiscount ? service.appliedDiscount?.discount_value : undefined,
+    variablePrice: service.variable_price ?? false,
   };
 
   return <ServiceCardComponent {...cardProps} />;

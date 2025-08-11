@@ -31,6 +31,7 @@ interface Service {
   is_active: boolean;
   created_at: string;
   category_id?: string;
+  variable_price?: boolean;
   service_categories?: {
     id: string;
     name: string;
@@ -153,7 +154,8 @@ export const AdminServices = () => {
     price_cents: 0,
     image_url: "",
     is_active: true,
-    category_id: "none"
+    category_id: "none",
+    variable_price: false,
   });
 
   // Discount form data

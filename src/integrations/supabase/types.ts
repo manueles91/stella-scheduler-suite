@@ -491,6 +491,7 @@ export type Database = {
           customer_name: string | null
           employee_id: string | null
           end_time: string
+          final_price_cents: number | null
           id: string
           is_guest_booking: boolean | null
           notes: string | null
@@ -509,6 +510,7 @@ export type Database = {
           customer_name?: string | null
           employee_id?: string | null
           end_time: string
+          final_price_cents?: number | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -527,6 +529,7 @@ export type Database = {
           customer_name?: string | null
           employee_id?: string | null
           end_time?: string
+          final_price_cents?: number | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -612,6 +615,7 @@ export type Database = {
           name: string
           price_cents: number
           updated_at: string | null
+          variable_price: boolean
         }
         Insert: {
           category_id?: string | null
@@ -624,6 +628,7 @@ export type Database = {
           name: string
           price_cents: number
           updated_at?: string | null
+          variable_price?: boolean
         }
         Update: {
           category_id?: string | null
@@ -636,6 +641,7 @@ export type Database = {
           name?: string
           price_cents?: number
           updated_at?: string | null
+          variable_price?: boolean
         }
         Relationships: [
           {

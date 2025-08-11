@@ -6,6 +6,7 @@ export interface Service {
   price_cents: number;
   category_id?: string;
   image_url?: string;
+  variable_price?: boolean;
 }
 
 export interface Combo {
@@ -47,6 +48,7 @@ export interface BookableItem {
   final_price_cents: number;
   category_id?: string;
   image_url?: string;
+  variable_price?: boolean;
   type: 'service' | 'combo';
   appliedDiscount?: Discount;
   savings_cents: number;

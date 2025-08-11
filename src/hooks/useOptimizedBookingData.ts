@@ -70,6 +70,7 @@ export const useOptimizedBookingData = () => {
         final_price_cents: finalPrice,
         category_id: service.category_id,
         image_url: service.image_url,
+        variable_price: (service as any).variable_price ?? false,
         type: 'service',
         appliedDiscount: bestDiscount,
         savings_cents: savings

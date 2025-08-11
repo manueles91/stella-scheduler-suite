@@ -58,6 +58,9 @@ export interface ServiceCardProps {
   // Admin-specific badges and buttons
   adminBadges?: React.ReactNode;
   adminButtons?: React.ReactNode;
+
+  // Pricing behavior
+  variablePrice?: boolean;
 }
 
 export const ServiceCard = ({
@@ -84,7 +87,8 @@ export const ServiceCard = ({
   showExpandable = true,
   className = "",
   adminBadges,
-  adminButtons
+  adminButtons,
+  variablePrice = false,
 }: ServiceCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useIsMobile();
@@ -148,25 +152,29 @@ export const ServiceCard = ({
     <div className="absolute bottom-4 right-4">
       {/* Only show price if not expanded to avoid redundancy */}
       {!isExpanded && (
-        hasDiscount ? (
-          <div className="space-y-1">
-            <div className={`text-white/80 line-through ${
-              isMobile ? 'text-xs' : 'text-sm'
-            }`}>
-              {formatPrice(originalPrice)}
+        variablePrice && !isCombo ? (
+          <Badge className="bg-white/80 text-gray-900 text-xs backdrop-blur-sm">Precio variable</Badge>
+        ) : (
+          hasDiscount ? (
+            <div className="space-y-1">
+              <div className={`text-white/80 line-through ${
+                isMobile ? 'text-xs' : 'text-sm'
+              }`}>
+                {formatPrice(originalPrice)}
+              </div>
+              <div className={`font-bold text-white drop-shadow-md ${
+                isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
+              }`}>
+                {formatPrice(finalPrice)}
+              </div>
             </div>
+          ) : (
             <div className={`font-bold text-white drop-shadow-md ${
               isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
             }`}>
               {formatPrice(finalPrice)}
             </div>
-          </div>
-        ) : (
-          <div className={`font-bold text-white drop-shadow-md ${
-            isMobile ? 'text-lg sm:text-2xl' : 'text-2xl'
-          }`}>
-            {formatPrice(finalPrice)}
-          </div>
+          )
         )
       )}
     </div>
@@ -240,17 +248,19 @@ export const ServiceCard = ({
               )}
            </div>
            {/* Price - Right side */}
-           <div className="flex-shrink-0 flex justify-center">
+            <div className="flex-shrink-0 flex justify-center">
              <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg inline-block">
-               {/* Final price - responsive sizing */}
+               {/* Final price - or variable pricing label */}
                <div className="text-center">
-                 <div className="font-bold text-lg sm:text-xl lg:text-2xl text-gray-900">
-                   {formatPrice(finalPrice)}
-                 </div>
+                 {variablePrice ? (
+                   <Badge className="bg-gray-900 text-white text-xs">Precio variable</Badge>
+                 ) : (
+                   <div className="font-bold text-lg sm:text-xl lg:text-2xl text-gray-900">
+                     {formatPrice(finalPrice)}
+                   </div>
+                 )}
                </div>
-               
-               {/* Nominal savings - responsive sizing */}
-               {hasDiscount && (
+               {!variablePrice && hasDiscount && (
                  <div className="text-center mt-1">
                    <span className="font-medium text-xs sm:text-sm text-green-700">
                      Ahorra {formatPrice(savings)}
