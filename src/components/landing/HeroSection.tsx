@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useBookingData } from "@/hooks/useBookingData";
 import { EnhancedCategoryFilter } from "@/components/landing/EnhancedCategoryFilter";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import heroImage from "@/assets/hero-salon.jpg";
 
 export const HeroSection = () => {
   const navigate = useNavigate();
   const { categories, selectedCategory, setSelectedCategory } = useBookingData();
+  const { settings } = useSiteSettings();
 
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
@@ -22,7 +24,7 @@ export const HeroSection = () => {
   return (
     <section 
       className="relative min-h-screen flex flex-col bg-cover bg-center"
-      style={{ backgroundImage: `url(${heroImage})` }}
+      style={{ backgroundImage: `url(${settings?.landing_background_url || heroImage})` }}
     >
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
@@ -30,6 +32,15 @@ export const HeroSection = () => {
       <div className="relative z-10 flex-1 flex flex-col justify-start px-4 sm:px-6 pt-16 sm:pt-24">
         <div className="text-center text-white max-w-6xl mx-auto">
           <div className="space-y-6 sm:space-y-8">
+            {settings?.logo_url && (
+              <div className="flex justify-center">
+                <img
+                  src={settings.logo_url}
+                  alt="Logo del salón Stella Studio"
+                  className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow"
+                />
+              </div>
+            )}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
               Tu belleza, nuestra
               <span className="block text-primary-glow">pasión</span>
@@ -48,7 +59,6 @@ export const HeroSection = () => {
               >
                 Reserva tu cita ahora
               </Button>
-              
               {/* Secondary actions */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center">
                 <Button 
@@ -61,28 +71,30 @@ export const HeroSection = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Spotlight: Categorías */}
+            <div className="mt-6 sm:mt-8">
+              <div className="text-center mb-6">
+                <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
+                  ¿Qué buscas hoy?
+                </h2>
+                <p className="text-sm sm:text-base text-white/80">
+                  Explora nuestras categorías y encuentra el servicio perfecto para ti
+                </p>
+              </div>
+              <div className="container mx-auto px-4 sm:px-6">
+                <EnhancedCategoryFilter 
+                  categories={categories} 
+                  selectedCategory={selectedCategory} 
+                  onCategorySelect={handleCategorySelect} 
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Categories Section - Integrated into hero */}
-      <div className="relative z-10 pb-8 sm:pb-12 -mt-8">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center mb-6">
-            <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
-              ¿Qué buscas hoy?
-            </h2>
-            <p className="text-sm sm:text-base text-white/80">
-              Explora nuestras categorías y encuentra el servicio perfecto para ti
-            </p>
-          </div>
-          <EnhancedCategoryFilter 
-            categories={categories} 
-            selectedCategory={selectedCategory} 
-            onCategorySelect={handleCategorySelect} 
-          />
-        </div>
-      </div>
+      {/* Categorías integradas arriba en el hero */}
     </section>
   );
 };
