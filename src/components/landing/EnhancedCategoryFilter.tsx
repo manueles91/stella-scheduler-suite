@@ -25,7 +25,7 @@ export const EnhancedCategoryFilter = ({
   className = ""
 }: EnhancedCategoryFilterProps) => {
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full overflow-x-hidden ${className}`}>
       <Carousel 
         className="w-full" 
         opts={{

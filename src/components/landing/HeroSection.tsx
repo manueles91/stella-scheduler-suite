@@ -23,7 +23,7 @@ export const HeroSection = () => {
 
   return (
     <section 
-      className="relative min-h-screen flex flex-col bg-cover bg-center"
+      className="relative min-h-screen flex flex-col overflow-x-hidden bg-cover bg-center"
       style={{ backgroundImage: `url(${settings?.landing_background_url || heroImage})` }}
     >
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
