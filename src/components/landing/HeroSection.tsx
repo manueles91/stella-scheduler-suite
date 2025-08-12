@@ -23,7 +23,7 @@ export const HeroSection = () => {
 
   return (
     <section 
-      className="relative min-h-screen flex flex-col bg-cover bg-center"
+      className="relative min-h-screen flex flex-col overflow-x-hidden bg-cover bg-center"
       style={{ backgroundImage: `url(${settings?.landing_background_url || heroImage})` }}
     >
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
@@ -41,7 +41,7 @@ export const HeroSection = () => {
                 />
               </div>
             )}
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
               Tu belleza, nuestra
               <span className="block text-primary-glow">pasión</span>
             </h1>
@@ -54,7 +54,7 @@ export const HeroSection = () => {
             <div className="space-y-3 sm:space-y-4">
               <Button 
                 size="lg" 
-                className="w-full sm:w-auto max-w-xs sm:max-w-none text-base sm:text-lg px-8 sm:px-12 py-3 sm:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105" 
+                className="text-base sm:text-lg px-8 sm:px-12 py-3 sm:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105" 
                 onClick={() => navigate('/book')}
               >
                 Reserva tu cita ahora
