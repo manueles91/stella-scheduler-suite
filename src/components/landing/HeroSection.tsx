@@ -28,43 +28,50 @@ export const HeroSection = () => {
     >
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
-      {/* Hero Content */}
-      <div className="relative z-10 flex-1 flex flex-col justify-start px-4 sm:px-6 pt-16 sm:pt-24">
-        <div className="text-center text-white max-w-6xl mx-auto">
-          <div className="space-y-6 sm:space-y-8">
+      {/* Hero Content - Mobile First Design */}
+      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-16 lg:pt-20 xl:pt-24">
+        <div className="text-center text-white max-w-6xl mx-auto w-full">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
+            {/* Logo - Mobile Responsive */}
             {settings?.logo_url && (
-              <div className="flex justify-center">
+              <div className="flex justify-center mb-3 sm:mb-4 md:mb-6">
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
-                  className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow"
+                  className="h-10 w-auto object-contain drop-shadow sm:h-12 md:h-16 lg:h-20 xl:h-24"
                 />
               </div>
             )}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight">
-              Tu belleza, nuestra
-              <span className="block text-primary-glow">pasión</span>
+            
+            {/* Main Heading - Mobile Responsive Typography */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-serif font-bold leading-tight px-1 sm:px-2 md:px-4">
+              <span className="block">Tu belleza, nuestra</span>
+              <span className="block text-primary-glow mt-1 sm:mt-2">pasión</span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            
+            {/* Description - Mobile Responsive */}
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-white/90 max-w-[280px] sm:max-w-xs md:max-w-sm lg:max-w-2xl xl:max-w-3xl mx-auto leading-relaxed px-3 sm:px-4 md:px-6">
               Experimenta tratamientos de belleza personalizados con los mejores profesionales. 
               Tu transformación comienza aquí.
             </p>
             
-            {/* Primary CTA */}
-            <div className="space-y-3 sm:space-y-4">
+            {/* CTA Buttons - Mobile Responsive Layout */}
+            <div className="space-y-2.5 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6">
+              {/* Primary Button */}
               <Button 
                 size="lg" 
-                className="text-base sm:text-lg px-8 sm:px-12 py-3 sm:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105" 
+                className="w-full sm:w-auto text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105 max-w-[280px] sm:max-w-xs md:max-w-none mx-auto min-h-[44px] sm:min-h-[48px] md:min-h-[52px]" 
                 onClick={() => navigate('/book')}
               >
                 Reserva tu cita ahora
               </Button>
-              {/* Secondary actions */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center">
+              
+              {/* Secondary Button */}
+              <div className="flex justify-center">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="text-sm px-6 py-2 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm" 
+                  className="text-xs sm:text-sm px-3 sm:px-4 md:px-6 py-2 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm min-h-[40px] sm:min-h-[44px]" 
                   onClick={() => navigate('/auth')}
                 >
                   Ingresar
@@ -72,17 +79,19 @@ export const HeroSection = () => {
               </div>
             </div>
 
-            {/* Spotlight: Categorías */}
-            <div className="mt-6 sm:mt-8">
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
+            {/* Categories Section - Mobile Responsive */}
+            <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 px-1 sm:px-2 md:px-4">
+              <div className="text-center mb-3 sm:mb-4 md:mb-6">
+                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-1.5 sm:mb-2">
                   ¿Qué buscas hoy?
                 </h2>
-                <p className="text-sm sm:text-base text-white/80">
+                <p className="text-xs sm:text-sm md:text-base text-white/80 px-3 sm:px-4 md:px-6 max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto">
                   Explora nuestras categorías y encuentra el servicio perfecto para ti
                 </p>
               </div>
-              <div className="container mx-auto max-w-full px-4 sm:px-6 overflow-x-hidden">
+              
+              {/* Category Filter Container */}
+              <div className="w-full max-w-full px-1 sm:px-2 md:px-4 lg:px-6 overflow-x-hidden">
                 <EnhancedCategoryFilter 
                   categories={categories} 
                   selectedCategory={selectedCategory} 
@@ -93,8 +102,6 @@ export const HeroSection = () => {
           </div>
         </div>
       </div>
-
-      {/* Categorías integradas arriba en el hero */}
     </section>
   );
 };
