@@ -48,6 +48,13 @@ export const HeroSection = () => {
               <span className="block">Tu belleza, nuestra</span>
               <span className="block text-primary-glow mt-1 sm:mt-2">pasión</span>
             </h1>
+
+            {/* Mission blurb */}
+            <div className="px-4 sm:px-6 md:px-8">
+              <p className="mt-3 sm:mt-4 md:mt-5 text-white/90 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
+                En Stella, creemos que el cuidado personal transforma cómo te ves y cómo te sientes. Nuestra misión es ofrecer una experiencia cálida y profesional donde cada detalle está pensado para resaltar tu mejor versión.
+              </p>
+            </div>
             
             {/* CTA Buttons - Mobile Responsive Layout */}
             <div className="space-y-3 sm:space-y-4 md:space-y-5 px-3 sm:px-4 md:px-6">
