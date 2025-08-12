@@ -115,10 +115,14 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
   }
 
   html {
     overflow-x: hidden;
   }
+}
+
+/* Override to avoid clipping content on mobile */
+html {
+  overflow-x: visible;
 }
