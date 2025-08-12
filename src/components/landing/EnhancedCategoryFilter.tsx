@@ -55,10 +55,10 @@ export const EnhancedCategoryFilter = ({
           {categories.map(category => (
             <CarouselItem 
               key={category.id} 
-              className="pl-1.5 sm:pl-2 basis-[110px] sm:basis-[120px] md:basis-[140px] lg:basis-[160px] xl:basis-[180px]"
+              className="pl-1.5 sm:pl-2 basis-[132px] sm:basis-[144px] md:basis-[168px] lg:basis-[192px] xl:basis-[216px]"
             >
               <Card 
-                className={`h-18 sm:h-20 md:h-24 lg:h-28 xl:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 min-h-[72px] sm:min-h-[80px] md:min-h-[96px] ${
+                className={`h-[108px] sm:h-[120px] md:h-[144px] lg:h-[168px] xl:h-[192px] cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
                   selectedCategory === category.id 
                     ? 'ring-2 ring-white shadow-2xl' 
                     : 'hover:shadow-xl border-white/30'
@@ -88,7 +88,7 @@ export const EnhancedCategoryFilter = ({
                 {/* Content - Mobile Responsive - Positioned at bottom with absolute positioning */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 p-1 sm:p-1.5 md:p-2 lg:p-3">
                   <div className="text-center w-full">
-                    <div className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-white drop-shadow-2xl leading-tight px-1">
+                    <div className="text-[11px] sm:text-[12px] md:text-sm lg:text-base xl:text-lg font-bold text-white drop-shadow-2xl leading-tight px-1">
                       {category.name}
                     </div>
                   </div>
