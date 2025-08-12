@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useBookingData } from "@/hooks/useBookingData";
 import { ServiceCard } from "@/components/cards/ServiceCard";
 import { Employee } from "@/types/booking";
+
 export const ServicesSection = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ export const ServicesSection = () => {
     bookableItems,
     allBookableItems,
     selectedCategory,
+    categories,
     formatPrice,
     employees
   } = useBookingData();
@@ -21,15 +23,21 @@ export const ServicesSection = () => {
       setLoading(false);
     }
   }, [allBookableItems]);
+
+  // Only show services section when a category is selected
+  if (!selectedCategory) {
+    return null;
+  }
+
+  // Get the category name for display
+  const selectedCategoryName = categories.find(cat => cat.id === selectedCategory)?.name || 'Categoría';
+
   if (loading) {
     return (
       <section className="py-16 bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-serif font-bold mb-4">Nuestros Servicios</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Descubre nuestra amplia gama de servicios profesionales de belleza
-            </p>
           </div>
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -38,56 +46,21 @@ export const ServicesSection = () => {
       </section>
     );
   }
+
   return (
     <section id="services" className="py-16 sm:py-24 bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 sm:mb-16">
-          {/* Quick CTA */}
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
+            Servicios de {selectedCategoryName}
+          </h2>
         </div>
 
-        {/* Services Display - Carousel or Grid based on category selection */}
-        {selectedCategory ? (
-          // Vertical grid when category is selected
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {bookableItems.length > 0 ? (
-              bookableItems.map(service => {
-                const comboServices = service.combo_services?.map(cs => ({
-                  name: cs.services.name,
-                  quantity: cs.quantity
-                })) || [];
-                return (
-                  <ServiceCard
-                    key={service.id}
-                    id={service.id}
-                    name={service.name}
-                    description={service.description}
-                    originalPrice={service.original_price_cents}
-                    finalPrice={service.final_price_cents}
-                    savings={service.savings_cents}
-                    duration={service.duration_minutes}
-                    imageUrl={service.image_url}
-                    type={service.type}
-                    discountType={service.savings_cents > 0 ? service.appliedDiscount?.discount_type : undefined}
-                    discountValue={service.savings_cents > 0 ? service.appliedDiscount?.discount_value : undefined}
-                    comboServices={comboServices}
-                    variablePrice={service.variable_price ?? false}
-                    onSelect={() => navigate(`/book?service=${service.id}&estilista=cualquier&step=2`)}
-                    variant="landing"
-                    showExpandable={true}
-                  />
-                );
-              })
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="text-muted-foreground">No se encontraron servicios en esta categoría</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          // Carousel when all services are shown
+        {/* Services Carousel - Only shown when category is selected */}
+        {bookableItems.length > 0 ? (
           <Carousel className="w-full">
             <CarouselContent className="-ml-2 md:-ml-4">
-              {allBookableItems.slice(0, 12).map(service => {
+              {bookableItems.map(service => {
                 const comboServices = service.combo_services?.map(cs => ({
                   name: cs.services.name,
                   quantity: cs.quantity
@@ -116,11 +89,14 @@ export const ServicesSection = () => {
                 );
               })}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
           </Carousel>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No se encontraron servicios en esta categoría</p>
+          </div>
         )}
-
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryImage } from "./CategoryImages";
+import { useEffect, useState } from "react";
 
 interface ServiceCategory {
   id: string;
@@ -24,13 +25,27 @@ export const EnhancedCategoryFilter = ({
   onCategorySelect,
   className = ""
 }: EnhancedCategoryFilterProps) => {
+  const [api, setApi] = useState<any>(null);
+
+  // Auto-scroll effect for infinite carousel
+  useEffect(() => {
+    if (!api) return;
+
+    const interval = setInterval(() => {
+      api.scrollNext();
+    }, 3000); // Scroll every 3 seconds for slow movement
+
+    return () => clearInterval(interval);
+  }, [api]);
+
   return (
     <div className={`w-full overflow-x-hidden ${className}`}>
       <Carousel 
         className="w-full overflow-x-clip" 
+        setApi={setApi}
         opts={{
           align: "start",
-          loop: false,
+          loop: true, // Enable infinite loop
           dragFree: true,
           skipSnaps: false
         }}
@@ -64,16 +79,16 @@ export const EnhancedCategoryFilter = ({
                       <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-secondary/10" />
                     );
                   })()}
-                  {/* Enhanced overlay for better readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+                  {/* Enhanced overlay for better readability - Stronger gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
-                {/* Content - Mobile Responsive */}
-                <div className="relative z-10 h-full flex items-end justify-center p-1 sm:p-1.5 md:p-2 lg:p-3">
-                  <div className="text-center">
-                    <div className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-white drop-shadow-lg leading-tight px-1">
+                {/* Content - Mobile Responsive - Positioned at bottom with absolute positioning */}
+                <div className="absolute bottom-0 left-0 right-0 z-10 p-1 sm:p-1.5 md:p-2 lg:p-3">
+                  <div className="text-center w-full">
+                    <div className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base font-bold text-white drop-shadow-2xl leading-tight px-1">
                       {category.name}
                     </div>
                   </div>
@@ -99,15 +114,6 @@ export const EnhancedCategoryFilter = ({
         <CarouselPrevious className="hidden sm:flex -left-6 sm:-left-8 md:-left-12 bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10" />
         <CarouselNext className="hidden sm:flex -right-6 sm:-right-8 md:-right-12 bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10" />
       </Carousel>
-      
-      {/* Mobile Scroll Indicator */}
-      <div className="flex justify-center mt-2 sm:mt-3 md:hidden">
-        <div className="flex space-x-1.5">
-          <div className="w-2 h-2 bg-white/40 rounded-full"></div>
-          <div className="w-2 h-2 bg-white/40 rounded-full"></div>
-          <div className="w-2 h-2 bg-white/40 rounded-full"></div>
-        </div>
-      </div>
     </div>
   );
 };

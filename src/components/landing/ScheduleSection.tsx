@@ -9,14 +9,8 @@ export const ScheduleSection = () => {
   return (
     <section className="py-10 sm:py-20 px-2 sm:px-4">
       <div className="max-w-full sm:max-w-4xl mx-auto">
-        <div className="text-center mb-8 sm:mb-16">
-          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2">
-            <Clock className="h-8 w-8 text-primary" />
-            Horario de Atención
-          </h2>
-          <p className="text-base sm:text-xl text-muted-foreground">
-            Conoce nuestros horarios y planifica tu visita
-          </p>
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">Horarios de Atención</h2>
         </div>
         
         <Card className="overflow-hidden">

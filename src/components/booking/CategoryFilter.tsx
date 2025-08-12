@@ -73,25 +73,25 @@ export const CategoryFilter = ({
                   {(() => {
                     const imageUrl = getCategoryImage(category.name);
                     return imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={category.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      <img 
+                        src={imageUrl} 
+                        alt={category.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />
                     );
                   })()}
-                  {/* Enhanced overlay for text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+                  {/* Enhanced overlay for better text readability - Stronger gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
-                {/* Content */}
-                <div className="relative z-10 h-full flex items-center justify-center p-1 md:p-2">
+                {/* Content - Moved to bottom with better shadow */}
+                <div className="relative z-10 h-full flex items-end justify-center p-1 md:p-2">
                   <div className="text-center">
-                    <div className="text-[10px] md:text-xs font-medium text-white drop-shadow-md">
+                    <div className="text-[10px] md:text-xs font-medium text-white drop-shadow-2xl">
                       {category.name}
                     </div>
                   </div>

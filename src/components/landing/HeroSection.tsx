@@ -28,13 +28,13 @@ export const HeroSection = () => {
     >
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
-      {/* Hero Content - Mobile First Design */}
-      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-16 lg:pt-20 xl:pt-24">
+      {/* Hero Content - Mobile First Design with Generous Spacing */}
+      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-24 md:pt-40 lg:pt-48 xl:pt-56">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
-          <div className="space-y-4 sm:space-y-6 md:space-y-8 lg:space-y-10">
-            {/* Logo - Mobile Responsive */}
+          <div className="space-y-10 sm:space-y-14 md:space-y-18 lg:space-y-24">
+            {/* Logo - Mobile Responsive with Generous Top Spacing */}
             {settings?.logo_url && (
-              <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
+              <div className="flex justify-center mb-12 sm:mb-16 md:mb-20">
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
@@ -43,24 +43,18 @@ export const HeroSection = () => {
               </div>
             )}
             
-            {/* Main Heading - Mobile Responsive Typography */}
+            {/* Main Heading - Mobile Responsive Typography with Generous Spacing */}
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-serif font-bold leading-tight px-1 sm:px-2 md:px-4">
               <span className="block">Tu belleza, nuestra</span>
               <span className="block text-primary-glow mt-1 sm:mt-2">pasión</span>
             </h1>
-            
-            {/* Description - Mobile Responsive */}
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-white/90 max-w-[280px] sm:max-w-xs md:max-w-sm lg:max-w-2xl xl:max-w-3xl mx-auto leading-relaxed px-3 sm:px-4 md:px-6">
-              Experimenta tratamientos de belleza personalizados con los mejores profesionales. 
-              Tu transformación comienza aquí.
-            </p>
             
             {/* CTA Buttons - Mobile Responsive Layout */}
             <div className="space-y-3 sm:space-y-4 md:space-y-5 px-3 sm:px-4 md:px-6">
               {/* Primary Button */}
               <Button 
                 size="lg" 
-                className="w-full sm:w-auto text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105 max-w-[280px] sm:max-w-xs md:max-w-none mx-auto min-h-[44px] sm:min-h-[48px] md:min-h-[52px]" 
+                className="text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105 min-h-[44px] sm:min-h-[48px] md:min-h-[52px]" 
                 onClick={() => navigate('/book')}
               >
                 Reserva tu cita
@@ -79,15 +73,12 @@ export const HeroSection = () => {
               </div>
             </div>
 
-            {/* Categories Section - Mobile Responsive with Better Spacing */}
-            <div className="mt-8 sm:mt-10 md:mt-12 lg:mt-16 px-1 sm:px-2 md:px-4">
+            {/* Categories Section - Mobile Responsive with Generous Spacing */}
+            <div className="mt-20 sm:mt-24 md:mt-32 lg:mt-40 px-1 sm:px-2 md:px-4">
               <div className="text-center mb-4 sm:mb-6 md:mb-8">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-2 sm:mb-3">
                   ¿Qué buscas hoy?
                 </h2>
-                <p className="text-xs sm:text-sm md:text-base text-white/80 px-3 sm:px-4 md:px-6 max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto">
-                  Explora nuestras categorías y encuentra el servicio perfecto para ti
-                </p>
               </div>
               
               {/* Category Filter Container */}
