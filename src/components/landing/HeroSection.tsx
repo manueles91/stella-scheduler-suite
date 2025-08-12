@@ -31,10 +31,10 @@ export const HeroSection = () => {
       {/* Hero Content - Mobile First Design */}
       <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-16 lg:pt-20 xl:pt-24">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
-          <div className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
+          <div className="space-y-4 sm:space-y-6 md:space-y-8 lg:space-y-10">
             {/* Logo - Mobile Responsive */}
             {settings?.logo_url && (
-              <div className="flex justify-center mb-3 sm:mb-4 md:mb-6">
+              <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
@@ -56,14 +56,14 @@ export const HeroSection = () => {
             </p>
             
             {/* CTA Buttons - Mobile Responsive Layout */}
-            <div className="space-y-2.5 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6">
+            <div className="space-y-3 sm:space-y-4 md:space-y-5 px-3 sm:px-4 md:px-6">
               {/* Primary Button */}
               <Button 
                 size="lg" 
                 className="w-full sm:w-auto text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 h-auto bg-primary hover:bg-primary/90 shadow-elegant transition-all duration-300 hover:scale-105 max-w-[280px] sm:max-w-xs md:max-w-none mx-auto min-h-[44px] sm:min-h-[48px] md:min-h-[52px]" 
                 onClick={() => navigate('/book')}
               >
-                Reserva tu cita ahora
+                Reserva tu cita
               </Button>
               
               {/* Secondary Button */}
@@ -79,10 +79,10 @@ export const HeroSection = () => {
               </div>
             </div>
 
-            {/* Categories Section - Mobile Responsive */}
-            <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 px-1 sm:px-2 md:px-4">
-              <div className="text-center mb-3 sm:mb-4 md:mb-6">
-                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-1.5 sm:mb-2">
+            {/* Categories Section - Mobile Responsive with Better Spacing */}
+            <div className="mt-8 sm:mt-10 md:mt-12 lg:mt-16 px-1 sm:px-2 md:px-4">
+              <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-2 sm:mb-3">
                   ¿Qué buscas hoy?
                 </h2>
                 <p className="text-xs sm:text-sm md:text-base text-white/80 px-3 sm:px-4 md:px-6 max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto">

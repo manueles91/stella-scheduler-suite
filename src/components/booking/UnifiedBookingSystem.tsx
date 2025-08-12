@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +42,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
 
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   // Use custom hooks for state management
   const {
@@ -103,88 +104,24 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       baseSteps.push({ id: 5, title: "Autenticación", description: "Inicia sesión o regístrate" });
     }
 
-    return baseSteps.slice(0, config.maxSteps);
+    return baseSteps;
   };
 
   const steps = getSteps();
 
-  // Handle URL parameters for pre-selecting service and step
-  useEffect(() => {
-    if (bookableItems.length > 0) {
-      const serviceId = searchParams.get('service');
-      const step = searchParams.get('step');
-      const estilista = searchParams.get('estilista');
-      const discountId = searchParams.get('discount');
-      
-      if (serviceId) {
-        const service = bookableItems.find(s => s.id === serviceId);
-        if (service) {
-          updateState({ selectedService: service });
-          
-          if (estilista === 'cualquier') {
-            updateState({ selectedEmployee: null });
-          }
-          
-          const targetStep = step ? parseInt(step) : 2;
-          if (targetStep >= 1 && targetStep <= config.maxSteps) {
-            updateState({ currentStep: targetStep });
-          }
-        }
-      }
+  // Handle going back to landing page
+  const handleGoBack = () => {
+    navigate('/');
+  };
+
+  // Handle going to previous step
+  const handlePrevious = () => {
+    if (state.currentStep > 1) {
+      updateState({ currentStep: state.currentStep - 1 });
     }
-  }, [bookableItems, searchParams, config.maxSteps, updateState]);
+  };
 
-  // Fetch available slots when service/date/employee changes
-  useEffect(() => {
-    if (state.selectedService && state.selectedDate) {
-      setSlotsLoading(true);
-      const loadSlots = async () => {
-        try {
-          const slots = await fetchAvailableSlots(
-            state.selectedService,
-            state.selectedDate,
-            state.selectedEmployee
-          );
-          setAvailableSlots(slots);
-        } finally {
-          setSlotsLoading(false);
-        }
-      };
-      loadSlots();
-    } else {
-      setAvailableSlots([]);
-      setSlotsLoading(false);
-    }
-  }, [state.selectedService, state.selectedDate, state.selectedEmployee]);
-
-  // Handle pending booking for guest flow
-  useEffect(() => {
-    if (config.isGuest) {
-      const savedBooking = localStorage.getItem('pendingBooking');
-      if (savedBooking) {
-        const bookingData = JSON.parse(savedBooking);
-        setPendingBooking(bookingData);
-        
-        if (user) {
-          handleFinalBooking(bookingData);
-        } else {
-          updateState({ currentStep: config.maxSteps });
-        }
-      }
-    }
-  }, [config.isGuest, config.maxSteps, user, handleFinalBooking, updateState]);
-
-  // Complete pending booking when user gets authenticated
-  useEffect(() => {
-    if (user && pendingBooking && config.isGuest) {
-      handleFinalBooking(pendingBooking);
-    }
-  }, [user, pendingBooking, config.isGuest, handleFinalBooking]);
-
-
-
-
-
+  // Render step content based on current step
   const renderStepContent = () => {
     switch (state.currentStep) {
       case 1:
@@ -256,7 +193,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }
   };
 
-
   const handleNext = () => {
     if (state.currentStep === 4 && config.isGuest) {
       updateState({ currentStep: 5 });
@@ -266,12 +202,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       handleGuestBooking();
     } else if (canGoNext()) {
       updateState({ currentStep: state.currentStep + 1 });
-    }
-  };
-
-  const handlePrevious = () => {
-    if (state.currentStep > 1) {
-      updateState({ currentStep: state.currentStep - 1 });
     }
   };
 
@@ -293,16 +223,30 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       {renderStepContent()}
 
       <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={state.currentStep === 1}
-          className="w-full sm:w-auto"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
+        {/* Navigation Buttons */}
+        {state.currentStep === 1 ? (
+          // Step 1: Show "Volver" button to go back to landing page
+          <Button
+            variant="outline"
+            onClick={handleGoBack}
+            className="w-full sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        ) : (
+          // Other steps: Show "Anterior" button to go to previous step
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            className="w-full sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
+        )}
 
+        {/* Next/Confirm Button */}
         {state.currentStep < config.maxSteps && (
           <Button
             onClick={handleNext}

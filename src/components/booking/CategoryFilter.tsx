@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getCategoryImage } from "@/components/landing/CategoryImages";
+
 interface ServiceCategory {
   id: string;
   name: string;
@@ -9,22 +11,24 @@ interface ServiceCategory {
   image_url?: string;
   display_order: number;
 }
+
 interface CategoryFilterProps {
   categories: ServiceCategory[];
   selectedCategory: string | null;
   onCategorySelect: (categoryId: string | null) => void;
   className?: string;
 }
+
 export const CategoryFilter = ({
   categories,
   selectedCategory,
   onCategorySelect,
   className = ""
 }: CategoryFilterProps) => {
-  return <div className={`w-full ${className}`}>
+  return (
+    <div className={`w-full ${className}`}>
       <div className="mb-4">
         <h3 className="text-lg font-semibold mb-2">Categorías de Servicios</h3>
-        
       </div>
       
       <Carousel className="w-full" opts={{
@@ -36,7 +40,14 @@ export const CategoryFilter = ({
         <CarouselContent className="-ml-2 md:-ml-4">
           {/* All Services Card */}
           <CarouselItem className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
-            <Card className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${selectedCategory === null ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(null)}>
+            <Card 
+              className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
+                selectedCategory === null 
+                  ? 'ring-2 ring-primary shadow-lg bg-primary/10' 
+                  : 'hover:shadow-md'
+              }`} 
+              onClick={() => onCategorySelect(null)}
+            >
               <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-[10px] md:text-xs font-medium text-foreground">Todos</div>
@@ -47,19 +58,30 @@ export const CategoryFilter = ({
           </CarouselItem>
 
           {/* Category Cards */}
-          {categories.map(category => <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
-              <Card className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${selectedCategory === category.id ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`} onClick={() => onCategorySelect(category.id)}>
-                {/* Background Image or Gradient */}
+          {categories.map(category => (
+            <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+              <Card 
+                className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
+                  selectedCategory === category.id 
+                    ? 'ring-2 ring-primary shadow-lg' 
+                    : 'hover:shadow-md'
+                }`} 
+                onClick={() => onCategorySelect(category.id)}
+              >
+                {/* Background Image or Gradient - Use the same system as landing page */}
                 <div className="absolute inset-0">
-                  {category.image_url ? (
-                    <img
-                      src={category.image_url}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />
-                  )}
+                  {(() => {
+                    const imageUrl = getCategoryImage(category.name);
+                    return imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />
+                    );
+                  })()}
                   {/* Enhanced overlay for text readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
                   {/* Hover glow effect */}
@@ -76,14 +98,18 @@ export const CategoryFilter = ({
                 </div>
 
                 {/* Selected Indicator */}
-                {selectedCategory === category.id && <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[9px] md:text-xs h-4 md:h-5 bg-primary">
+                {selectedCategory === category.id && (
+                  <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[9px] md:text-xs h-4 md:h-5 bg-primary">
                     ✓
-                  </Badge>}
+                  </Badge>
+                )}
               </Card>
-            </CarouselItem>)}
+            </CarouselItem>
+          ))}
         </CarouselContent>
         <CarouselPrevious className="hidden md:flex" />
         <CarouselNext className="hidden md:flex" />
       </Carousel>
-    </div>;
+    </div>
+  );
 };
