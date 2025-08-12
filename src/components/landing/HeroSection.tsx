@@ -82,7 +82,7 @@ export const HeroSection = () => {
                   Explora nuestras categorías y encuentra el servicio perfecto para ti
                 </p>
               </div>
-              <div className="container mx-auto px-4 sm:px-6">
+              <div className="container mx-auto max-w-full px-4 sm:px-6 overflow-x-hidden">
                 <EnhancedCategoryFilter 
                   categories={categories} 
                   selectedCategory={selectedCategory} 

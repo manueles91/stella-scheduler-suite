@@ -27,7 +27,7 @@ export const EnhancedCategoryFilter = ({
   return (
     <div className={`w-full overflow-x-hidden ${className}`}>
       <Carousel 
-        className="w-full" 
+        className="w-full overflow-x-clip" 
         opts={{
           align: "start",
           loop: false,
@@ -35,12 +35,12 @@ export const EnhancedCategoryFilter = ({
           skipSnaps: false
         }}
       >
-        <CarouselContent className="-ml-2 md:-ml-4">
+        <CarouselContent className="ml-0 md:-ml-4">
           {/* Category Cards (no "Todos" option displayed) */}
           {categories.map(category => (
             <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
               <Card 
-                className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
+                className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group sm:hover:scale-105 ${
                   selectedCategory === category.id 
                     ? 'ring-2 ring-white shadow-2xl' 
                     : 'hover:shadow-xl border-white/30'
@@ -55,7 +55,7 @@ export const EnhancedCategoryFilter = ({
                       <img 
                         src={imageUrl} 
                         alt={category.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        className="w-full h-full object-cover sm:group-hover:scale-110 transition-transform duration-300" 
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-secondary/10" />
@@ -85,7 +85,7 @@ export const EnhancedCategoryFilter = ({
 
                 {/* Shine effect on hover */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full sm:group-hover:translate-x-full transition-transform duration-700" />
                 </div>
               </Card>
             </CarouselItem>
