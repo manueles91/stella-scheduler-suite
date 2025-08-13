@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, isAfter, parseISO } from "date-fns";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { formatCRC } from "@/lib/currency";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Bar,
   BarChart,
@@ -36,6 +37,7 @@ export const AdminIngresos = () => {
   const [reservations, setReservations] = useState<ReservationLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [daysWindow] = useState<number>(DAYS_WINDOW_DEFAULT);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,6 +104,12 @@ export const AdminIngresos = () => {
       revenueCents: centsByDay.get(d) || 0,
     }));
   }, [completedInWindow, timeframeDays]);
+
+  const barMinWidth = useMemo(() => {
+    const perBar = isMobile ? 28 : 20;
+    const yAxisReserve = isMobile ? 80 : 100;
+    return Math.max(640, dailyRevenueData.length * perBar + yAxisReserve);
+  }, [dailyRevenueData.length, isMobile]);
 
   const retentionData = useMemo(() => {
     // Identify customers' earliest completed booking
@@ -239,15 +247,34 @@ export const AdminIngresos = () => {
             <CardTitle>Ingresos diarios</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={dailyRevenueConfig} className="h-[300px]">
-              <BarChart data={dailyRevenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={renderCurrencyTick} tickLine={false} axisLine={false} width={80} />
-                <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => [formatCRC(Number(value)), "Ingresos"]} />
-                <Bar dataKey="revenueCents" fill="var(--color-revenueCents)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            <div className="-mx-4 sm:mx-0 overflow-x-auto">
+              <div style={{ minWidth: barMinWidth }}>
+                <ChartContainer config={dailyRevenueConfig} className="h-[280px] sm:h-[340px]">
+                  <BarChart data={dailyRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                      height={isMobile ? 50 : 30}
+                      tick={{ fontSize: isMobile ? 12 : 11 }}
+                      angle={isMobile ? -45 : 0}
+                      dy={isMobile ? 10 : 0}
+                    />
+                    <YAxis
+                      tickFormatter={renderCurrencyTick}
+                      tickLine={false}
+                      axisLine={false}
+                      width={isMobile ? 64 : 80}
+                      tick={{ fontSize: isMobile ? 12 : 11 }}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => [formatCRC(Number(value)), "Ingresos"]} />
+                    <Bar dataKey="revenueCents" fill="var(--color-revenueCents)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -258,10 +285,10 @@ export const AdminIngresos = () => {
           <CardContent>
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1">
-                <ChartContainer config={retentionConfig} className="h-[260px]">
+                <ChartContainer config={retentionConfig} className="h-[240px] sm:h-[280px]">
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
-                    <Pie dataKey="value" data={retentionData.chart} nameKey="name" innerRadius={60} outerRadius={90} strokeWidth={2}>
+                    <Pie dataKey="value" data={retentionData.chart} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
                       {retentionData.chart.map((entry) => (
                         <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
                       ))}
@@ -286,13 +313,13 @@ export const AdminIngresos = () => {
             {categoryShare.chart.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">Sin datos</div>
             ) : (
-              <ChartContainer config={categoryConfig} className="h-[260px]">
+              <ChartContainer config={categoryConfig} className="h-[240px] sm:h-[280px]">
                 <PieChart>
                   <ChartTooltip
                     content={<ChartTooltipContent nameKey="name" />}
                     formatter={(value, name) => [formatCRC(Number(value)), String(name)]}
                   />
-                  <Pie dataKey="value" data={categoryShare.chart} nameKey="name" innerRadius={60} outerRadius={90} strokeWidth={2}>
+                  <Pie dataKey="value" data={categoryShare.chart} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
                     {categoryShare.chart.map((entry) => (
                       <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
                     ))}
