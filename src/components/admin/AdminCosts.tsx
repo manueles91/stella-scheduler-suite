@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, DollarSign, Settings } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,16 +11,30 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
 import { AdminCostCategories } from "./AdminCostCategories";
-import { Progress } from "@/components/ui/progress";
 import { formatCRC } from "@/lib/currency";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+  Cell,
+} from "recharts";
+
 type CostType = 'fixed' | 'variable' | 'recurring' | 'one_time';
+
 interface CostCategory {
   id: string;
   name: string;
   description?: string;
 }
+
 interface Cost {
   id: string;
   name: string;
@@ -35,6 +49,9 @@ interface Cost {
   next_due_date?: string;
   created_at: string;
 }
+
+const DAYS_WINDOW_DEFAULT = 30;
+
 const costTypes = [{
   value: 'fixed',
   label: 'Fijo'
@@ -61,8 +78,11 @@ export function AdminCosts() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<Cost | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [daysWindow] = useState<number>(DAYS_WINDOW_DEFAULT);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const isMobile = useIsMobile();
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -72,10 +92,12 @@ export function AdminCosts() {
     recurring_frequency: '',
     date_incurred: new Date().toISOString().split('T')[0]
   });
+
   useEffect(() => {
     fetchCosts();
     fetchCostCategories();
-  }, []);
+  }, [daysWindow]);
+
   const fetchCostCategories = async () => {
     try {
       const {
@@ -90,8 +112,12 @@ export function AdminCosts() {
       console.error('Error fetching cost categories:', error);
     }
   };
+
   const fetchCosts = async () => {
     try {
+      const startDate = subDays(new Date(), daysWindow + 60); // include lookback for context
+      const startStr = format(startDate, "yyyy-MM-dd");
+      
       const {
         data,
         error
@@ -102,8 +128,8 @@ export function AdminCosts() {
             name,
             description
           )
-        `).order('created_at', {
-        ascending: false
+        `).gte("date_incurred", startStr).order('date_incurred', {
+        ascending: true
       });
       if (error) throw error;
       setCosts(data || []);
@@ -118,6 +144,7 @@ export function AdminCosts() {
       setLoading(false);
     }
   };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -130,6 +157,7 @@ export function AdminCosts() {
     });
     setEditingCost(null);
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.amount || !formData.cost_type || !formData.cost_category_id) {
@@ -195,6 +223,7 @@ export function AdminCosts() {
       });
     }
   };
+
   const handleEdit = (cost: Cost) => {
     setEditingCost(cost);
     setFormData({
@@ -208,6 +237,7 @@ export function AdminCosts() {
     });
     setIsDialogOpen(true);
   };
+
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este costo?')) return;
     try {
@@ -229,312 +259,429 @@ export function AdminCosts() {
       });
     }
   };
+
   const getCategoryLabel = (categoryId: string) => {
     const category = costCategories.find(c => c.id === categoryId);
     return category?.name || 'Sin categoría';
   };
+
   const getTypeLabel = (type: string) => {
     return costTypes.find(t => t.value === type)?.label || type;
   };
 
-  // Derived metrics for decision-making and progress tracking
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const timeframeStart = useMemo(() => subDays(new Date(), daysWindow - 1), [daysWindow]);
+  const timeframeStartStr = useMemo(() => format(timeframeStart, "yyyy-MM-dd"), [timeframeStart]);
+  const timeframeDays: string[] = useMemo(() => {
+    const days: string[] = [];
+    for (let i = daysWindow - 1; i >= 0; i--) {
+      days.push(format(subDays(new Date(), i), "yyyy-MM-dd"));
+    }
+    return days;
+  }, [daysWindow]);
 
-  const isInCurrentMonth = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d >= startOfMonth && d <= endOfMonth;
-  };
+  const costsInWindow = useMemo(() => {
+    return costs.filter((c) => {
+      return c.date_incurred >= timeframeStartStr;
+    });
+  }, [costs, timeframeStartStr]);
 
-  const monthToDateSpentCents = costs
-    .filter(c => isInCurrentMonth(c.date_incurred))
-    .reduce((sum, c) => sum + c.amount_cents, 0);
+  const dailyCostData = useMemo(() => {
+    const centsByDay = new Map<string, number>();
+    timeframeDays.forEach((d) => centsByDay.set(d, 0));
 
-  const totalMonthly = costs
-    .filter(cost => cost.is_active && (cost.cost_type === 'recurring' || cost.cost_type === 'fixed'))
-    .reduce((sum, cost) => {
-      if (cost.cost_type === 'recurring' && cost.recurring_frequency) {
-        return sum + cost.amount_cents * (30 / cost.recurring_frequency);
-      }
-      return sum + cost.amount_cents;
-    }, 0);
+    for (const c of costsInWindow) {
+      const key = c.date_incurred;
+      const prev = centsByDay.get(key) || 0;
+      centsByDay.set(key, prev + c.amount_cents);
+    }
 
-  const progressPct = totalMonthly > 0 ? Math.min(100, Math.round((monthToDateSpentCents / totalMonthly) * 100)) : 0;
+    return timeframeDays.map((d) => ({
+      date: format(parseISO(d), "dd/MM"),
+      costCents: centsByDay.get(d) || 0,
+    }));
+  }, [costsInWindow, timeframeDays]);
 
-  const byType = costs.reduce(
-    (acc, c) => {
-      acc[c.cost_type] = (acc[c.cost_type] || 0) + c.amount_cents;
-      return acc;
-    },
-    {} as Record<CostType, number>
+  const barMinWidth = useMemo(() => {
+    const perBar = isMobile ? 28 : 20;
+    const yAxisReserve = isMobile ? 80 : 100;
+    return Math.max(640, dailyCostData.length * perBar + yAxisReserve);
+  }, [dailyCostData.length, isMobile]);
+
+  const costTypeData = useMemo(() => {
+    const centsByType = new Map<string, number>();
+    
+    for (const c of costsInWindow) {
+      const typeLabel = getTypeLabel(c.cost_type);
+      const prev = centsByType.get(typeLabel) || 0;
+      centsByType.set(typeLabel, prev + c.amount_cents);
+    }
+
+    return Array.from(centsByType.entries()).map(([name, cents]) => ({
+      name,
+      value: cents,
+    })).filter(item => item.value > 0);
+  }, [costsInWindow]);
+
+  const categoryShare = useMemo(() => {
+    const centsByCategory = new Map<string, number>();
+
+    for (const c of costsInWindow) {
+      const catName = c.cost_categories?.name || "Sin categoría";
+      const prev = centsByCategory.get(catName) || 0;
+      centsByCategory.set(catName, prev + c.amount_cents);
+    }
+
+    const items = Array.from(centsByCategory.entries()).map(([name, cents]) => ({
+      name,
+      value: cents,
+    })).filter(item => item.value > 0);
+
+    items.sort((a, b) => b.value - a.value);
+
+    return {
+      chart: items,
+      totalCents: items.reduce((s, i) => s + i.value, 0) || 1,
+    };
+  }, [costsInWindow]);
+
+  const costTypeConfig = useMemo(() => {
+    const palette = [
+      "hsl(10, 87%, 55%)",
+      "hsl(27, 96%, 61%)",
+      "hsl(340, 82%, 52%)",
+      "hsl(291, 64%, 42%)",
+    ];
+
+    const cfg: Record<string, { label: string; color: string }> = {};
+    costTypeData.forEach((item, idx) => {
+      cfg[item.name] = { label: item.name, color: palette[idx % palette.length] };
+    });
+    return cfg;
+  }, [costTypeData]);
+
+  const categoryConfig = useMemo(() => {
+    const palette = [
+      "hsl(221, 83%, 53%)",
+      "hsl(142, 71%, 45%)",
+      "hsl(27, 96%, 61%)",
+      "hsl(291, 64%, 42%)",
+      "hsl(199, 89%, 48%)",
+      "hsl(340, 82%, 52%)",
+      "hsl(10, 87%, 55%)",
+      "hsl(50, 94%, 58%)",
+      "hsl(170, 78%, 41%)",
+    ];
+
+    const cfg: Record<string, { label: string; color: string }> = {};
+    categoryShare.chart.forEach((item, idx) => {
+      cfg[item.name] = { label: item.name, color: palette[idx % palette.length] };
+    });
+    return cfg;
+  }, [categoryShare.chart]);
+
+  const dailyCostConfig = useMemo(
+    () => ({
+      costCents: {
+        label: "Costos diarios",
+        color: "hsl(10, 87%, 55%)",
+      },
+    }),
+    []
   );
 
+  const renderCurrencyTick = (value: number) => formatCRC(value);
+
   if (loading) {
-    return <div className="flex items-center justify-center p-8">Cargando costos...</div>;
+    return (
+      <div className="space-y-6">
+        <h2 className="text-3xl font-serif font-bold">Costos</h2>
+        <div className="text-center py-8">Cargando datos...</div>
+      </div>
+    );
   }
-  return <div className="max-w-7xl mx-auto space-y-6 p-4">
-      {/* Header - Mobile optimized */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="w-full sm:w-auto">
-          <h1 className="text-xl sm:text-2xl font-bold">Costos</h1>
-          
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm} className="flex-1 sm:flex-none">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Costo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nombre *</Label>
-                  <Input id="name" value={formData.name} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  name: e.target.value
-                }))} placeholder="Ej: Electricidad mes de enero" required />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea id="description" value={formData.description} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  description: e.target.value
-                }))} placeholder="Descripción opcional del gasto" rows={2} />
-                </div>
 
-                <div>
-                  <Label htmlFor="amount">Monto (₡) *</Label>
-                  <Input id="amount" type="number" step="0.01" value={formData.amount} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  amount: e.target.value
-                }))} placeholder="0.00" required />
-                </div>
-
-                <div>
-                  <Label htmlFor="cost_category_id">Categoría *</Label>
-                  <Select value={formData.cost_category_id} onValueChange={value => setFormData(prev => ({
-                  ...prev,
-                  cost_category_id: value
-                }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {costCategories.map(category => <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="cost_type">Tipo *</Label>
-                  <Select value={formData.cost_type} onValueChange={value => setFormData(prev => ({
-                  ...prev,
-                  cost_type: value as CostType
-                }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {costTypes.map(type => <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.cost_type === 'recurring' && <div>
-                    <Label htmlFor="recurring_frequency">Frecuencia (días)</Label>
-                    <Input id="recurring_frequency" type="number" value={formData.recurring_frequency} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  recurring_frequency: e.target.value
-                }))} placeholder="30 (mensual), 7 (semanal)" />
-                  </div>}
-
-                <div>
-                  <Label htmlFor="date_incurred">Fecha *</Label>
-                  <Input id="date_incurred" type="date" value={formData.date_incurred} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  date_incurred: e.target.value
-                }))} required />
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button type="submit" className="flex-1">
-                    {editingCost ? 'Actualizar' : 'Crear'}
-                  </Button>
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => {
-                  setIsDialogOpen(false);
-                  resetForm();
-                }}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-          
-          <Button variant="outline" size="sm" onClick={() => setShowCategoryManager(true)} className="px-3">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-serif font-bold">Costos</h2>
+        <div className="text-sm text-muted-foreground">Últimos {daysWindow} días</div>
       </div>
 
-      {/* Category Manager Modal */}
-      <Dialog open={showCategoryManager} onOpenChange={open => {
-      setShowCategoryManager(open);
-      if (!open) {
-        // Refresh categories when modal is closed
-        fetchCostCategories();
-      }
-    }}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <AdminCostCategories />
-        </DialogContent>
-      </Dialog>
-
-      {/* Summary Cards - Mobile optimized */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gasto MTD</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="col-span-1 lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Costos diarios</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(monthToDateSpentCents)}</div>
-            <p className="text-xs text-muted-foreground">Mes en curso</p>
+            <div className="-mx-4 sm:mx-0 overflow-x-auto">
+              <div style={{ minWidth: barMinWidth }}>
+                <ChartContainer config={dailyCostConfig} className="h-[280px] sm:h-[340px]">
+                  <BarChart data={dailyCostData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                      height={isMobile ? 50 : 30}
+                      tick={{ fontSize: isMobile ? 12 : 11 }}
+                      angle={isMobile ? -45 : 0}
+                      dy={isMobile ? 10 : 0}
+                    />
+                    <YAxis
+                      tickFormatter={renderCurrencyTick}
+                      tickLine={false}
+                      axisLine={false}
+                      width={isMobile ? 64 : 80}
+                      tick={{ fontSize: isMobile ? 12 : 11 }}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => [formatCRC(Number(value)), "Costos"]} />
+                    <Bar dataKey="costCents" fill="var(--color-costCents)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gasto Mensual Estimado</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Distribución por tipo de costo</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalMonthly)}</div>
-            <p className="text-xs text-muted-foreground">Fijo + Recurrente</p>
+            {costTypeData.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">Sin datos</div>
+            ) : (
+              <ChartContainer config={costTypeConfig} className="h-[240px] sm:h-[280px]">
+                <PieChart>
+                  <ChartTooltip
+                    content={<ChartTooltipContent nameKey="name" />}
+                    formatter={(value, name) => [formatCRC(Number(value)), String(name)]}
+                  />
+                  <Pie dataKey="value" data={costTypeData} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
+                    {costTypeData.map((entry) => (
+                      <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
+                    ))}
+                  </Pie>
+                  <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                </PieChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Registros</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Costos por categoría</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{costs.length}</div>
-            <p className="text-xs text-muted-foreground">Costos registrados</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activos</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{costs.filter(c => c.is_active).length}</div>
-            <p className="text-xs text-muted-foreground">En seguimiento</p>
+            {categoryShare.chart.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">Sin datos</div>
+            ) : (
+              <ChartContainer config={categoryConfig} className="h-[240px] sm:h-[280px]">
+                <PieChart>
+                  <ChartTooltip
+                    content={<ChartTooltipContent nameKey="name" />}
+                    formatter={(value, name) => [formatCRC(Number(value)), String(name)]}
+                  />
+                  <Pie dataKey="value" data={categoryShare.chart} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
+                    {categoryShare.chart.map((entry) => (
+                      <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
+                    ))}
+                  </Pie>
+                  <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                </PieChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Progreso del Mes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>{formatCurrency(monthToDateSpentCents)} / {formatCurrency(totalMonthly)}</span>
-              <span className="text-muted-foreground">{progressPct}%</span>
-            </div>
-            <Progress value={progressPct} />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs text-muted-foreground">
-              <div>Fijo: <span className="font-medium text-foreground">{formatCurrency(byType['fixed' as CostType] || 0)}</span></div>
-              <div>Recurrente: <span className="font-medium text-foreground">{formatCurrency(byType['recurring' as CostType] || 0)}</span></div>
-              <div>Variable: <span className="font-medium text-foreground">{formatCurrency(byType['variable' as CostType] || 0)}</span></div>
-              <div>Único: <span className="font-medium text-foreground">{formatCurrency(byType['one_time' as CostType] || 0)}</span></div>
-            </div>
+      {/* Management Section */}
+      <div className="space-y-6">
+        {/* Header - Mobile optimized */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="w-full sm:w-auto">
+            <h3 className="text-xl font-semibold">Gestión de costos</h3>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Costs List - Mobile optimized */}
-      <div className="space-y-4">
-        {costs.map(cost => <Card key={cost.id}>
-            <CardContent className="p-4">
-              {/* Mobile Layout */}
-              <div className="flex flex-col space-y-3">
-                {/* Header with title and badges */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold text-lg break-words">{cost.name}</h3>
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant={cost.is_active ? "default" : "secondary"} className="text-xs">
-                        {cost.is_active ? "Activo" : "Inactivo"}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {cost.cost_categories?.name || getCategoryLabel(cost.cost_category_id)}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {getTypeLabel(cost.cost_type)}
-                      </Badge>
-                    </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm} className="flex-1 sm:flex-none">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Costo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nombre *</Label>
+                    <Input id="name" value={formData.name} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    name: e.target.value
+                  }))} placeholder="Ej: Electricidad mes de enero" required />
                   </div>
                   
-                  <div className="flex items-center justify-between sm:justify-end gap-2">
-                    <div className="text-right">
-                      <div className="text-lg sm:text-xl font-bold">
-                        {formatCurrency(cost.amount_cents)}
+                  <div>
+                    <Label htmlFor="description">Descripción</Label>
+                    <Textarea id="description" value={formData.description} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    description: e.target.value
+                  }))} placeholder="Descripción opcional del gasto" rows={2} />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="amount">Monto (₡) *</Label>
+                    <Input id="amount" type="number" step="0.01" value={formData.amount} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    amount: e.target.value
+                  }))} placeholder="0.00" required />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cost_category_id">Categoría *</Label>
+                    <Select value={formData.cost_category_id} onValueChange={value => setFormData(prev => ({
+                    ...prev,
+                    cost_category_id: value
+                  }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {costCategories.map(category => <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cost_type">Tipo *</Label>
+                    <Select value={formData.cost_type} onValueChange={value => setFormData(prev => ({
+                    ...prev,
+                    cost_type: value as CostType
+                  }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {costTypes.map(type => <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.cost_type === 'recurring' && <div>
+                      <Label htmlFor="recurring_frequency">Frecuencia (días)</Label>
+                      <Input id="recurring_frequency" type="number" value={formData.recurring_frequency} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    recurring_frequency: e.target.value
+                  }))} placeholder="30 (mensual), 7 (semanal)" />
+                    </div>}
+
+                  <div>
+                    <Label htmlFor="date_incurred">Fecha *</Label>
+                    <Input id="date_incurred" type="date" value={formData.date_incurred} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    date_incurred: e.target.value
+                  }))} required />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button type="submit" className="flex-1">
+                      {editingCost ? 'Actualizar' : 'Crear'}
+                    </Button>
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                    setIsDialogOpen(false);
+                    resetForm();
+                  }}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            
+            <Button variant="outline" size="sm" onClick={() => setShowCategoryManager(true)} className="px-3">
+              Categorías
+            </Button>
+          </div>
+        </div>
+
+        {/* Category Manager Modal */}
+        <Dialog open={showCategoryManager} onOpenChange={open => {
+        setShowCategoryManager(open);
+        if (!open) {
+          // Refresh categories when modal is closed
+          fetchCostCategories();
+        }
+      }}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <AdminCostCategories />
+          </DialogContent>
+        </Dialog>
+
+        {/* Costs List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de costos recientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {costsInWindow.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  No hay costos registrados en el período seleccionado
+                </div>
+              ) : (
+                costsInWindow.slice(0, 10).map((cost) => (
+                  <div key={cost.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="font-medium">{cost.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {getCategoryLabel(cost.cost_category_id)} • {getTypeLabel(cost.cost_type)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(cost.date_incurred), 'dd/MM/yyyy')}
                       </div>
                     </div>
-                    
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(cost)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(cost.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="font-medium">{formatCRC(cost.amount_cents)}</div>
+                        <Badge variant={cost.is_active ? "default" : "secondary"} className="text-xs">
+                          {cost.is_active ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(cost)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(cost.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                {/* Description */}
-                {cost.description && <p className="text-muted-foreground text-sm break-words">
-                    {cost.description}
-                  </p>}
-                
-                {/* Date info */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                  <span>Fecha: {format(new Date(cost.date_incurred), 'dd/MM/yyyy')}</span>
-                  {cost.recurring_frequency && <span>Cada {cost.recurring_frequency} días</span>}
-                  {cost.next_due_date && <span>Próximo: {format(new Date(cost.next_due_date), 'dd/MM/yyyy')}</span>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>)}
-        
-        {costs.length === 0 && <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">
-                No hay costos registrados. ¡Crea el primero!
-              </p>
-            </CardContent>
-          </Card>}
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>;
+    </div>
+  );
 }
