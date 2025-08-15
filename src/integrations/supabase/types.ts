@@ -717,18 +717,7 @@ export type Database = {
       }
     }
     Views: {
-      public_promotions: {
-        Row: {
-          description: string | null
-          end_date: string | null
-          id: string | null
-          name: string | null
-          promotion_text: string | null
-          service_name: string | null
-          start_date: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       generate_registration_token: {
