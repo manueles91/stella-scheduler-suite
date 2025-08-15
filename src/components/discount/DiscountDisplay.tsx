@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Percent, DollarSign, Tag } from "lucide-react";
+import { Percent, DollarSign, Tag, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface Discount {
   id: string;
@@ -37,6 +39,8 @@ const DiscountDisplay: React.FC<DiscountDisplayProps> = ({
   const [discountCode, setDiscountCode] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPublicDiscounts();
@@ -48,6 +52,11 @@ const DiscountDisplay: React.FC<DiscountDisplayProps> = ({
   }, [appliedDiscount, originalPrice]);
 
   const fetchPublicDiscounts = async () => {
+    if (!user) {
+      // User needs to be authenticated to see discounts
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from("discounts")
@@ -95,6 +104,15 @@ const DiscountDisplay: React.FC<DiscountDisplayProps> = ({
   };
 
   const applyDiscountCode = async () => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión requerida",
+        description: "Debes iniciar sesión para aplicar códigos de descuento",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!discountCode.trim()) {
       toast({
         title: "Error",
@@ -173,6 +191,28 @@ const DiscountDisplay: React.FC<DiscountDisplayProps> = ({
 
   const finalPrice = calculateFinalPrice();
   const savings = appliedDiscount ? calculateSavings(appliedDiscount, originalPrice) : 0;
+
+  // Show login prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="bg-muted p-4 rounded-lg border text-center">
+          <LogIn className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mb-3">
+            Inicia sesión para ver descuentos y aplicar códigos promocionales
+          </p>
+          <Button onClick={() => navigate('/auth')} variant="outline" size="sm">
+            Iniciar sesión
+          </Button>
+        </div>
+        <div className="text-right">
+          <span className="text-lg font-semibold">
+            {formatPrice(originalPrice)}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${className}`}>
