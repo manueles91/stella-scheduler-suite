@@ -655,23 +655,50 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          business_address: string | null
+          business_email: string | null
+          business_hours: Json | null
+          business_name: string | null
+          business_phone: string | null
+          google_maps_link: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
           id: string
           landing_background_url: string | null
           logo_url: string | null
+          testimonials: Json | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          business_address?: string | null
+          business_email?: string | null
+          business_hours?: Json | null
+          business_name?: string | null
+          business_phone?: string | null
+          google_maps_link?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           landing_background_url?: string | null
           logo_url?: string | null
+          testimonials?: Json | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          business_address?: string | null
+          business_email?: string | null
+          business_hours?: Json | null
+          business_name?: string | null
+          business_phone?: string | null
+          google_maps_link?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           landing_background_url?: string | null
           logo_url?: string | null
+          testimonials?: Json | null
           updated_at?: string
           updated_by?: string | null
         }

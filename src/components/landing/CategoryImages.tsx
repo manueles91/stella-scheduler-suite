@@ -1,22 +1,18 @@
 // Import all category images
 import cejas from "@/assets/categories/cejas.jpg";
-import faciales from "@/assets/categories/faciales.jpg";
-import manicura from "@/assets/categories/manicura.jpg";
-import masajes from "@/assets/categories/masajes.jpg";
-import pedicura from "@/assets/categories/pedicura.jpg";
+import cabello from "@/assets/categories/cabello.jpg";
+import manicuraYPedicura from "@/assets/categories/manicura-y-pedicura.jpg";
+import esteticaFacial from "@/assets/categories/estetica-facial.jpg";
+import esteticaCorporal from "@/assets/categories/estetica-corporal.jpg";
 import pestanas from "@/assets/categories/pestanas.jpg";
-import relajantes from "@/assets/categories/relajantes.jpg";
-import tratamientos from "@/assets/categories/tratamientos.jpg";
 
 export const categoryImages: Record<string, string> = {
   'cejas': cejas,
-  'faciales': faciales,
-  'manicura': manicura,
-  'masajes': masajes,
-  'pedicura': pedicura,
+  'cabello': cabello,
+  'manicura y pedicura': manicuraYPedicura,
+  'estética facial': esteticaFacial,
+  'estética corporal': esteticaCorporal,
   'pestañas': pestanas,
-  'relajantes': relajantes,
-  'tratamientos': tratamientos,
 };
 
 export const getCategoryImage = (categoryName: string): string | null => {
