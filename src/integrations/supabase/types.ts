@@ -38,6 +38,13 @@ export type Database = {
             foreignKeyName: "fk_appointment_services_appointment_id"
             columns: ["appointment_id"]
             isOneToOne: false
+            referencedRelation: "guest_reservations_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_appointment_services_appointment_id"
+            columns: ["appointment_id"]
+            isOneToOne: false
             referencedRelation: "reservations"
             referencedColumns: ["id"]
           },
@@ -744,9 +751,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      guest_reservations_view: {
+        Row: {
+          appointment_date: string | null
+          customer_name: string | null
+          end_time: string | null
+          id: string | null
+          notes: string | null
+          registration_token: string | null
+          start_time: string | null
+          status: string | null
+        }
+        Insert: {
+          appointment_date?: string | null
+          customer_name?: string | null
+          end_time?: string | null
+          id?: string | null
+          notes?: string | null
+          registration_token?: string | null
+          start_time?: string | null
+          status?: string | null
+        }
+        Update: {
+          appointment_date?: string | null
+          customer_name?: string | null
+          end_time?: string | null
+          id?: string | null
+          notes?: string | null
+          registration_token?: string | null
+          start_time?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      check_guest_reservation_access: {
+        Args: { reservation_id: string; token: string }
+        Returns: boolean
+      }
       generate_registration_token: {
         Args: Record<PropertyKey, never>
         Returns: string
