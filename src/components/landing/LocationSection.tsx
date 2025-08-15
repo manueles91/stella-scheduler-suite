@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Clock } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export const LocationSection = () => {
   const navigate = useNavigate();
+  const { settings } = useSiteSettings();
 
   return (
     <section className="py-10 sm:py-20 bg-muted/30 px-2 sm:px-4">
@@ -20,13 +22,18 @@ export const LocationSection = () => {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          {/* Map Placeholder */}
-          <div className="aspect-video bg-muted rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground font-medium">Mapa interactivo</p>
-              <p className="text-sm text-muted-foreground">Se agregará próximamente</p>
-            </div>
+          {/* Interactive Map or Map Link */}
+          <div className="aspect-video bg-muted rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors">
+            <a 
+              href={settings?.google_maps_link || 'https://maps.google.com'} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-center w-full h-full flex flex-col items-center justify-center"
+            >
+              <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
+              <p className="text-primary font-medium">Ver en Google Maps</p>
+              <p className="text-sm text-muted-foreground">Haz clic para abrir</p>
+            </a>
           </div>
           
           {/* Location Info */}
@@ -39,8 +46,7 @@ export const LocationSection = () => {
                     <div>
                       <h3 className="font-semibold mb-1">Dirección</h3>
                       <p className="text-muted-foreground">
-                        Av. Central 123, San José<br />
-                        Costa Rica, 10101
+                        {settings?.business_address || 'Av. Central 123, San José, Costa Rica, 10101'}
                       </p>
                     </div>
                   </div>
@@ -49,7 +55,9 @@ export const LocationSection = () => {
                     <Phone className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <h3 className="font-semibold mb-1">Teléfono</h3>
-                      <p className="text-muted-foreground">+506 2222-3333</p>
+                      <p className="text-muted-foreground">
+                        {settings?.business_phone || '+506 2222-3333'}
+                      </p>
                     </div>
                   </div>
                   
@@ -58,9 +66,19 @@ export const LocationSection = () => {
                     <div>
                       <h3 className="font-semibold mb-1">Horarios</h3>
                       <div className="text-muted-foreground space-y-1">
-                        <p>Lunes - Viernes: 9:00 AM - 7:00 PM</p>
-                        <p>Sábados: 9:00 AM - 5:00 PM</p>
-                        <p>Domingos: Cerrado</p>
+                        {settings?.business_hours ? (
+                          Object.entries(settings.business_hours).map(([day, hours]) => (
+                            <p key={day} className="capitalize">
+                              {day}: {hours}
+                            </p>
+                          ))
+                        ) : (
+                          <>
+                            <p>Lunes - Viernes: 9:00 AM - 7:00 PM</p>
+                            <p>Sábados: 9:00 AM - 5:00 PM</p>
+                            <p>Domingos: Cerrado</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

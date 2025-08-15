@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Phone, Star } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export const ScheduleSection = () => {
   const navigate = useNavigate();
+  const { settings } = useSiteSettings();
 
   return (
     <section className="py-10 sm:py-20 px-2 sm:px-4">
@@ -19,18 +21,31 @@ export const ScheduleSection = () => {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-primary mb-4">Horarios Regulares</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="font-medium">Lunes - Viernes</span>
-                    <span className="text-primary">9:00 AM - 7:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="font-medium">Sábados</span>
-                    <span className="text-primary">9:00 AM - 5:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="font-medium">Domingos</span>
-                    <span className="text-muted-foreground">Cerrado</span>
-                  </div>
+                  {settings?.business_hours ? (
+                    Object.entries(settings.business_hours).map(([day, hours]) => (
+                      <div key={day} className="flex justify-between items-center py-2 border-b border-muted">
+                        <span className="font-medium capitalize">{day}</span>
+                        <span className={hours.toLowerCase().includes('cerrado') ? 'text-muted-foreground' : 'text-primary'}>
+                          {hours}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-muted">
+                        <span className="font-medium">Lunes - Viernes</span>
+                        <span className="text-primary">9:00 AM - 7:00 PM</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-muted">
+                        <span className="font-medium">Sábados</span>
+                        <span className="text-primary">9:00 AM - 5:00 PM</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-muted">
+                        <span className="font-medium">Domingos</span>
+                        <span className="text-muted-foreground">Cerrado</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -48,7 +63,7 @@ export const ScheduleSection = () => {
                     <Phone className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium">Reservas telefónicas</p>
-                      <p className="text-sm">+506 2222-3333</p>
+                      <p className="text-sm">{settings?.business_phone || '+506 2222-3333'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
