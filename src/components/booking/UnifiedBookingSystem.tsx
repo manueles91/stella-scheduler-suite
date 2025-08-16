@@ -272,28 +272,15 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       {renderStepContent()}
 
       <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
-        {/* Navigation Buttons */}
-        {state.currentStep === 1 ? (
-          // Step 1: Show "Volver" button to go back to landing page
-          <Button
-            variant="outline"
-            onClick={handleGoBack}
-            className="w-full sm:w-auto"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        ) : (
-          // Other steps: Show "Anterior" button to go to previous step
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            className="w-full sm:w-auto"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-        )}
+        {/* Navigation Buttons - Always show "Anterior" */}
+        <Button
+          variant="outline"
+          onClick={state.currentStep === 1 ? handleGoBack : handlePrevious}
+          className="w-full sm:w-auto"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Anterior
+        </Button>
 
         {/* Next/Confirm Button */}
         {state.currentStep < config.maxSteps && !(config.isGuest && state.currentStep === 4) && (

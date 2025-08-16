@@ -103,26 +103,6 @@ export const ConfirmationStep = ({
               </div>
             </div>
 
-            {(selectedEmployee || selectedSlot) && (
-              <div className="flex items-center gap-3 pt-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage 
-                    src={selectedEmployee ? 
-                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedEmployee.id}` :
-                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedSlot?.employee_id}`
-                    } 
-                  />
-                  <AvatarFallback className="text-xs">
-                    {(selectedEmployee?.full_name || selectedSlot?.employee_name || '').split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <span className="font-medium text-sm">Estilista:</span>{" "}
-                  {selectedEmployee?.full_name || selectedSlot?.employee_name}
-                </div>
-              </div>
-            )}
-
             {selectedService.savings_cents > 0 && (
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-2">
@@ -134,6 +114,36 @@ export const ConfirmationStep = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Enhanced Stylist Card */}
+        {(selectedEmployee || selectedSlot) && (
+          <Card className="border-muted">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                  <AvatarImage 
+                    src={selectedEmployee ? 
+                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedEmployee.id}` :
+                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedSlot?.employee_id}`
+                    } 
+                  />
+                  <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
+                    {(selectedEmployee?.full_name || selectedSlot?.employee_name || '').split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-lg">Tu Estilista</h4>
+                  <p className="text-primary font-medium">
+                    {selectedEmployee?.full_name || selectedSlot?.employee_name}
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    Profesional certificado
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <div className="space-y-2">
