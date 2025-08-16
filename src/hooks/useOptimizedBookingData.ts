@@ -153,7 +153,8 @@ export const useOptimizedBookingData = () => {
                 start_time: slotTime,
                 employee_id: employee.id,
                 employee_name: employee.full_name,
-                available: true
+                available: true,
+                employee_avatar_url: (employee as any).avatar_url,
               });
             }
           }

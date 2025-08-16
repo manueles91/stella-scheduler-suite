@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sparkles, Package } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -96,6 +96,9 @@ export const ConfirmationStep = ({
             {selectedEmployee && (
               <div className="flex items-center gap-3 pt-2">
                 <Avatar className="h-8 w-8">
+                  { (selectedEmployee as any).avatar_url && (
+                    <AvatarImage src={(selectedEmployee as any).avatar_url} alt={selectedEmployee.full_name} />
+                  )}
                   <AvatarFallback className="text-xs">
                     {selectedEmployee.full_name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -103,6 +106,23 @@ export const ConfirmationStep = ({
                 <div>
                   <span className="font-medium text-sm">Estilista:</span>{" "}
                   {selectedEmployee.full_name}
+                </div>
+              </div>
+            )}
+
+            {!selectedEmployee && selectedSlot?.employee_name && (
+              <div className="flex items-center gap-3 pt-2">
+                <Avatar className="h-8 w-8">
+                  {selectedSlot.employee_avatar_url && (
+                    <AvatarImage src={selectedSlot.employee_avatar_url} alt={selectedSlot.employee_name} />
+                  )}
+                  <AvatarFallback className="text-xs">
+                    {selectedSlot.employee_name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <span className="font-medium text-sm">Estilista:</span>{" "}
+                  {selectedSlot.employee_name}
                 </div>
               </div>
             )}
