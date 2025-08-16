@@ -3,9 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Calendar, ExternalLink } from "lucide-react";
-import { generateCalendarUrl, formatTime12Hour } from "@/lib/utils";
+import { CalendarAddButton } from "@/components/ui/calendar-add-button";
+import { createBookingCalendarEvent } from "@/lib/utils/calendar";
+import { formatTime12Hour } from "@/lib/utils";
 import { Sparkles, Package } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -30,26 +30,15 @@ export const ConfirmationStep = ({
   formatPrice,
   onNotesChange,
 }: ConfirmationStepProps) => {
-  const createCalendarEvent = () => {
-    if (!selectedService || !selectedDate || !selectedSlot) return;
-
-    const startDateTime = new Date(selectedDate);
-    const [hours, minutes] = selectedSlot.start_time.split(':');
-    startDateTime.setHours(parseInt(hours), parseInt(minutes));
-    
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setMinutes(endDateTime.getMinutes() + selectedService.duration_minutes);
-
-    const calendarUrl = generateCalendarUrl(
-      `Cita: ${selectedService.name}`,
-      startDateTime,
-      endDateTime,
-      `Servicio: ${selectedService.name}\nEstilista: ${selectedSlot.employee_name}${notes ? `\nNotas: ${notes}` : ''}`,
-      'Salón de Belleza'
-    );
-
-    window.open(calendarUrl, '_blank');
-  };
+  // Create calendar event for the booking
+  const calendarEvent = selectedService && selectedDate && selectedSlot 
+    ? createBookingCalendarEvent(
+        selectedService,
+        selectedDate,
+        selectedSlot,
+        selectedEmployee?.full_name || selectedSlot.employee_name
+      )
+    : null;
 
   return (
     <Card>
@@ -153,17 +142,11 @@ export const ConfirmationStep = ({
           />
         </div>
 
-        <div className="flex justify-center">
-          <Button
-            onClick={createCalendarEvent}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Agregar a calendario
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        </div>
+        {calendarEvent && (
+          <div className="flex justify-center">
+            <CalendarAddButton event={calendarEvent} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

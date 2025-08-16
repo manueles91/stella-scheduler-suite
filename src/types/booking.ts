@@ -91,6 +91,7 @@ export interface BookingState {
   submitting: boolean;
   customerEmail: string;
   customerName: string;
+  customerPhone: string;
 }
 
 export interface BookingConfig {

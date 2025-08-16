@@ -116,8 +116,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         { id: 1, title: "Servicio", description: "Elige tu servicio" },
         { id: 2, title: "Fecha", description: "Selecciona una fecha" },
         { id: 3, title: "Hora", description: "Elige tu horario" },
-        { id: 4, title: "Confirmación", description: "Revisa y confirma" },
-        { id: 5, title: "Información", description: "Datos de contacto" },
+        { id: 4, title: "Información", description: "Confirma y reserva" },
       ];
     }
 
@@ -192,6 +191,29 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         );
 
       case 4:
+        // For guest bookings, show customer info form directly
+        if (config.isGuest) {
+          return (
+            <GuestCustomerInfo
+              selectedService={state.selectedService}
+              selectedDate={state.selectedDate}
+              selectedSlot={state.selectedSlot}
+              selectedEmployee={state.selectedEmployee}
+              customerName={state.customerName}
+              customerEmail={state.customerEmail}
+              customerPhone={state.customerPhone}
+              notes={state.notes}
+              onCustomerNameChange={(name) => updateState({ customerName: name })}
+              onCustomerEmailChange={(email) => updateState({ customerEmail: email })}
+              onCustomerPhoneChange={(phone) => updateState({ customerPhone: phone })}
+              onNotesChange={handleNotesChange}
+              onBack={() => updateState({ currentStep: 3 })}
+              onConfirm={handleGuestBooking}
+              submitting={state.submitting}
+            />
+          );
+        }
+        // For authenticated users, show confirmation step
         return (
           <ConfirmationStep
             selectedService={state.selectedService}
@@ -205,26 +227,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         );
 
       case 5:
-        // For guest bookings, show customer info form
-        if (config.isGuest) {
-          return (
-            <GuestCustomerInfo
-              selectedService={state.selectedService}
-              selectedDate={state.selectedDate}
-              selectedSlot={state.selectedSlot}
-              selectedEmployee={state.selectedEmployee}
-              customerName={state.customerName}
-              customerEmail={state.customerEmail}
-              notes={state.notes}
-              onCustomerNameChange={(name) => updateState({ customerName: name })}
-              onCustomerEmailChange={(email) => updateState({ customerEmail: email })}
-              onNotesChange={handleNotesChange}
-              onBack={() => updateState({ currentStep: 4 })}
-              onConfirm={handleGuestBooking}
-              submitting={state.submitting}
-            />
-          );
-        }
         return (
           <AuthenticationStep
             isGuest={config.isGuest}
@@ -242,12 +244,9 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   };
 
   const handleNext = () => {
-    if (state.currentStep === 4 && config.isGuest) {
-      updateState({ currentStep: 5 });
-    } else if (state.currentStep === 4) {
+    if (state.currentStep === 4 && !config.isGuest) {
+      // For authenticated users, book directly from confirmation step
       handleBooking();
-    } else if (state.currentStep === 5 && config.isGuest) {
-      handleGuestBooking();
     } else if (canGoNext()) {
       updateState({ currentStep: state.currentStep + 1 });
     }
@@ -295,26 +294,23 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         )}
 
         {/* Next/Confirm Button */}
-        {state.currentStep < config.maxSteps && (
+        {state.currentStep < config.maxSteps && !(config.isGuest && state.currentStep === 4) && (
           <Button
             onClick={handleNext}
             disabled={!canGoNext() || state.submitting}
             className="w-full sm:w-auto"
           >
-            {state.currentStep === 4 ? (
+            {state.currentStep === 4 && !config.isGuest ? (
               <>
                 {state.submitting ? (
                   "Procesando..."
                 ) : (
                   <>
-                    {config.isGuest ? "Continuar" : "Confirmar reserva"}
+                    Confirmar reserva
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </>
                 )}
               </>
-            ) : state.currentStep === 5 && config.isGuest ? (
-              // For guest step 5, show nothing since GuestCustomerInfo handles its own buttons
-              null
             ) : (
               <>
                 Siguiente

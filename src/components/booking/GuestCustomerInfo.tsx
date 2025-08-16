@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { BookableItem, Employee, TimeSlot } from "@/types/booking";
-import { Calendar, Clock, User, Mail, MessageSquare } from "lucide-react";
+import { Calendar, Clock, User, Mail, MessageSquare, Phone } from "lucide-react";
 
 interface GuestCustomerInfoProps {
   selectedService: BookableItem | null;
@@ -13,9 +13,11 @@ interface GuestCustomerInfoProps {
   selectedSlot: TimeSlot | null;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   notes: string;
   onCustomerNameChange: (name: string) => void;
   onCustomerEmailChange: (email: string) => void;
+  onCustomerPhoneChange?: (phone: string) => void;
   onNotesChange: (notes: string) => void;
   onBack: () => void;
   onConfirm: () => void;
@@ -29,15 +31,17 @@ export const GuestCustomerInfo = ({
   selectedSlot,
   customerName,
   customerEmail,
+  customerPhone,
   notes,
   onCustomerNameChange,
   onCustomerEmailChange,
+  onCustomerPhoneChange,
   onNotesChange,
   onBack,
   onConfirm,
   submitting
 }: GuestCustomerInfoProps) => {
-  const canConfirm = customerName.trim() && customerEmail.trim() && customerEmail.includes('@');
+  const canConfirm = customerName.trim() && customerEmail.trim() && customerEmail.includes('@') && customerPhone?.trim();
 
   return (
     <div className="space-y-6">
@@ -123,6 +127,25 @@ export const GuestCustomerInfo = ({
                 Recibirás la confirmación y podrás registrarte para gestionar tus citas
               </p>
             </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="customerPhone">Teléfono *</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="customerPhone"
+                type="tel"
+                value={customerPhone || ''}
+                onChange={(e) => onCustomerPhoneChange?.(e.target.value)}
+                placeholder="+34 600 000 000"
+                className="pl-10"
+                required
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Te contactaremos para confirmar tu cita si es necesario
+            </p>
           </div>
           
           <div>

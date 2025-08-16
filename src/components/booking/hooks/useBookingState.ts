@@ -22,6 +22,7 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
     submitting: false,
     customerEmail: selectedCustomer?.email || "",
     customerName: selectedCustomer?.full_name || "",
+    customerPhone: selectedCustomer?.phone || "",
   });
 
   const updateState = useCallback((updates: Partial<BookingState>) => {
@@ -74,6 +75,7 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
       submitting: false,
       customerEmail: "",
       customerName: "",
+      customerPhone: "",
     });
   }, []);
 
@@ -88,7 +90,7 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
       case 4:
         return true;
       case 5:
-        return !!state.customerName.trim() && !!state.customerEmail.trim() && state.customerEmail.includes('@');
+        return !!state.customerName.trim() && !!state.customerEmail.trim() && state.customerEmail.includes('@') && !!state.customerPhone.trim();
       default:
         return false;
     }

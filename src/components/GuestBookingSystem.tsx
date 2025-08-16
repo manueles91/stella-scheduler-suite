@@ -6,7 +6,7 @@ const guestConfig: BookingConfig = {
   showAuthStep: false,
   allowEmployeeSelection: true,
   showCategories: true,
-  maxSteps: 5, // Service, Date, Time, Confirmation, Customer Info
+  maxSteps: 4, // Service, Date, Time, Customer Info (removed Confirmation as separate step)
 };
 
 export const GuestBookingSystem = () => {
