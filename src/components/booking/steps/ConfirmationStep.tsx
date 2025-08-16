@@ -19,6 +19,8 @@ interface ConfirmationStepProps {
   notes: string;
   formatPrice: (cents: number) => string;
   onNotesChange: (notes: string) => void;
+  onConfirm?: () => void;
+  isSubmitting?: boolean;
 }
 
 export const ConfirmationStep = ({
@@ -29,6 +31,8 @@ export const ConfirmationStep = ({
   notes,
   formatPrice,
   onNotesChange,
+  onConfirm,
+  isSubmitting = false,
 }: ConfirmationStepProps) => {
   // Create calendar event for the booking
   const calendarEvent = selectedService && selectedDate && selectedSlot 

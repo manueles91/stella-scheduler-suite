@@ -107,7 +107,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     };
 
     loadSlots();
-  }, [state.selectedService, state.selectedDate, state.selectedEmployee, fetchAvailableSlots]);
+  }, [state.selectedService?.id, state.selectedDate?.toISOString(), state.selectedEmployee?.id]);
 
   // Define steps based on config
   const getSteps = (): BookingStep[] => {
@@ -223,6 +223,8 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             notes={state.notes}
             formatPrice={formatPrice}
             onNotesChange={handleNotesChange}
+            onConfirm={handleBooking}
+            isSubmitting={state.submitting}
           />
         );
 
