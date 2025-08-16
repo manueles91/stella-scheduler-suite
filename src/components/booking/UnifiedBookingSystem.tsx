@@ -121,6 +121,29 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }
   };
 
+  // Fetch available time slots when service/date/employee changes
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (!state.selectedService || !state.selectedDate) {
+        setAvailableSlots([]);
+        return;
+      }
+      setSlotsLoading(true);
+      try {
+        const slots = await fetchAvailableSlots(
+          state.selectedService,
+          state.selectedDate,
+          state.selectedEmployee
+        );
+        setAvailableSlots(slots);
+      } finally {
+        setSlotsLoading(false);
+      }
+    };
+
+    loadSlots();
+  }, [state.selectedService, state.selectedDate, state.selectedEmployee, fetchAvailableSlots]);
+
   // Render step content based on current step
   const renderStepContent = () => {
     switch (state.currentStep) {
