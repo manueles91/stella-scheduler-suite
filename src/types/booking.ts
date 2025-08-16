@@ -65,7 +65,6 @@ export interface Employee {
   employee_services: {
     service_id: string;
   }[];
-  avatar_url?: string; // Added optional avatar URL for employee/admin profile image
 }
 
 export interface TimeSlot {
@@ -73,7 +72,6 @@ export interface TimeSlot {
   employee_id: string;
   employee_name: string;
   available: boolean;
-  employee_avatar_url?: string; // Added optional image URL to display during slot selection/confirmation
 }
 
 export interface BookingStep {

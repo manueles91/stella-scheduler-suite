@@ -10,7 +10,6 @@ interface Employee {
   id: string;
   full_name: string;
   email: string;
-  avatar_url?: string | null;
 }
 
 interface EmployeeSelectionProps {
@@ -48,8 +47,7 @@ export const EmployeeSelection = ({
             id,
             full_name,
             email,
-            role,
-            avatar_url
+            role
           )
         `)
         .eq('service_id', selectedService.id);
@@ -142,9 +140,6 @@ export const EmployeeSelection = ({
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  {employee.avatar_url && (
-                    <AvatarImage src={employee.avatar_url} alt={employee.full_name} />
-                  )}
                   <AvatarFallback>
                     {employee.full_name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>

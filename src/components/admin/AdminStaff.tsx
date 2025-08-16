@@ -7,10 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Users, Mail, Phone, UserCheck, Upload, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Users, Mail, Phone, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Profile {
   id: string;
   email: string;
@@ -18,7 +17,6 @@ interface Profile {
   phone?: string;
   role: 'client' | 'employee' | 'admin';
   created_at: string;
-  avatar_url?: string | null;
 }
 interface Service {
   id: string;
@@ -45,12 +43,8 @@ export const AdminStaff = () => {
     email: "",
     full_name: "",
     phone: "",
-    role: "employee" as "client" | "employee" | "admin",
-    avatar_url: "" as string | null | "",
+    role: "employee" as "client" | "employee" | "admin"
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const {
     toast
   } = useToast();
@@ -103,45 +97,6 @@ export const AdminStaff = () => {
       setEmployeeServices(data || []);
     }
   };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImageFile(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    } else {
-      setImagePreview(null);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setFormData({ ...formData, avatar_url: "" });
-  };
-
-  const uploadAvatar = async (file: File): Promise<string | null> => {
-    try {
-      setUploadingImage(true);
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `profile-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-      if (uploadError) throw uploadError;
-      const { data: pub } = supabase.storage.from('profile-images').getPublicUrl(fileName);
-      return pub.publicUrl || null;
-    } catch (err) {
-      console.error('Avatar upload failed', err);
-      toast({ title: 'Error', description: 'No se pudo subir la imagen', variant: 'destructive' });
-      return null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.full_name.trim() || !formData.email.trim()) {
@@ -153,22 +108,10 @@ export const AdminStaff = () => {
       return;
     }
     try {
-      let avatarUrlToSave: string | null | "" = formData.avatar_url || editingProfile?.avatar_url || "";
-      if (imageFile) {
-        const uploaded = await uploadAvatar(imageFile);
-        if (uploaded) avatarUrlToSave = uploaded;
-      }
-
       if (editingProfile) {
         const {
           error
-        } = await supabase.from('profiles').update({
-          email: formData.email,
-          full_name: formData.full_name,
-          phone: formData.phone || null,
-          role: formData.role,
-          avatar_url: avatarUrlToSave || null,
-        }).eq('id', editingProfile.id);
+        } = await supabase.from('profiles').update(formData).eq('id', editingProfile.id);
         if (error) throw error;
         toast({
           title: "Éxito",
@@ -200,11 +143,8 @@ export const AdminStaff = () => {
       email: profile.email,
       full_name: profile.full_name,
       phone: profile.phone || "",
-      role: profile.role,
-      avatar_url: profile.avatar_url || "",
+      role: profile.role
     });
-    setImagePreview(profile.avatar_url || null);
-    setImageFile(null);
     setDialogOpen(true);
   };
   const resetForm = () => {
@@ -212,11 +152,8 @@ export const AdminStaff = () => {
       email: "",
       full_name: "",
       phone: "",
-      role: "employee",
-      avatar_url: "",
+      role: "employee"
     });
-    setImageFile(null);
-    setImagePreview(null);
     setEditingProfile(null);
   };
   const openServicesDialog = (employeeId: string) => {
@@ -294,24 +231,6 @@ export const AdminStaff = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  {imagePreview && <AvatarImage src={imagePreview} alt="Vista previa" />}
-                  <AvatarFallback>
-                    {formData.full_name ? formData.full_name.split(' ').map(n => n[0]).join('') : 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Label htmlFor="image">Foto</Label>
-                  <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
-                  {imagePreview && (
-                    <Button type="button" variant="ghost" size="sm" className="mt-1" onClick={removeImage}>
-                      <X className="h-4 w-4 mr-1" /> Quitar
-                    </Button>
-                  )}
-                </div>
-              </div>
-
               <div>
                 <Label htmlFor="full_name">Nombre completo *</Label>
                 <Input id="full_name" value={formData.full_name} onChange={e => setFormData({
@@ -353,17 +272,11 @@ export const AdminStaff = () => {
                 </Select>
               </div>
 
-              {uploadingImage && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Subiendo imagen...
-                </div>
-              )}
-
               <div className="flex gap-2 pt-4">
-                <Button type="submit" className="flex-1" disabled={uploadingImage}>
+                <Button type="submit" className="flex-1">
                   {editingProfile ? "Actualizar" : "Crear"} Empleado
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={uploadingImage}>
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
                 </Button>
               </div>
@@ -406,10 +319,7 @@ export const AdminStaff = () => {
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                    <AvatarFallback className="text-xs">{profile.full_name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
+                  <Users className="h-5 w-5" />
                   <CardTitle className="text-lg">{profile.full_name}</CardTitle>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
