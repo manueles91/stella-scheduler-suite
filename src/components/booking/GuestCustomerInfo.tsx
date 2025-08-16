@@ -3,8 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookableItem, Employee, TimeSlot } from "@/types/booking";
-import { Calendar, Clock, User, Mail, MessageSquare, Phone } from "lucide-react";
+import { Calendar, Clock, User, Mail, MessageSquare, Phone, Sparkles, Package, ArrowLeft } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { formatTime12Hour } from "@/lib/utils";
 
 interface GuestCustomerInfoProps {
   selectedService: BookableItem | null;
@@ -15,6 +20,7 @@ interface GuestCustomerInfoProps {
   customerEmail: string;
   customerPhone?: string;
   notes: string;
+  formatPrice: (cents: number) => string;
   onCustomerNameChange: (name: string) => void;
   onCustomerEmailChange: (email: string) => void;
   onCustomerPhoneChange?: (phone: string) => void;
@@ -33,6 +39,7 @@ export const GuestCustomerInfo = ({
   customerEmail,
   customerPhone,
   notes,
+  formatPrice,
   onCustomerNameChange,
   onCustomerEmailChange,
   onCustomerPhoneChange,
@@ -45,48 +52,108 @@ export const GuestCustomerInfo = ({
 
   return (
     <div className="space-y-6">
-      {/* Booking Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Resumen de tu Cita
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Servicio</Label>
-              <p className="font-medium">{selectedService?.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {Math.floor(selectedService?.duration_minutes || 0)} min • €{((selectedService?.final_price_cents || 0) / 100).toFixed(2)}
-              </p>
-            </div>
-            
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Fecha y Hora</Label>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>{selectedDate?.toLocaleDateString('es-ES')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{selectedSlot?.start_time}</span>
-              </div>
-            </div>
-            
-            {selectedEmployee && (
-              <div className="md:col-span-2">
-                <Label className="text-sm font-medium text-muted-foreground">Profesional</Label>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>{selectedEmployee.full_name}</span>
+      {/* Enhanced Booking Summary - matching ConfirmationStep design */}
+      {selectedService && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Confirma tu reserva</CardTitle>
+            <CardDescription>Revisa los detalles antes de confirmar</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 border rounded-lg space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  {selectedService.type === 'combo' ? (
+                    <Package className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{selectedService.name}</h3>
+                  {selectedService.description && (
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {selectedService.description}
+                    </p>
+                  )}
+                  <div className="mt-2">
+                    <Badge variant={selectedService.type === 'combo' ? 'secondary' : 'outline'}>
+                      {selectedService.type === 'combo' ? 'Combo' : 'Servicio'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Duración:</span>{" "}
+                  {selectedService.duration_minutes} minutos
+                </div>
+                <div>
+                  <span className="font-medium">Precio:</span>{" "}
+                  <span className="font-bold text-primary">
+                    {formatPrice(selectedService.final_price_cents)}
+                  </span>
+                  {selectedService.savings_cents > 0 && (
+                    <span className="ml-2 text-sm text-muted-foreground line-through">
+                      {formatPrice(selectedService.original_price_cents)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium">Fecha:</span>{" "}
+                  {selectedDate && format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
+                </div>
+                <div>
+                  <span className="font-medium">Hora:</span>{" "}
+                  {selectedSlot && formatTime12Hour(selectedSlot.start_time)}
+                </div>
+              </div>
+
+              {selectedService.savings_cents > 0 && (
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-700 dark:text-green-300">
+                      ¡Ahorro de {formatPrice(selectedService.savings_cents)}!
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Enhanced Stylist Card */}
+            {(selectedEmployee || selectedSlot) && (
+              <Card className="border-muted">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                      <AvatarImage 
+                        src={selectedEmployee ? 
+                          `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedEmployee.id}` :
+                          `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedSlot?.employee_id}`
+                        } 
+                      />
+                      <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
+                        {(selectedEmployee?.full_name || selectedSlot?.employee_name || '').split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-lg">Tu Estilista</h4>
+                      <p className="text-primary font-medium">
+                        {selectedEmployee?.full_name || selectedSlot?.employee_name}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Profesional certificado
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Customer Information */}
       <Card>
@@ -172,7 +239,8 @@ export const GuestCustomerInfo = ({
           disabled={submitting}
           className="sm:w-auto"
         >
-          Volver
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Anterior
         </Button>
         
         <Button

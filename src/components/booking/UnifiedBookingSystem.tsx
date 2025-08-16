@@ -203,6 +203,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
               customerEmail={state.customerEmail}
               customerPhone={state.customerPhone}
               notes={state.notes}
+              formatPrice={formatPrice}
               onCustomerNameChange={(name) => updateState({ customerName: name })}
               onCustomerEmailChange={(email) => updateState({ customerEmail: email })}
               onCustomerPhoneChange={(phone) => updateState({ customerPhone: phone })}
