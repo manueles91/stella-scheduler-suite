@@ -2,7 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Calendar, ExternalLink } from "lucide-react";
+import { generateCalendarUrl, formatTime12Hour } from "@/lib/utils";
 import { Sparkles, Package } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -27,12 +30,25 @@ export const ConfirmationStep = ({
   formatPrice,
   onNotesChange,
 }: ConfirmationStepProps) => {
-  const formatTime12Hour = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  const createCalendarEvent = () => {
+    if (!selectedService || !selectedDate || !selectedSlot) return;
+
+    const startDateTime = new Date(selectedDate);
+    const [hours, minutes] = selectedSlot.start_time.split(':');
+    startDateTime.setHours(parseInt(hours), parseInt(minutes));
+    
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setMinutes(endDateTime.getMinutes() + selectedService.duration_minutes);
+
+    const calendarUrl = generateCalendarUrl(
+      `Cita: ${selectedService.name}`,
+      startDateTime,
+      endDateTime,
+      `Servicio: ${selectedService.name}\nEstilista: ${selectedSlot.employee_name}${notes ? `\nNotas: ${notes}` : ''}`,
+      'Salón de Belleza'
+    );
+
+    window.open(calendarUrl, '_blank');
   };
 
   return (
@@ -93,16 +109,22 @@ export const ConfirmationStep = ({
               </div>
             </div>
 
-            {selectedEmployee && (
+            {(selectedEmployee || selectedSlot) && (
               <div className="flex items-center gap-3 pt-2">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage 
+                    src={selectedEmployee ? 
+                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedEmployee.id}` :
+                      `https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/profiles/${selectedSlot?.employee_id}`
+                    } 
+                  />
                   <AvatarFallback className="text-xs">
-                    {selectedEmployee.full_name.split(' ').map(n => n[0]).join('')}
+                    {(selectedEmployee?.full_name || selectedSlot?.employee_name || '').split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <span className="font-medium text-sm">Estilista:</span>{" "}
-                  {selectedEmployee.full_name}
+                  {selectedEmployee?.full_name || selectedSlot?.employee_name}
                 </div>
               </div>
             )}
@@ -129,6 +151,18 @@ export const ConfirmationStep = ({
             onChange={(e) => onNotesChange(e.target.value)}
             className="min-h-[80px]"
           />
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            onClick={createCalendarEvent}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Agregar a calendario
+            <ExternalLink className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
     </Card>

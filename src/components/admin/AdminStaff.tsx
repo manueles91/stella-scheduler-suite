@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Users, Mail, Phone, UserCheck } from "lucide-react";
+import { Plus, Pencil, Users, Mail, Phone, UserCheck, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Profile {
   id: string;
   email: string;
@@ -17,6 +18,7 @@ interface Profile {
   phone?: string;
   role: 'client' | 'employee' | 'admin';
   created_at: string;
+  image_url?: string;
 }
 interface Service {
   id: string;
@@ -45,6 +47,7 @@ export const AdminStaff = () => {
     phone: "",
     role: "employee" as "client" | "employee" | "admin"
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
   const {
     toast
   } = useToast();
@@ -146,6 +149,44 @@ export const AdminStaff = () => {
       role: profile.role
     });
     setDialogOpen(true);
+  };
+
+  const handleImageUpload = async (file: File, profileId: string) => {
+    setUploadingImage(true);
+    try {
+      const fileName = `profiles/${profileId}`;
+      const { error: uploadError } = await supabase.storage
+        .from('service-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('service-images')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ image_url: publicUrl } as any)
+        .eq('id', profileId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Éxito",
+        description: "Imagen actualizada correctamente"
+      });
+      
+      fetchProfiles();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al subir la imagen",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
   };
   const resetForm = () => {
     setFormData({
@@ -318,8 +359,28 @@ export const AdminStaff = () => {
         {profiles.map(profile => <Card key={profile.id}>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={profile.image_url} />
+                      <AvatarFallback>
+                        {profile.full_name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors">
+                      <Upload className="h-3 w-3" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, profile.id);
+                        }}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  </div>
                   <CardTitle className="text-lg">{profile.full_name}</CardTitle>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>

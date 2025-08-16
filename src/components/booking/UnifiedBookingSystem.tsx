@@ -20,6 +20,7 @@ import { DateSelectionStep } from "./steps/DateSelectionStep";
 import { TimeSlotSelectionStep } from "./steps/TimeSlotSelectionStep";
 import { ConfirmationStep } from "./steps/ConfirmationStep";
 import { AuthenticationStep } from "./steps/AuthenticationStep";
+import { GuestCustomerInfo } from "./GuestCustomerInfo";
 
 // Import hooks
 import { useBookingState } from "./hooks/useBookingState";
@@ -204,6 +205,26 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         );
 
       case 5:
+        // For guest bookings, show customer info form
+        if (config.isGuest) {
+          return (
+            <GuestCustomerInfo
+              selectedService={state.selectedService}
+              selectedDate={state.selectedDate}
+              selectedSlot={state.selectedSlot}
+              selectedEmployee={state.selectedEmployee}
+              customerName={state.customerName}
+              customerEmail={state.customerEmail}
+              notes={state.notes}
+              onCustomerNameChange={(name) => updateState({ customerName: name })}
+              onCustomerEmailChange={(email) => updateState({ customerEmail: email })}
+              onNotesChange={handleNotesChange}
+              onBack={() => updateState({ currentStep: 4 })}
+              onConfirm={handleGuestBooking}
+              submitting={state.submitting}
+            />
+          );
+        }
         return (
           <AuthenticationStep
             isGuest={config.isGuest}
@@ -292,7 +313,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
                 )}
               </>
             ) : state.currentStep === 5 && config.isGuest ? (
-              // This case is handled by GuestCustomerInfo component's onConfirm
+              // For guest step 5, show nothing since GuestCustomerInfo handles its own buttons
               null
             ) : (
               <>
