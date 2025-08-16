@@ -149,7 +149,7 @@ export const useBookingData = () => {
           service_id
         )
       `)
-      .eq('role', 'employee')
+      .in('role', ['employee', 'admin'])
       .order('full_name');
 
     if (error) {

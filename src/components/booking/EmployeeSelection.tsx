@@ -46,7 +46,8 @@ export const EmployeeSelection = ({
           profiles (
             id,
             full_name,
-            email
+            email,
+            role
           )
         `)
         .eq('service_id', selectedService.id);
@@ -63,7 +64,8 @@ export const EmployeeSelection = ({
 
       const employeeProfiles = data
         ?.map(item => item.profiles)
-        .filter(Boolean) as Employee[];
+        .filter(Boolean)
+        .filter((p: any) => p.role === 'employee' || p.role === 'admin') as Employee[];
 
       setEmployees(employeeProfiles || []);
     } catch (error) {
