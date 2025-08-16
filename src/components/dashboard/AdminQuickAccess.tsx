@@ -92,7 +92,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'employee')
+        .in('role', ['employee', 'admin'])
         .eq('account_status', 'active')
         .order('full_name');
       if (error) throw error;

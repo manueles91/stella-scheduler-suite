@@ -634,7 +634,7 @@ const getStatusText = (status: string) => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Editar
                                 </DropdownMenuItem>
-                                {user.role === 'employee' && (
+                                {(user.role === 'employee' || user.role === 'admin') && (
                                   <DropdownMenuItem onClick={() => openServicesDialog(user.id)}>
                                     <UserCheck className="h-4 w-4 mr-2" />
                                     Servicios
@@ -669,7 +669,7 @@ const getStatusText = (status: string) => {
       <Dialog open={servicesDialogOpen} onOpenChange={setServicesDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Gestionar Servicios del Empleado</DialogTitle>
+            <DialogTitle>Gestionar Servicios</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
