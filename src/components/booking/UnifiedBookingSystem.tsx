@@ -81,6 +81,33 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   
   const { selectedCategory, setSelectedCategory } = useBookingContext();
 
+  // Fetch available slots when service, date, or employee changes
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (state.selectedService && state.selectedDate) {
+        setSlotsLoading(true);
+        try {
+          const slots = await fetchAvailableSlots(
+            state.selectedService, 
+            state.selectedDate, 
+            state.selectedEmployee
+          );
+          setAvailableSlots(slots);
+        } catch (error) {
+          console.error('Error loading available slots:', error);
+          setAvailableSlots([]);
+        } finally {
+          setSlotsLoading(false);
+        }
+      } else {
+        setAvailableSlots([]);
+        setSlotsLoading(false);
+      }
+    };
+
+    loadSlots();
+  }, [state.selectedService, state.selectedDate, state.selectedEmployee, fetchAvailableSlots]);
+
   // Define steps based on config
   const getSteps = (): BookingStep[] => {
     if (config.isGuest) {
