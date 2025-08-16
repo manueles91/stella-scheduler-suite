@@ -95,6 +95,7 @@ export const apiService = {
         .select(`
           id,
           full_name,
+          avatar_url,
           employee_services (
             service_id
           )

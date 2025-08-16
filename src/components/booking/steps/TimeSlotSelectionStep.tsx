@@ -27,7 +27,7 @@ export const TimeSlotSelectionStep = ({
         <CardTitle>Elige tu horario</CardTitle>
         <CardDescription>
           Horarios disponibles para {selectedService?.name} el{" "}
-          {selectedDate && format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
+          {selectedDate && format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}. Los horarios se muestran en formato 12h y agrupados por estilista.
         </CardDescription>
       </CardHeader>
       <CardContent>

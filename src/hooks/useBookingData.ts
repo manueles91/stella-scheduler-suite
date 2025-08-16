@@ -145,6 +145,7 @@ export const useBookingData = () => {
       .select(`
         id,
         full_name,
+        avatar_url,
         employee_services (
           service_id
         )
@@ -178,8 +179,8 @@ export const useBookingData = () => {
   const processBookableItems = (): BookableItem[] => {
     const items: BookableItem[] = [];
 
-
-
+    
+    
     // Process services with discounts
     services.forEach(service => {
       const serviceDiscounts = discounts.filter(d => d.service_id === service.id);
@@ -206,7 +207,7 @@ export const useBookingData = () => {
         savings_cents: savings,
       };
 
-
+      
       items.push(serviceItem);
     });
 
@@ -229,8 +230,8 @@ export const useBookingData = () => {
         combo_services: combo.combo_services,
       };
 
-
-
+      
+      
       items.push(comboItem);
     });
 
@@ -350,6 +351,7 @@ export const useBookingData = () => {
                 employee_id: employee.id,
                 employee_name: employee.full_name,
                 available: true,
+                employee_avatar_url: (employee as any).avatar_url,
               });
             }
           }
