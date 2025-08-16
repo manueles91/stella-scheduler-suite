@@ -412,6 +412,8 @@ export type Database = {
           invite_token: string | null
           invited_at: string
           invited_by: string
+          is_guest_user: boolean | null
+          last_booking_date: string | null
           notes: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -427,6 +429,8 @@ export type Database = {
           invite_token?: string | null
           invited_at?: string
           invited_by: string
+          is_guest_user?: boolean | null
+          last_booking_date?: string | null
           notes?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -442,6 +446,8 @@ export type Database = {
           invite_token?: string | null
           invited_at?: string
           invited_by?: string
+          is_guest_user?: boolean | null
+          last_booking_date?: string | null
           notes?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -495,6 +501,7 @@ export type Database = {
           employee_id: string | null
           end_time: string
           final_price_cents: number | null
+          guest_user_id: string | null
           id: string
           is_guest_booking: boolean | null
           notes: string | null
@@ -514,6 +521,7 @@ export type Database = {
           employee_id?: string | null
           end_time: string
           final_price_cents?: number | null
+          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -533,6 +541,7 @@ export type Database = {
           employee_id?: string | null
           end_time?: string
           final_price_cents?: number | null
+          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -562,6 +571,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_guest_user_id_fkey"
+            columns: ["guest_user_id"]
+            isOneToOne: false
+            referencedRelation: "invited_users"
             referencedColumns: ["id"]
           },
           {

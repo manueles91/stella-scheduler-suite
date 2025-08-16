@@ -62,9 +62,7 @@ export const useBookingHandlers = ({
           start_time: startTime,
           end_time: endTime,
           notes: bookingNotes || null,
-          original_price_cents: service.original_price_cents,
-          final_price_cents: service.final_price_cents,
-          savings_cents: service.savings_cents
+          final_price_cents: service.final_price_cents
         })) || [];
 
         const { error } = await supabase
@@ -89,10 +87,7 @@ export const useBookingHandlers = ({
             start_time: startTime,
             end_time: endTime,
             notes: bookingNotes || null,
-            applied_discount_id: service.appliedDiscount?.id,
-            original_price_cents: service.original_price_cents,
-            final_price_cents: service.final_price_cents,
-            savings_cents: service.savings_cents
+            final_price_cents: service.final_price_cents
           });
 
         if (error) throw error;
@@ -142,9 +137,7 @@ export const useBookingHandlers = ({
           start_time: startTime,
           end_time: endTime,
           notes: state.notes || null,
-          original_price_cents: state.selectedService.original_price_cents,
-          final_price_cents: state.selectedService.final_price_cents,
-          savings_cents: state.selectedService.savings_cents
+          final_price_cents: state.selectedService.final_price_cents
         })) || [];
 
         const { error } = await supabase
@@ -169,10 +162,7 @@ export const useBookingHandlers = ({
             start_time: startTime,
             end_time: endTime,
             notes: state.notes || null,
-            applied_discount_id: state.selectedService.appliedDiscount?.id,
-            original_price_cents: state.selectedService.original_price_cents,
-            final_price_cents: state.selectedService.final_price_cents,
-            savings_cents: state.selectedService.savings_cents
+            final_price_cents: state.selectedService.final_price_cents
           });
 
         if (error) throw error;
@@ -212,10 +202,51 @@ export const useBookingHandlers = ({
     );
 
     try {
+      // First, check if guest user exists or create new one
+      let guestUserId;
+      
+      // Check for existing guest user by email
+      const { data: existingGuest } = await supabase
+        .from('invited_users')
+        .select('id')
+        .eq('email', state.customerEmail)
+        .eq('is_guest_user', true)
+        .maybeSingle();
+
+      if (existingGuest) {
+        guestUserId = existingGuest.id;
+        
+        // Update last booking date
+        await supabase
+          .from('invited_users')
+          .update({ last_booking_date: new Date().toISOString() })
+          .eq('id', guestUserId);
+      } else {
+        // Create new guest user
+        const { data: newGuest, error: guestError } = await supabase
+          .from('invited_users')
+          .insert({
+            email: state.customerEmail,
+            full_name: state.customerName,
+            phone: state.customerPhone || null,
+            role: 'client',
+            is_guest_user: true,
+            last_booking_date: new Date().toISOString(),
+            invited_by: null,
+            account_status: 'guest'
+          })
+          .select('id')
+          .single();
+
+        if (guestError) throw guestError;
+        guestUserId = newGuest.id;
+      }
+
       const { error } = await supabase
         .from('reservations')
         .insert({
           client_id: null,
+          guest_user_id: guestUserId,
           employee_id: state.selectedSlot.employee_id,
           service_id: state.selectedService.id,
           appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
@@ -225,7 +256,8 @@ export const useBookingHandlers = ({
           customer_email: state.customerEmail,
           customer_name: state.customerName,
           is_guest_booking: true,
-          status: 'confirmed'
+          status: 'confirmed',
+          final_price_cents: state.selectedService.final_price_cents
         });
 
       if (error) throw error;
