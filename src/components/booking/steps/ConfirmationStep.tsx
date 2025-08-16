@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,6 +150,26 @@ export const ConfirmationStep = ({
         {calendarEvent && (
           <div className="flex justify-center">
             <CalendarAddButton event={calendarEvent} />
+          </div>
+        )}
+
+        {onConfirm && (
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={onConfirm}
+              disabled={isSubmitting}
+              size="lg"
+              className="min-w-[200px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  Procesando...
+                </>
+              ) : (
+                "Confirmar reserva"
+              )}
+            </Button>
           </div>
         )}
       </CardContent>
