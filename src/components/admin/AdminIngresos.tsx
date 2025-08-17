@@ -87,7 +87,8 @@ export const AdminIngresos = () => {
 
   const completedInWindow = useMemo(() => {
     return reservations.filter((r) => {
-      if (r.status !== "completed") return false;
+      // Include both completed and confirmed reservations for revenue analysis
+      if (r.status !== "completed" && r.status !== "confirmed") return false;
       return r.appointment_date >= timeframeStartStr;
     });
   }, [reservations, timeframeStartStr]);
@@ -120,9 +121,9 @@ export const AdminIngresos = () => {
 
     const identifierFor = (r: ReservationLite) => r.client_id || r.client_email || r.id;
 
-    // Consider all completed in our fetch window, not only timeframe, to detect prior history
+    // Consider all completed and confirmed reservations for retention analysis
     const allCompletedSorted = [...reservations]
-      .filter((r) => r.status === "completed")
+      .filter((r) => r.status === "completed" || r.status === "confirmed")
       .sort((a, b) => a.appointment_date.localeCompare(b.appointment_date));
 
     for (const r of allCompletedSorted) {
@@ -339,6 +340,9 @@ export const AdminIngresos = () => {
       <Card>
         <CardHeader>
           <CardTitle>Ingresos Recientes</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Incluye citas completadas y confirmadas de los últimos {daysWindow} días
+          </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -368,8 +372,11 @@ export const AdminIngresos = () => {
                     <div className="font-semibold text-green-600">
                       {formatCRC(reservation.service_price_cents)}
                     </div>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      Completado
+                    <Badge 
+                      variant={reservation.status === "completed" ? "secondary" : "outline"} 
+                      className="text-xs mt-1"
+                    >
+                      {reservation.status === "completed" ? "Completado" : "Confirmado"}
                     </Badge>
                   </div>
                 </div>
