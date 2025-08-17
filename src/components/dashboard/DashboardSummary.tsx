@@ -38,6 +38,7 @@ export const DashboardSummary = ({
         .from('discounts')
         .select('*, services(id, name, description, duration_minutes, price_cents, image_url)')
         .eq('is_active', true)
+        .eq('is_public', true) // Only fetch public discounts
         .lte('start_date', nowISO)
         .gte('end_date', nowISO)
         .limit(3);

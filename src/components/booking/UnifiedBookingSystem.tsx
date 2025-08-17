@@ -112,11 +112,19 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   useEffect(() => {
     const serviceId = searchParams.get('service');
     
-    if (serviceId && filteredBookableItems.length > 0 && !state.selectedService) {
-      // Find the service by ID
-      const service = filteredBookableItems.find(item => item.id === serviceId);
+    if (serviceId && !state.selectedService) {
+      // First try to find the service in all bookable items
+      const service = allBookableItems.find(item => item.id === serviceId);
       
       if (service) {
+        // Set the category based on the pre-selected service
+        if (service.type === 'service' && service.category_id) {
+          setSelectedCategory(service.category_id);
+        } else if (service.type === 'combo') {
+          // For combos, set category to 'promociones' since they're promotional items
+          setSelectedCategory('promociones');
+        }
+        
         // Set the selected service and go directly to step 2 (date selection)
         // since step 1 is service selection and we're pre-selecting the service
         const tomorrow = new Date();
@@ -129,7 +137,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         });
       }
     }
-  }, [searchParams, filteredBookableItems, state.selectedService, updateState]);
+  }, [searchParams, allBookableItems, state.selectedService, updateState, setSelectedCategory]);
 
   // Fetch available slots when service, date, or employee changes
   useEffect(() => {

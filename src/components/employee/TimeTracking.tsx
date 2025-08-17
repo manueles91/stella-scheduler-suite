@@ -387,8 +387,10 @@ export const TimeTracking = ({
     if (!effectiveEmployeeId) return;
     setLoading(true);
     try {
-      // Build query - admins see all reservations, employees see only their own
-      let query = supabase.from('reservations').select(`
+      // Use the employee_calendar_view for better performance and reliability
+      const { data, error } = await supabase
+        .from('employee_calendar_view')
+        .select(`
           id,
           appointment_date,
           start_time,
@@ -396,31 +398,28 @@ export const TimeTracking = ({
           status,
           notes,
           employee_id,
-          profiles!reservations_client_id_fkey(full_name),
-          employee_profile:profiles!reservations_employee_id_fkey(full_name),
-          services(name)
-        `).gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd')).lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
+          client_name,
+          service_name
+        `)
+        .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
+        .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
+        .order('appointment_date')
+        .order('start_time');
 
-      // If not admin, filter by employee_id
-      if (profile?.role !== 'admin') {
-        query = query.eq('employee_id', effectiveEmployeeId);
-      }
-      const {
-        data,
-        error
-      } = await query.order('appointment_date').order('start_time');
       if (error) throw error;
+      
       const formattedAppointments = data?.map(appointment => ({
         id: appointment.id,
-        client_name: appointment.profiles?.full_name || 'Cliente',
-        employee_name: appointment.employee_profile?.full_name || 'Empleado',
-        service_name: appointment.services?.name || 'Servicio',
+        client_name: appointment.client_name || 'Cliente',
+        employee_name: 'Empleado', // This will be the current employee
+        service_name: appointment.service_name || 'Servicio',
         appointment_date: appointment.appointment_date,
         start_time: appointment.start_time,
         end_time: appointment.end_time,
         status: appointment.status,
         notes: appointment.notes
       })) || [];
+      
       setAppointments(formattedAppointments);
     } catch (error) {
       toast({
@@ -816,4 +815,821 @@ export const TimeTracking = ({
         </DialogContent>
       </Dialog>
     </div>;
+};
+      } = await query.order('appointment_date').order('start_time');
+
+      if (error) throw error;
+
+      const formattedAppointments = data?.map(appointment => ({
+
+        id: appointment.id,
+
+        client_name: appointment.profiles?.full_name || 'Cliente',
+
+        employee_name: appointment.employee_profile?.full_name || 'Empleado',
+
+        service_name: appointment.services?.name || 'Servicio',
+
+        appointment_date: appointment.appointment_date,
+
+        start_time: appointment.start_time,
+
+        end_time: appointment.end_time,
+
+        status: appointment.status,
+
+        notes: appointment.notes
+
+      })) || [];
+
+      setAppointments(formattedAppointments);
+
+    } catch (error) {
+
+      toast({
+
+        title: "Error",
+
+        description: "Error al cargar las citas",
+
+        variant: "destructive"
+
+      });
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  const fetchBlockedTimes = async () => {
+
+    if (!effectiveEmployeeId) return;
+
+    try {
+
+      // Build query - admins see all blocked times, employees see only their own
+
+      let query = supabase.from('blocked_times').select('*').gte('date', format(startOfDay(selectedDate), 'yyyy-MM-dd')).lte('date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
+
+
+
+      // If not admin, filter by employee_id
+
+      if (profile?.role !== 'admin') {
+
+        query = query.eq('employee_id', effectiveEmployeeId);
+
+      }
+
+      const {
+
+        data,
+
+        error
+
+      } = await query.order('date').order('start_time');
+
+      if (error) {
+
+        console.error('Blocked times fetch error:', error);
+
+        // If table doesn't exist or other error, just set empty array
+
+        setBlockedTimes([]);
+
+        return;
+
+      }
+
+      setBlockedTimes(data || []);
+
+      console.log('Blocked times loaded successfully:', data?.length || 0, 'entries');
+
+    } catch (error) {
+
+      console.error('Error fetching blocked times:', error);
+
+      setBlockedTimes([]);
+
+    }
+
+  };
+
+  const createBlockedTime = async () => {
+
+    if (!effectiveEmployeeId) return;
+
+
+
+    // Validate times before saving
+
+    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+
+      toast({
+
+        title: "Error",
+
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+
+        variant: "destructive"
+
+      });
+
+      return;
+
+    }
+
+    try {
+
+      const {
+
+        error
+
+      } = await supabase.from('blocked_times').insert({
+
+        employee_id: effectiveEmployeeId,
+
+        date: blockTimeForm.date,
+
+        start_time: blockTimeForm.start_time,
+
+        end_time: blockTimeForm.end_time,
+
+        reason: blockTimeForm.reason || 'Tiempo bloqueado',
+
+        is_recurring: blockTimeForm.is_recurring
+
+      });
+
+      if (error) {
+
+        console.error('Error creating blocked time:', error);
+
+        throw error;
+
+      }
+
+      toast({
+
+        title: "Éxito",
+
+        description: "Tiempo bloqueado correctamente"
+
+      });
+
+      setDialogOpen(false);
+
+      fetchBlockedTimes();
+
+      resetBlockTimeForm();
+
+    } catch (error: any) {
+
+      console.error('Blocked time creation error:', error);
+
+      let errorMessage = "Error al bloquear el tiempo";
+
+      if (error.message?.includes('blocked_times')) {
+
+        errorMessage = "Error en la base de datos. Contacte al administrador.";
+
+      }
+
+      toast({
+
+        title: "Error",
+
+        description: errorMessage,
+
+        variant: "destructive"
+
+      });
+
+    }
+
+  };
+
+
+
+  const updateBlockedTime = async () => {
+
+    if (!editingBlockedTime) return;
+
+
+
+    // Validate times before saving
+
+    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+
+      toast({
+
+        title: "Error",
+
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+
+        variant: "destructive"
+
+      });
+
+      return;
+
+    }
+
+    try {
+
+      const { error } = await supabase.from('blocked_times').update({
+
+        date: blockTimeForm.date,
+
+        start_time: blockTimeForm.start_time,
+
+        end_time: blockTimeForm.end_time,
+
+        reason: blockTimeForm.reason || 'Tiempo bloqueado',
+
+        is_recurring: blockTimeForm.is_recurring
+
+      }).eq('id', editingBlockedTime.id);
+
+      
+
+      if (error) throw error;
+
+      toast({
+
+        title: "Éxito",
+
+        description: "Tiempo bloqueado actualizado correctamente"
+
+      });
+
+      setDialogOpen(false);
+
+      fetchBlockedTimes();
+
+    } catch (error) {
+
+      toast({
+
+        title: "Error",
+
+        description: "Error al actualizar el tiempo bloqueado",
+
+        variant: "destructive"
+
+      });
+
+    }
+
+  };
+
+  const deleteBlockedTime = async (id: string) => {
+
+    try {
+
+      const {
+
+        error
+
+      } = await supabase.from('blocked_times').delete().eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+
+        title: "Éxito",
+
+        description: "Tiempo desbloqueado correctamente"
+
+      });
+
+      fetchBlockedTimes();
+
+    } catch (error) {
+
+      toast({
+
+        title: "Error",
+
+        description: "Error al desbloquear el tiempo",
+
+        variant: "destructive"
+
+      });
+
+    }
+
+  };
+
+  const resetBlockTimeForm = () => {
+
+    setBlockTimeForm({
+
+      date: format(selectedDate, 'yyyy-MM-dd'),
+
+      start_time: '09:00',
+
+      end_time: '10:00',
+
+      reason: '',
+
+      is_recurring: false
+
+    });
+
+  };
+
+  const getSelectedDateAppointments = () => {
+
+    return appointments.filter(appointment => isSameDay(parseISO(appointment.appointment_date), selectedDate));
+
+  };
+
+  const getSelectedDateBlockedTimes = () => {
+
+    return blockedTimes.filter(blocked => isSameDay(parseISO(blocked.date), selectedDate));
+
+  };
+
+  const getStatusColor = (status: string) => {
+
+    switch (status) {
+
+      case 'confirmed':
+
+        return 'bg-green-100 text-green-800';
+
+      case 'cancelled':
+
+        return 'bg-red-100 text-red-800';
+
+      case 'completed':
+
+        return 'bg-blue-100 text-blue-800';
+
+      case 'no_show':
+
+        return 'bg-gray-100 text-gray-800';
+
+      default:
+
+        return 'bg-gray-100 text-gray-800';
+
+    }
+
+  };
+
+  const getStatusText = (status: string) => {
+
+    switch (status) {
+
+      case 'confirmed':
+
+        return 'Confirmada';
+
+      case 'cancelled':
+
+        return 'Cancelada';
+
+      case 'completed':
+
+        return 'Completada';
+
+      case 'no_show':
+
+        return 'No asistió';
+
+      default:
+
+        return status;
+
+    }
+
+  };
+
+  if (loading) {
+
+    return <div className="space-y-4">
+
+        <h2 className="text-3xl font-serif font-bold">Agenda y Horarios</h2>
+
+        <div className="text-center py-8">Cargando agenda...</div>
+
+      </div>;
+
+  }
+
+  const selectedDateAppointments = getSelectedDateAppointments();
+
+  const selectedDateBlockedTimes = getSelectedDateBlockedTimes();
+
+  return <div className="space-y-6">
+
+      <div className="flex items-center justify-between">
+
+        <div className="flex items-center gap-2">
+
+          <CalendarIcon className="h-8 w-8" />
+
+          <h2 className="text-3xl font-serif font-bold">Mi Agenda</h2>
+
+        </div>
+
+        <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+
+          <DialogTrigger asChild>
+
+            <Button variant="outline" className="flex items-center gap-2">
+
+              <Clock className="h-4 w-4" />
+
+              Mi Horario
+
+            </Button>
+
+          </DialogTrigger>
+
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+
+            <DialogHeader>
+
+              <DialogTitle>Mi Horario</DialogTitle>
+
+            </DialogHeader>
+
+            <EmployeeSchedule employeeId={effectiveEmployeeId} />
+
+          </DialogContent>
+
+        </Dialog>
+
+      </div>
+
+
+
+      {/* Render only calendar view (daily view) */}
+
+      {renderCalendarView()}
+
+
+
+      {/* Dialog for calendar view */}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
+        <DialogContent className="sm:max-w-[425px]">
+
+          <DialogHeader>
+
+            <DialogTitle>
+
+              {dialogType === 'appointment' ? 
+
+                (editMode ? 'Editar Cita' : 'Nueva Cita') : 
+
+                (editMode ? 'Editar Tiempo Bloqueado' : 'Bloquear Tiempo')
+
+              }
+
+            </DialogTitle>
+
+          </DialogHeader>
+
+          
+
+          {dialogType === 'appointment' ? <div className="space-y-4">
+
+              <div>
+
+                <Label htmlFor="client">Cliente</Label>
+
+                <Select value={appointmentForm.client_id} onValueChange={value => setAppointmentForm({
+
+              ...appointmentForm,
+
+              client_id: value
+
+            })}>
+
+                  <SelectTrigger>
+
+                    <SelectValue placeholder="Seleccionar cliente" />
+
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {clients.map(client => <SelectItem key={client.id} value={client.id}>
+
+                        {client.full_name}
+
+                      </SelectItem>)}
+
+                  </SelectContent>
+
+                </Select>
+
+              </div>
+
+
+
+              <div>
+
+                <Label htmlFor="service">Servicio</Label>
+
+                <Select value={appointmentForm.service_id} onValueChange={value => setAppointmentForm({
+
+              ...appointmentForm,
+
+              service_id: value
+
+            })}>
+
+                  <SelectTrigger>
+
+                    <SelectValue placeholder="Seleccionar servicio" />
+
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {services.map(service => <SelectItem key={service.id} value={service.id}>
+
+                        {service.name} ({service.duration_minutes} min)
+
+                      </SelectItem>)}
+
+                  </SelectContent>
+
+                </Select>
+
+              </div>
+
+
+
+              <div>
+
+                <Label htmlFor="date">Fecha</Label>
+
+                <Input id="date" type="date" value={appointmentForm.date} onChange={e => setAppointmentForm({
+
+              ...appointmentForm,
+
+              date: e.target.value
+
+            })} />
+
+              </div>
+
+
+
+              <div>
+
+                <Label htmlFor="start_time">Hora de inicio</Label>
+
+                <Select value={appointmentForm.start_time} onValueChange={value => setAppointmentForm({
+
+              ...appointmentForm,
+
+              start_time: value
+
+            })}>
+
+                  <SelectTrigger>
+
+                    <SelectValue />
+
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {TIME_SLOTS.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+
+                  </SelectContent>
+
+                </Select>
+
+              </div>
+
+
+
+              <div>
+
+                <Label htmlFor="notes">Notas</Label>
+
+                <Textarea id="notes" placeholder="Notas adicionales..." value={appointmentForm.notes} onChange={e => setAppointmentForm({
+
+              ...appointmentForm,
+
+              notes: e.target.value
+
+            })} />
+
+              </div>
+
+
+
+              <div className="flex gap-2">
+
+                <Button onClick={editMode ? updateAppointment : createAppointment} className="flex-1">
+
+                  {editMode ? 'Actualizar Cita' : 'Crear Cita'}
+
+                </Button>
+
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+
+                  Cancelar
+
+                </Button>
+
+              </div>
+
+            </div> : <div className="space-y-4">
+
+              <div>
+
+                <Label htmlFor="block_date">Fecha</Label>
+
+                <Input id="block_date" type="date" value={blockTimeForm.date} onChange={e => setBlockTimeForm({
+
+              ...blockTimeForm,
+
+              date: e.target.value
+
+            })} />
+
+              </div>
+
+
+
+              <div className="grid grid-cols-2 gap-4">
+
+                <div>
+
+                  <Label htmlFor="block_start">Hora de inicio</Label>
+
+                  <Select value={blockTimeForm.start_time} onValueChange={value => setBlockTimeForm({
+
+                ...blockTimeForm,
+
+                start_time: value
+
+              })}>
+
+                    <SelectTrigger>
+
+                      <SelectValue />
+
+                    </SelectTrigger>
+
+                    <SelectContent>
+
+                      {TIME_SLOTS.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+
+                    </SelectContent>
+
+                  </Select>
+
+                </div>
+
+
+
+                <div>
+
+                  <Label htmlFor="block_end">Hora de fin</Label>
+
+                  <Select value={blockTimeForm.end_time} onValueChange={value => setBlockTimeForm({
+
+                ...blockTimeForm,
+
+                end_time: value
+
+              })}>
+
+                    <SelectTrigger>
+
+                      <SelectValue />
+
+                    </SelectTrigger>
+
+                    <SelectContent>
+
+                      {TIME_SLOTS.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+
+                    </SelectContent>
+
+                  </Select>
+
+                </div>
+
+              </div>
+
+
+
+              <div>
+
+                <Label htmlFor="reason">Motivo</Label>
+
+                <Textarea id="reason" placeholder="Ej: Reunión, descanso, formación..." value={blockTimeForm.reason} onChange={e => setBlockTimeForm({
+
+              ...blockTimeForm,
+
+              reason: e.target.value
+
+            })} />
+
+              </div>
+
+
+
+              <div className="flex gap-2">
+
+                <Button onClick={editMode ? updateBlockedTime : createBlockedTime} className="flex-1">
+
+                  {editMode ? 'Actualizar Tiempo Bloqueado' : 'Bloquear Tiempo'}
+
+                </Button>
+
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+
+                  Cancelar
+
+                </Button>
+
+              </div>
+
+            </div>}
+
+        </DialogContent>
+
+      </Dialog>
+
+
+
+      {/* Type Picker Dialog */}
+
+      <Dialog open={showTypePicker} onOpenChange={setShowTypePicker}>
+
+        <DialogContent className="sm:max-w-[300px]">
+
+          <DialogHeader>
+
+            <DialogTitle>Seleccionar Acción</DialogTitle>
+
+          </DialogHeader>
+
+          <div className="space-y-4">
+
+            <p className="text-sm text-muted-foreground">
+
+              ¿Qué te gustaría hacer a las {selectedTimeSlot}?
+
+            </p>
+
+            <div className="grid grid-cols-1 gap-2">
+
+              <Button 
+
+                onClick={() => openDialog('appointment', selectedTimeSlot)}
+
+                className="flex items-center gap-2"
+
+              >
+
+                <User className="h-4 w-4" />
+
+                Nueva Cita
+
+              </Button>
+
+              <Button 
+
+                onClick={() => openDialog('block', selectedTimeSlot)}
+
+                variant="secondary"
+
+                className="flex items-center gap-2"
+
+              >
+
+                <Shield className="h-4 w-4" />
+
+                Bloquear Tiempo
+
+              </Button>
+
+            </div>
+
+          </div>
+
+        </DialogContent>
+
+      </Dialog>
+
+    </div>;
+
 };

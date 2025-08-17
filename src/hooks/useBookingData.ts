@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Service, Employee, TimeSlot, Combo, Discount, BookableItem } from "@/types/booking";
 import { format, addMinutes, parseISO, isSameDay, isAfter } from "date-fns";
 import { useBookingContext } from "@/contexts/BookingContext";
+import { useSearchParams } from "react-router-dom";
+
 export const useBookingData = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [combos, setCombos] = useState<Combo[]>([]);
@@ -14,6 +16,7 @@ export const useBookingData = () => {
   const [loading, setLoading] = useState(false);
   const { selectedCategory, setSelectedCategory } = useBookingContext();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetchServices();
@@ -22,6 +25,14 @@ export const useBookingData = () => {
     fetchEmployees();
     fetchCategories();
   }, []);
+
+  // Set default category to 'promociones' only if no service is pre-selected
+  useEffect(() => {
+    const serviceId = searchParams.get('service');
+    if (!serviceId && !selectedCategory && categories.length > 0) {
+      setSelectedCategory('promociones');
+    }
+  }, [searchParams, selectedCategory, categories, setSelectedCategory]);
 
   // Process services and combos into bookable items with discounts
   useEffect(() => {
@@ -132,6 +143,7 @@ export const useBookingData = () => {
       .from('discounts')
       .select('*')
       .eq('is_active', true)
+      .eq('is_public', true) // Only fetch public discounts
       .lte('start_date', nowISO)
       .gte('end_date', nowISO)
       .order('created_at', { ascending: false });

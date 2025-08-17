@@ -45,15 +45,18 @@ export const AdminIngresos = () => {
       const startDate = subDays(new Date(), daysWindow + 60); // include lookback for retention context
       const startStr = format(startDate, "yyyy-MM-dd");
 
+      // Use the admin_reservations_view for better performance and reliability
       const { data, error } = await supabase
-        .from("reservations")
+        .from("admin_reservations_view")
         .select(`
           id,
           appointment_date,
           status,
           client_id,
-          customer_email,
-          services(price_cents, category_id, service_categories(name))
+          client_email,
+          service_name,
+          service_price_cents,
+          category_name
         `)
         .gte("appointment_date", startStr)
         .order("appointment_date", { ascending: true });
@@ -63,7 +66,23 @@ export const AdminIngresos = () => {
         console.error("Error loading reservations for ingresos dashboard:", error);
         setReservations([]);
       } else {
-        setReservations((data as unknown as ReservationLite[]) || []);
+        // Transform the data to match the expected interface
+        const transformedData = data?.map(item => ({
+          id: item.id,
+          appointment_date: item.appointment_date,
+          status: item.status,
+          client_id: item.client_id,
+          customer_email: item.client_email,
+          services: {
+            price_cents: item.service_price_cents || 0,
+            category_id: null, // We'll get this from the category_name if needed
+            service_categories: {
+              name: item.category_name
+            }
+          }
+        })) || [];
+        
+        setReservations(transformedData as unknown as ReservationLite[]);
       }
       setLoading(false);
     };

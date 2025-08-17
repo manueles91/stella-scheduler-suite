@@ -76,6 +76,7 @@ export const apiService = {
         .from('discounts')
         .select('*')
         .eq('is_active', true)
+        .eq('is_public', true) // Only fetch public discounts
         .lte('start_date', nowISO)
         .gte('end_date', nowISO)
         .order('created_at', { ascending: false });

@@ -121,46 +121,40 @@ export const PromocionesSection = () => {
       const now = new Date();
       const nowISO = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
       
-      if (user) {
-        // Authenticated users can see full discount details
-        const { data, error } = await supabase
-          .from("discounts")
-          .select(`
+      // Both authenticated and unauthenticated users can see public discounts
+      const { data, error } = await supabase
+        .from("discounts")
+        .select(`
+          id,
+          name,
+          description,
+          discount_type,
+          discount_value,
+          start_date,
+          end_date,
+          is_active,
+          services (
             id,
             name,
             description,
-            discount_type,
-            discount_value,
-            start_date,
-            end_date,
-            is_active,
-            services (
-              id,
-              name,
-              description,
-              duration_minutes,
-              price_cents,
-              image_url
-            )
-          `)
-          .eq("is_active", true)
-          .eq("is_public", true)
-          .lte("start_date", nowISO)
-          .gte("end_date", nowISO)
-          .limit(10);
-        
-        if (error) {
-          console.error("Supabase error fetching discounts:", error);
-          setFetchError("Error loading discounts");
-          return;
-        }
-        
-        setDiscounts(data || []);
-      } else {
-        // For unauthenticated users, we'll just skip showing individual discounts
-        // They can still see combos and use the public_promotions view if needed
-        setDiscounts([]);
+            duration_minutes,
+            price_cents,
+            image_url
+          )
+        `)
+        .eq("is_active", true)
+        .eq("is_public", true)
+        .lte("start_date", nowISO)
+        .gte("end_date", nowISO)
+        .limit(10);
+      
+      if (error) {
+        console.error("Supabase error fetching discounts:", error);
+        setFetchError("Error loading discounts");
+        return;
       }
+      
+      setDiscounts(data || []);
     } catch (error) {
       console.error("Error fetching discounts:", error);
       setFetchError("Error loading discounts");

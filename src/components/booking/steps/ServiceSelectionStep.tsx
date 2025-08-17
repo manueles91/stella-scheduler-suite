@@ -39,21 +39,42 @@ export const ServiceSelectionStep = ({
     }
     return false;
   }) : allBookableItems;
-  return <Card className="w-full">
+
+  return (
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Elige tu servicio</CardTitle>
-        
+        {selectedService && (
+          <CardDescription className="text-green-600 font-medium">
+            ✓ Servicio pre-seleccionado: {selectedService.name}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {showCategories && <CategoryFilter categories={categories} selectedCategory={selectedCategory} onCategorySelect={onCategorySelect} className="w-full" />}
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map(service => <MemoizedServiceCard key={service.id} service={service} isSelected={selectedService?.id === service.id} onSelect={onServiceSelect} employees={employees} selectedEmployee={selectedEmployee} onEmployeeSelect={onEmployeeSelect} allowEmployeeSelection={allowEmployeeSelection} formatPrice={formatPrice} />)}
+          {filteredItems.map(service => (
+            <MemoizedServiceCard 
+              key={service.id} 
+              service={service} 
+              isSelected={selectedService?.id === service.id} 
+              onSelect={onServiceSelect} 
+              employees={employees} 
+              selectedEmployee={selectedEmployee} 
+              onEmployeeSelect={onEmployeeSelect} 
+              allowEmployeeSelection={allowEmployeeSelection} 
+              formatPrice={formatPrice} 
+            />
+          ))}
         </div>
         
-        {filteredItems.length === 0 && <div className="text-center py-8 text-muted-foreground">
+        {filteredItems.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
             No hay servicios disponibles en esta categoría
-          </div>}
+          </div>
+        )}
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
