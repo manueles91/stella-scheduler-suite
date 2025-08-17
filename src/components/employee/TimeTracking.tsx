@@ -814,19 +814,9 @@ export const TimeTracking = ({
           </div>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
-      } = await query.order('appointment_date').order('start_time');
-
-      if (error) throw error;
-
-      const formattedAppointments = data?.map(appointment => ({
-
-        id: appointment.id,
-
-        client_name: appointment.profiles?.full_name || 'Cliente',
-
-        employee_name: appointment.employee_profile?.full_name || 'Empleado',
 
         service_name: appointment.services?.name || 'Servicio',
 
@@ -838,31 +828,6 @@ export const TimeTracking = ({
 
         status: appointment.status,
 
-        notes: appointment.notes
-
-      })) || [];
-
-      setAppointments(formattedAppointments);
-
-    } catch (error) {
-
-      toast({
-
-        title: "Error",
-
-        description: "Error al cargar las citas",
-
-        variant: "destructive"
-
-      });
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
 
   const fetchBlockedTimes = async () => {
 
@@ -1627,9 +1592,7 @@ export const TimeTracking = ({
           </div>
 
         </DialogContent>
-
       </Dialog>
-
-    </div>;
-
+    </div>
+  );
 };
