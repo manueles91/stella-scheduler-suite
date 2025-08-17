@@ -157,10 +157,13 @@ const { toast } = useToast();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'Confirmada':
         return 'bg-green-100 text-green-800';
       case 'completed':
+      case 'Completada':
         return 'bg-blue-100 text-blue-800';
       case 'cancelled':
+      case 'Cancelada':
         return 'bg-red-100 text-red-800';
       case 'no_show':
         return 'bg-gray-100 text-gray-800';
@@ -213,9 +216,9 @@ const { toast } = useToast();
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="confirmed">Confirmado</SelectItem>
-                <SelectItem value="completed">Completado</SelectItem>
-                <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectItem value="confirmed">Confirmada</SelectItem>
+                <SelectItem value="completed">Completada</SelectItem>
+                <SelectItem value="cancelled">Cancelada</SelectItem>
                 <SelectItem value="no_show">No se presentó</SelectItem>
               </SelectContent>
             </Select>
@@ -316,9 +319,9 @@ const { toast } = useToast();
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="confirmed">Confirmado</SelectItem>
-                          <SelectItem value="completed">Completado</SelectItem>
-                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                          <SelectItem value="confirmed">Confirmada</SelectItem>
+                          <SelectItem value="completed">Completada</SelectItem>
+                          <SelectItem value="cancelled">Cancelada</SelectItem>
                           <SelectItem value="no_show">No se presentó</SelectItem>
                         </SelectContent>
                       </Select>

@@ -32,10 +32,19 @@ export const ServiceSelectionStep = ({
 }: ServiceSelectionStepProps) => {
   // Filter items based on selected category
   const filteredItems = selectedCategory ? allBookableItems.filter(item => {
+    // Handle "promociones" category - show items with discounts or combos
+    if (selectedCategory === 'promociones') {
+      return item.type === 'combo' || (item.type === 'service' && item.appliedDiscount);
+    }
+    
+    // Handle regular category filtering
     if (item.type === 'service') {
       return item.category_id === selectedCategory;
     } else if (item.type === 'combo' && item.combo_services) {
-      return item.combo_services.some(cs => categories.some(cat => cat.id === selectedCategory && allBookableItems.some(service => service.id === cs.service_id && service.category_id === selectedCategory)));
+      return item.combo_services.some(cs => {
+        const service = allBookableItems.find(s => s.id === cs.service_id);
+        return service && service.category_id === selectedCategory;
+      });
     }
     return false;
   }) : allBookableItems;

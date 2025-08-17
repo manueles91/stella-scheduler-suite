@@ -155,12 +155,15 @@ export const DashboardSummary = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'Confirmada':
         return 'bg-green-100 text-green-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
+      case 'Cancelada':
         return 'bg-red-100 text-red-800';
       case 'completed':
+      case 'Completada':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -176,6 +179,10 @@ export const DashboardSummary = ({
         return 'Cancelada';
       case 'completed':
         return 'Completada';
+      case 'Confirmada':
+      case 'Cancelada':
+      case 'Completada':
+        return status;
       default:
         return status;
     }
@@ -190,51 +197,38 @@ export const DashboardSummary = ({
     return effectiveProfile?.role === 'admin';
   };
   const renderAppointment = (appt: Appointment) => <div key={appt.id} className="border border-border rounded-lg p-4 bg-gradient-to-r from-card to-card/50 hover:shadow-md transition-shadow">
-      {/* Top row with service and status */}
+      {/* Top row with service and main actions */}
       <div className="flex justify-between items-start mb-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
-            <Calendar className="h-4 w-4 text-primary" />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-foreground text-base leading-tight mb-1">
+            {appt.services && appt.services.length > 0 ? appt.services.map(service => service.name).join(', ') : 'Servicio'}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-foreground text-base leading-tight mb-1">
-              {appt.services && appt.services.length > 0 ? appt.services.map(service => service.name).join(', ') : 'Servicio'}
-            </div>
-          </div>
-        </div>
-        
-        <Badge className={getStatusColor(appt.status)} variant="secondary">
-          {getStatusText(appt.status)}
-        </Badge>
-      </div>
-
-      {/* Bottom row with time/date and edit button */}
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          {/* Time */}
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-3 w-3 flex-shrink-0" />
             <span>
-              {formatTime12Hour(appt.start_time).replace(' ', '')} - {formatTime12Hour(appt.end_time).replace(' ', '')}
+              {formatTime12Hour(appt.start_time)} - {formatTime12Hour(appt.end_time)}
             </span>
-          </div>
-          
-          {/* Date */}
-          <div className="text-sm text-muted-foreground">
-            {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short'
-          })}
+            <span className="text-xs">
+              {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })}
+            </span>
           </div>
         </div>
         
-        {/* Edit button on the right */}
-        <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
+        {/* Status and Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge className={getStatusColor(appt.status)} variant="secondary">
+            {getStatusText(appt.status)}
+          </Badge>
+          <EditableAppointment appointment={appt} onUpdate={fetchAppointments} canEdit={canEditAppointment(appt)} />
+        </div>
       </div>
       
-      {/* Client/Employee info - full width at bottom */}
-      {(effectiveProfile?.role === 'admin' || effectiveProfile?.role === 'employee' || appt.employee_profile) && <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-3 mt-3 border-t border-border/50">
+      {/* Client/Employee info - compact layout */}
+      {(effectiveProfile?.role === 'admin' || effectiveProfile?.role === 'employee' || appt.employee_profile) && <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border/30">
           {effectiveProfile?.role === 'admin' && <>
               <div className="flex items-center gap-1 min-w-0">
                 <User className="h-3 w-3 flex-shrink-0" />

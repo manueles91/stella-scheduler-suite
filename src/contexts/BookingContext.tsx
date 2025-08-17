@@ -15,8 +15,8 @@ interface BookingProviderProps {
 }
 
 export const BookingProvider = ({ children }: BookingProviderProps) => {
-  // Remove hardcoded 'promociones' default to allow dynamic category selection
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
+  // Default to 'promociones' to show promotions by default
+  const [selectedCategory, setSelectedCategoryState] = useState<string | null>('promociones');
   const [filteredItems, setFilteredItems] = useState<BookableItem[]>([]);
 
   const setSelectedCategory = useCallback((category: string | null) => {
