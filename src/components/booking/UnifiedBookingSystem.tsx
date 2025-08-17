@@ -99,48 +99,93 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   ): Promise<TimeSlot[]> => {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
+      const dayOfWeek = date.getDay();
       
+      // Get all employees who can perform this service
+      const { data: employeeServices } = await supabase
+        .from('employee_services')
+        .select(`
+          employee_id,
+          profiles!inner(id, full_name, role)
+        `)
+        .eq('service_id', service.id);
+
+      if (!employeeServices || employeeServices.length === 0) {
+        return [];
+      }
+
+      // Get employee schedules for this day of week
+      const employeeIds = employeeServices.map(es => es.employee_id);
+      const { data: schedules } = await supabase
+        .from('employee_schedules')
+        .select('*')
+        .in('employee_id', employeeIds)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_available', true);
+
+      // Get existing reservations for this date
       const { data: reservations } = await supabase
         .from('reservations')
         .select('start_time, end_time, employee_id')
         .eq('appointment_date', dateStr)
-        .neq('status', 'cancelled');
+        .neq('status', 'Cancelada');
 
-      // Generate time slots from 9 AM to 6 PM in 30-minute intervals
+      // Get blocked times for this date
+      const { data: blockedTimes } = await supabase
+        .from('blocked_times')
+        .select('*')
+        .in('employee_id', employeeIds)
+        .eq('date', dateStr);
+
       const slots: TimeSlot[] = [];
-      const startHour = 9;
-      const endHour = 18;
-      
-      for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
+
+      // Generate slots for each available employee
+      employeeServices.forEach(empService => {
+        const employee = empService.profiles;
+        const employeeSchedule = schedules?.find(s => s.employee_id === employee.id);
+        
+        if (!employeeSchedule) return;
+
+        // Convert schedule times to minutes for easier calculation
+        const [startHour, startMinute] = employeeSchedule.start_time.split(':').map(Number);
+        const [endHour, endMinute] = employeeSchedule.end_time.split(':').map(Number);
+        const scheduleStart = startHour * 60 + startMinute;
+        const scheduleEnd = endHour * 60 + endMinute;
+
+        // Generate 30-minute time slots within schedule
+        for (let timeInMinutes = scheduleStart; timeInMinutes < scheduleEnd; timeInMinutes += 30) {
+          const hour = Math.floor(timeInMinutes / 60);
+          const minute = timeInMinutes % 60;
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          
-          // Check if slot conflicts with existing reservations
-          const hasConflict = reservations?.some(res => {
+
+          // Check for conflicts with existing reservations
+          const hasReservationConflict = reservations?.some(res => {
+            if (res.employee_id !== employee.id) return false;
             const resStartTime = res.start_time;
             const resEndTime = res.end_time;
-            const resEmployeeId = res.employee_id;
-            
-            // If employee is selected, only check conflicts for that employee
-            if (selectedEmployee && resEmployeeId !== selectedEmployee.id) {
-              return false;
-            }
-            
             return timeString >= resStartTime && timeString < resEndTime;
           });
-          
-          if (!hasConflict) {
+
+          // Check for blocked times
+          const hasBlockedConflict = blockedTimes?.some(blocked => {
+            if (blocked.employee_id !== employee.id) return false;
+            const blockedStartTime = blocked.start_time;
+            const blockedEndTime = blocked.end_time;
+            return timeString >= blockedStartTime && timeString < blockedEndTime;
+          });
+
+          if (!hasReservationConflict && !hasBlockedConflict) {
             slots.push({
               start_time: timeString,
-              employee_id: selectedEmployee?.id || '',
-              employee_name: selectedEmployee?.full_name || 'Cualquier profesional',
+              employee_id: employee.id,
+              employee_name: employee.full_name,
               available: true
             });
           }
         }
-      }
+      });
       
-      return slots;
+      return slots.sort((a, b) => a.start_time.localeCompare(b.start_time));
     } catch (error) {
       console.error('Error fetching available slots:', error);
       return [];
@@ -378,8 +423,8 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
           Anterior
         </Button>
 
-        {/* Next/Confirm Button */}
-        {state.currentStep < config.maxSteps && !(config.isGuest && state.currentStep === 4) && (
+        {/* Next/Confirm Button - Only show if not on guest step 4 (which has its own confirm button) */}
+        {!(config.isGuest && state.currentStep === 4) && state.currentStep < config.maxSteps && (
           <Button
             onClick={handleNext}
             disabled={!canGoNext() || state.submitting}

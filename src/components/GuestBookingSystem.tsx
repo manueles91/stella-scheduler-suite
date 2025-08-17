@@ -1,5 +1,6 @@
 import { UnifiedBookingSystem } from "./booking/UnifiedBookingSystem";
 import { BookingConfig } from "@/types/booking";
+import { BookingProvider } from "@/contexts/BookingContext";
 
 const guestConfig: BookingConfig = {
   isGuest: true,
@@ -10,5 +11,9 @@ const guestConfig: BookingConfig = {
 };
 
 export const GuestBookingSystem = () => {
-  return <UnifiedBookingSystem config={guestConfig} />;
+  return (
+    <BookingProvider>
+      <UnifiedBookingSystem config={guestConfig} />
+    </BookingProvider>
+  );
 };
