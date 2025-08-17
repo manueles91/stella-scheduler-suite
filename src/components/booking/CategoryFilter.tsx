@@ -3,6 +3,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryImage } from "@/components/landing/CategoryImages";
+import { Sparkles } from "lucide-react";
 
 interface ServiceCategory {
   id: string;
@@ -38,20 +39,21 @@ export const CategoryFilter = ({
         skipSnaps: false
       }}>
         <CarouselContent className="-ml-2 md:-ml-4">
-          {/* All Services Card */}
-          <CarouselItem className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+          {/* Promociones Card - Selected by default */}
+          <CarouselItem className="pl-2 md:pl-4 basis-[120px] sm:basis-[140px] md:basis-[160px]">
             <Card 
-              className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
-                selectedCategory === null 
+              className={`h-20 sm:h-24 md:h-28 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
+                selectedCategory === 'promociones' 
                   ? 'ring-2 ring-primary shadow-lg bg-primary/10' 
                   : 'hover:shadow-md'
               }`} 
-              onClick={() => onCategorySelect(null)}
+              onClick={() => onCategorySelect('promociones')}
             >
-              <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <div className="h-full w-full bg-gradient-to-br from-yellow-400/20 to-orange-500/10 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-[10px] md:text-xs font-medium text-foreground">Todos</div>
-                  <div className="text-[9px] md:text-xs text-muted-foreground">servicios</div>
+                  <Sparkles className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 text-yellow-600" />
+                  <div className="text-[9px] md:text-xs font-medium text-foreground">Promociones</div>
+                  <div className="text-[8px] md:text-xs text-muted-foreground">y ofertas</div>
                 </div>
               </div>
             </Card>
@@ -59,9 +61,9 @@ export const CategoryFilter = ({
 
           {/* Category Cards */}
           {categories.map(category => (
-            <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+            <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-[120px] sm:basis-[140px] md:basis-[160px]">
               <Card 
-                className={`h-24 sm:h-28 md:h-32 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
+                className={`h-20 sm:h-24 md:h-28 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
                   selectedCategory === category.id 
                     ? 'ring-2 ring-primary shadow-lg' 
                     : 'hover:shadow-md'
@@ -91,7 +93,7 @@ export const CategoryFilter = ({
                 {/* Content - Moved to bottom with better shadow */}
                 <div className="relative z-10 h-full flex items-end justify-center p-1 md:p-2">
                   <div className="text-center">
-                    <div className="text-[10px] md:text-xs font-medium text-white drop-shadow-2xl">
+                    <div className="text-[9px] md:text-xs font-medium text-white drop-shadow-2xl">
                       {category.name}
                     </div>
                   </div>
@@ -99,7 +101,7 @@ export const CategoryFilter = ({
 
                 {/* Selected Indicator */}
                 {selectedCategory === category.id && (
-                  <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[9px] md:text-xs h-4 md:h-5 bg-primary">
+                  <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[8px] md:text-xs h-3 md:h-4 bg-primary">
                     ✓
                   </Badge>
                 )}

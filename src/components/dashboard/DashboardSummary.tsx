@@ -305,10 +305,10 @@ export const DashboardSummary = ({
             name: cs.services.name,
             quantity: cs.quantity,
             service_id: cs.service_id
-          })) || []} variant="dashboard" onSelect={() => navigate(`/book?service=${combo.id}&step=2`)} showExpandable={true} />)}
+          })) || []} variant="dashboard" onSelect={() => navigate(`/book?service=${combo.id}`)} showExpandable={true} />)}
               
               {/* Display Individual Discounts */}
-              {activePromotions.map(promo => <ServiceCard key={`discount-${promo.id}`} id={promo.services.id} name={promo.services.name} description={promo.services.description} originalPrice={promo.services.price_cents} finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100)} savings={promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100} duration={promo.services.duration_minutes} imageUrl={promo.services.image_url} type="service" discountType={promo.discount_type} discountValue={promo.discount_value} variant="dashboard" onSelect={() => navigate(`/book?service=${promo.services.id}&step=2`)} showExpandable={true} />)}
+              {activePromotions.map(promo => <ServiceCard key={`discount-${promo.id}`} id={promo.services.id} name={promo.services.name} description={promo.services.description} originalPrice={promo.services.price_cents} finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100)} savings={promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100} duration={promo.services.duration_minutes} imageUrl={promo.services.image_url} type="service" discountType={promo.discount_type} discountValue={promo.discount_value} variant="dashboard" onSelect={() => navigate(`/book?service=${promo.services.id}`)} showExpandable={true} />)}
             </div> : <div className="text-center py-8 text-muted-foreground">
               <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
                 <Sparkles className="h-8 w-8 text-muted-foreground" />

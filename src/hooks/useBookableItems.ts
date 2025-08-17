@@ -14,6 +14,12 @@ export const useBookableItems = (selectedCategory?: string | null) => {
     
     const filtered = selectedCategory 
       ? processedItems.filter(item => {
+          // Handle "promociones" category - show items with discounts or combos
+          if (selectedCategory === 'promociones') {
+            return item.type === 'combo' || (item.type === 'service' && item.appliedDiscount);
+          }
+          
+          // Handle regular category filtering
           if (item.type === 'service') {
             return item.category_id === selectedCategory;
           } else if (item.type === 'combo' && item.combo_services) {

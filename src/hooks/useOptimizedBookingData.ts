@@ -96,6 +96,12 @@ export const useOptimizedBookingData = () => {
     return items;
   }, [services, combos, discountCalculations]);
 
+  // Memoized filtered bookable items based on selected category
+  const filteredBookableItems = useMemo(() => {
+    // This will be filtered by the BookingContext selectedCategory
+    return bookableItems;
+  }, [bookableItems]);
+
   // Memoized available slots fetcher
   const fetchAvailableSlots = useCallback(async (
     service: BookableItem,
@@ -174,7 +180,8 @@ export const useOptimizedBookingData = () => {
   }, []);
 
   return {
-    bookableItems,
+    bookableItems: filteredBookableItems,
+    allBookableItems: bookableItems,
     categories,
     employees,
     loading,

@@ -15,7 +15,7 @@ interface BookingProviderProps {
 }
 
 export const BookingProvider = ({ children }: BookingProviderProps) => {
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategoryState] = useState<string | null>('promociones');
   const [filteredItems, setFilteredItems] = useState<BookableItem[]>([]);
 
   const setSelectedCategory = useCallback((category: string | null) => {

@@ -39,6 +39,11 @@ export const useBookingData = () => {
     const filtered = bookableItems.filter(item => {
       console.log('Checking item:', item.name, 'category_id:', item.category_id, 'type:', item.type);
       
+      // Handle "promociones" category - show items with discounts or combos
+      if (selectedCategory === 'promociones') {
+        return item.type === 'combo' || (item.type === 'service' && item.appliedDiscount);
+      }
+      
       if (item.type === 'service') {
         const matches = item.category_id === selectedCategory;
         console.log('Service matches:', matches);

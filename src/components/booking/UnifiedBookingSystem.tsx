@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -73,6 +73,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   
   const { 
     bookableItems, 
+    allBookableItems,
     categories, 
     employees, 
     loading, 
@@ -81,6 +82,54 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   } = useOptimizedBookingData();
   
   const { selectedCategory, setSelectedCategory } = useBookingContext();
+
+  // Filter bookable items based on selected category
+  const filteredBookableItems = useMemo(() => {
+    if (!selectedCategory) return bookableItems;
+    
+    // Handle "promociones" category - show items with discounts or combos
+    if (selectedCategory === 'promociones') {
+      return bookableItems.filter(item => 
+        item.type === 'combo' || (item.type === 'service' && item.appliedDiscount)
+      );
+    }
+    
+    // Handle regular category filtering
+    return bookableItems.filter(item => {
+      if (item.type === 'service') {
+        return item.category_id === selectedCategory;
+      } else if (item.type === 'combo' && item.combo_services) {
+        const serviceIds = item.combo_services.map(cs => cs.service_id);
+        return allBookableItems.some(service => 
+          serviceIds.includes(service.id) && service.category_id === selectedCategory
+        );
+      }
+      return false;
+    });
+  }, [bookableItems, selectedCategory, allBookableItems]);
+
+  // Handle URL parameters for pre-selected service and step
+  useEffect(() => {
+    const serviceId = searchParams.get('service');
+    
+    if (serviceId && filteredBookableItems.length > 0 && !state.selectedService) {
+      // Find the service by ID
+      const service = filteredBookableItems.find(item => item.id === serviceId);
+      
+      if (service) {
+        // Set the selected service and go directly to step 2 (date selection)
+        // since step 1 is service selection and we're pre-selecting the service
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        updateState({ 
+          selectedService: service,
+          selectedDate: tomorrow,
+          currentStep: 2 
+        });
+      }
+    }
+  }, [searchParams, filteredBookableItems, state.selectedService, updateState]);
 
   // Fetch available slots when service, date, or employee changes
   useEffect(() => {
@@ -154,7 +203,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       case 1:
         return (
           <ServiceSelectionStep
-            allBookableItems={bookableItems}
+            allBookableItems={filteredBookableItems}
             categories={categories}
             employees={employees}
             selectedService={state.selectedService}
