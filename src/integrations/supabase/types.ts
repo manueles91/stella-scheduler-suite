@@ -425,7 +425,7 @@ export type Database = {
           id: string
           invite_token: string | null
           invited_at: string
-          invited_by: string
+          invited_by: string | null
           is_guest_user: boolean | null
           last_booking_date: string | null
           notes: string | null
@@ -442,7 +442,7 @@ export type Database = {
           id?: string
           invite_token?: string | null
           invited_at?: string
-          invited_by: string
+          invited_by?: string | null
           is_guest_user?: boolean | null
           last_booking_date?: string | null
           notes?: string | null
@@ -459,7 +459,7 @@ export type Database = {
           id?: string
           invite_token?: string | null
           invited_at?: string
-          invited_by?: string
+          invited_by?: string | null
           is_guest_user?: boolean | null
           last_booking_date?: string | null
           notes?: string | null
