@@ -1,10 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOptimizedBookingData } from "@/hooks/useOptimizedBookingData";
+import { useBookableItems } from "@/hooks/useBookableItems";
 import { useBookingContext } from "@/contexts/BookingContext";
+import { useServices } from "@/hooks/useServices";
+import { useEmployees } from "@/hooks/useEmployees";
+import { useCategories } from "@/hooks/useCategories";
+import { supabase } from "@/integrations/supabase/client";
 import { BookingProgress } from "./BookingProgress";
 import { 
   BookableItem, 
@@ -44,6 +49,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { selectedCategory, setSelectedCategory } = useBookingContext();
   
   // Use custom hooks for state management
   const {
@@ -71,42 +77,75 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     resetForm,
   });
   
+  // Fetch data using individual hooks
+  const { data: categories = [] } = useCategories();
+  const { data: employees = [] } = useEmployees();
   const { 
-    bookableItems, 
-    allBookableItems,
-    categories, 
-    employees, 
-    loading, 
-    fetchAvailableSlots, 
-    formatPrice 
-  } = useOptimizedBookingData();
-  
-  const { selectedCategory, setSelectedCategory } = useBookingContext();
+    data: filteredBookableItems = [], 
+    allItems: allBookableItems = [],
+    isLoading: loading
+  } = useBookableItems(selectedCategory);
 
-  // Filter bookable items based on selected category
-  const filteredBookableItems = useMemo(() => {
-    if (!selectedCategory) return bookableItems;
-    
-    // Handle "promociones" category - show items with discounts or combos
-    if (selectedCategory === 'promociones') {
-      return bookableItems.filter(item => 
-        item.type === 'combo' || (item.type === 'service' && item.appliedDiscount)
-      );
-    }
-    
-    // Handle regular category filtering
-    return bookableItems.filter(item => {
-      if (item.type === 'service') {
-        return item.category_id === selectedCategory;
-      } else if (item.type === 'combo' && item.combo_services) {
-        const serviceIds = item.combo_services.map(cs => cs.service_id);
-        return allBookableItems.some(service => 
-          serviceIds.includes(service.id) && service.category_id === selectedCategory
-        );
+  // Format price helper
+  const formatPrice = (cents: number) => {
+    return `₡${Math.round(cents / 100)}`;
+  };
+
+  // Fetch available slots helper
+  const fetchAvailableSlots = async (
+    service: BookableItem,
+    date: Date,
+    selectedEmployee?: Employee | null
+  ): Promise<TimeSlot[]> => {
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      
+      const { data: reservations } = await supabase
+        .from('reservations')
+        .select('start_time, end_time, employee_id')
+        .eq('appointment_date', dateStr)
+        .neq('status', 'cancelled');
+
+      // Generate time slots from 9 AM to 6 PM in 30-minute intervals
+      const slots: TimeSlot[] = [];
+      const startHour = 9;
+      const endHour = 18;
+      
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Check if slot conflicts with existing reservations
+          const hasConflict = reservations?.some(res => {
+            const resStartTime = res.start_time;
+            const resEndTime = res.end_time;
+            const resEmployeeId = res.employee_id;
+            
+            // If employee is selected, only check conflicts for that employee
+            if (selectedEmployee && resEmployeeId !== selectedEmployee.id) {
+              return false;
+            }
+            
+            return timeString >= resStartTime && timeString < resEndTime;
+          });
+          
+          if (!hasConflict) {
+            slots.push({
+              start_time: timeString,
+              employee_id: selectedEmployee?.id || '',
+              employee_name: selectedEmployee?.full_name || 'Cualquier profesional',
+              available: true
+            });
+          }
+        }
       }
-      return false;
-    });
-  }, [bookableItems, selectedCategory, allBookableItems]);
+      
+      return slots;
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      return [];
+    }
+  };
 
   // Handle URL parameters for pre-selected service and step
   useEffect(() => {
@@ -126,7 +165,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         }
         
         // Set the selected service and go directly to step 2 (date selection)
-        // since step 1 is service selection and we're pre-selecting the service
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         
@@ -369,4 +407,4 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       </div>
     </div>
   );
-}; 
+};
