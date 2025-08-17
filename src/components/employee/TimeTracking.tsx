@@ -446,9 +446,9 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setLoading(true);
     
     try {
-      // Use the employee_calendar_view for better performance and reliability
+      // Query reservations directly with proper joins for employee calendar
       const { data, error } = await supabase
-        .from('employee_calendar_view')
+        .from('reservations')
         .select(`
           id,
           appointment_date,
@@ -457,11 +457,16 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           status,
           notes,
           employee_id,
-          client_name,
-          service_name
+          customer_name,
+          client_id,
+          services (
+            name
+          )
         `)
+        .eq('employee_id', effectiveEmployeeId)
         .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
         .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
+        .neq('status', 'cancelled')
         .order('appointment_date')
         .order('start_time');
 
@@ -469,15 +474,36 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       
       const formattedAppointments = data?.map(appointment => ({
         id: appointment.id,
-        client_name: appointment.client_name || 'Cliente',
+        client_name: appointment.customer_name || 'Cliente',
         employee_name: 'Empleado', // This will be the current employee
-        service_name: appointment.service_name || 'Servicio',
+        service_name: appointment.services?.name || 'Servicio',
         appointment_date: appointment.appointment_date,
         start_time: appointment.start_time,
         end_time: appointment.end_time,
         status: appointment.status,
         notes: appointment.notes
       })) || [];
+      
+      // For reservations with client_id but no customer_name, fetch client names
+      if (data) {
+        const clientIds = data.filter(a => a.client_id && !a.customer_name).map(a => a.client_id);
+        if (clientIds.length > 0) {
+          const { data: clientData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', clientIds);
+            
+          if (clientData) {
+            const clientMap = new Map(clientData.map(c => [c.id, c.full_name]));
+            formattedAppointments.forEach((appointment, index) => {
+              const originalAppointment = data[index];
+              if (originalAppointment.client_id && !originalAppointment.customer_name) {
+                appointment.client_name = clientMap.get(originalAppointment.client_id) || 'Cliente';
+              }
+            });
+          }
+        }
+      }
       
       setAppointments(formattedAppointments);
     } catch (error) {

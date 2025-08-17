@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, isAfter, parseISO } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { formatCRC } from "@/lib/currency";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "@/components/ui/badge";
 import {
   Bar,
   BarChart,
@@ -18,17 +19,15 @@ import {
 
 interface ReservationLite {
   id: string;
-  appointment_date: string; // yyyy-MM-dd
+  appointment_date: string;
+  start_time: string;
   status: string;
   client_id: string | null;
-  customer_email: string | null;
-  services: {
-    price_cents: number;
-    category_id: string | null;
-    service_categories: {
-      name: string | null;
-    } | null;
-  };
+  client_email: string | null;
+  client_name: string | null;
+  service_name: string;
+  service_price_cents: number;
+  category_name: string | null;
 }
 
 const DAYS_WINDOW_DEFAULT = 30;
@@ -42,7 +41,7 @@ export const AdminIngresos = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const startDate = subDays(new Date(), daysWindow + 60); // include lookback for retention context
+      const startDate = subDays(new Date(), daysWindow + 60);
       const startStr = format(startDate, "yyyy-MM-dd");
 
       // Use the admin_reservations_view for better performance and reliability
@@ -51,38 +50,23 @@ export const AdminIngresos = () => {
         .select(`
           id,
           appointment_date,
+          start_time,
           status,
           client_id,
           client_email,
+          client_name,
           service_name,
           service_price_cents,
           category_name
         `)
         .gte("appointment_date", startStr)
-        .order("appointment_date", { ascending: true });
+        .order("appointment_date", { ascending: false });
 
       if (error) {
-        // eslint-disable-next-line no-console
         console.error("Error loading reservations for ingresos dashboard:", error);
         setReservations([]);
       } else {
-        // Transform the data to match the expected interface
-        const transformedData = data?.map(item => ({
-          id: item.id,
-          appointment_date: item.appointment_date,
-          status: item.status,
-          client_id: item.client_id,
-          customer_email: item.client_email,
-          services: {
-            price_cents: item.service_price_cents || 0,
-            category_id: null, // We'll get this from the category_name if needed
-            service_categories: {
-              name: item.category_name
-            }
-          }
-        })) || [];
-        
-        setReservations(transformedData as unknown as ReservationLite[]);
+        setReservations(data || []);
       }
       setLoading(false);
     };
@@ -115,7 +99,7 @@ export const AdminIngresos = () => {
     for (const r of completedInWindow) {
       const key = r.appointment_date;
       const prev = centsByDay.get(key) || 0;
-      centsByDay.set(key, prev + (r.services?.price_cents || 0));
+      centsByDay.set(key, prev + (r.service_price_cents || 0));
     }
 
     return timeframeDays.map((d) => ({
@@ -134,7 +118,7 @@ export const AdminIngresos = () => {
     // Identify customers' earliest completed booking
     const earliestCompletedByCustomer = new Map<string, string>();
 
-    const identifierFor = (r: ReservationLite) => r.client_id || r.customer_email || r.id;
+    const identifierFor = (r: ReservationLite) => r.client_id || r.client_email || r.id;
 
     // Consider all completed in our fetch window, not only timeframe, to detect prior history
     const allCompletedSorted = [...reservations]
@@ -182,9 +166,9 @@ export const AdminIngresos = () => {
     const centsByCategory = new Map<string, number>();
 
     for (const r of completedInWindow) {
-      const catName = r.services?.service_categories?.name || "Sin categoría";
+      const catName = r.category_name || "Sin categoría";
       const prev = centsByCategory.get(catName) || 0;
-      centsByCategory.set(catName, prev + (r.services?.price_cents || 0));
+      centsByCategory.set(catName, prev + (r.service_price_cents || 0));
     }
 
     const items = Array.from(centsByCategory.entries()).map(([name, cents]) => ({
@@ -350,6 +334,50 @@ export const AdminIngresos = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Revenues Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ingresos Recientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {completedInWindow.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No hay ingresos recientes
+              </div>
+            ) : (
+              completedInWindow.slice(0, 10).map((reservation) => (
+                <div key={reservation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{reservation.service_name}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {reservation.category_name || "Sin categoría"}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <span>{reservation.client_name || reservation.client_email || "Cliente invitado"}</span>
+                      <span className="mx-2">•</span>
+                      <span>{format(parseISO(reservation.appointment_date), "dd/MM/yyyy")}</span>
+                      <span className="mx-2">•</span>
+                      <span>{reservation.start_time}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-green-600">
+                      {formatCRC(reservation.service_price_cents)}
+                    </div>
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      Completado
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
