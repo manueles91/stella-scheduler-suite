@@ -100,4 +100,14 @@ export interface BookingConfig {
   allowEmployeeSelection: boolean;
   showCategories: boolean;
   maxSteps: number;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: 'client' | 'employee' | 'admin';
+  created_at?: string;
+  image_url?: string;
 } 

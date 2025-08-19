@@ -10,20 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Users, Mail, Phone, UserCheck, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Profile, Service } from "@/types/booking";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-interface Profile {
-  id: string;
-  email: string;
-  full_name: string;
-  phone?: string;
-  role: 'client' | 'employee' | 'admin';
-  created_at: string;
-  image_url?: string;
-}
-interface Service {
-  id: string;
-  name: string;
-}
 interface EmployeeService {
   employee_id: string;
   service_id: string;

@@ -412,44 +412,46 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       
       {renderStepContent()}
 
-      <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
-        {/* Navigation Buttons - Always show "Anterior" */}
-        <Button
-          variant="outline"
-          onClick={state.currentStep === 1 ? handleGoBack : handlePrevious}
-          className="w-full sm:w-auto"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-
-        {/* Next/Confirm Button - Only show if not on guest step 4 (which has its own confirm button) */}
-        {!(config.isGuest && state.currentStep === 4) && state.currentStep < config.maxSteps && (
+      {/* Navigation Buttons - Only show when not on guest step 4 (which has its own navigation) */}
+      {!(config.isGuest && state.currentStep === 4) && (
+        <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
           <Button
-            onClick={handleNext}
-            disabled={!canGoNext() || state.submitting}
+            variant="outline"
+            onClick={state.currentStep === 1 ? handleGoBack : handlePrevious}
             className="w-full sm:w-auto"
           >
-            {state.currentStep === 4 && !config.isGuest ? (
-              <>
-                {state.submitting ? (
-                  "Procesando..."
-                ) : (
-                  <>
-                    Confirmar reserva
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                Siguiente
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </>
-            )}
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Anterior
           </Button>
-        )}
-      </div>
+
+          {/* Next/Confirm Button */}
+          {state.currentStep < config.maxSteps && (
+            <Button
+              onClick={handleNext}
+              disabled={!canGoNext() || state.submitting}
+              className="w-full sm:w-auto"
+            >
+              {state.currentStep === 4 && !config.isGuest ? (
+                <>
+                  {state.submitting ? (
+                    "Procesando..."
+                  ) : (
+                    <>
+                      Confirmar reserva
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  Siguiente
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

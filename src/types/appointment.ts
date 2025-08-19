@@ -1,9 +1,4 @@
-export interface Service {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  price_cents: number;
-}
+import { Service, Profile } from './booking';
 
 export interface Appointment {
   id: string;
@@ -21,10 +16,4 @@ export interface Appointment {
   employee_profile?: {
     full_name: string;
   };
-}
-
-export interface Profile {
-  id: string;
-  full_name: string;
-  role: string;
 }
