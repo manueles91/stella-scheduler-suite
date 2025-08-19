@@ -4,10 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { CategoriesSection } from "@/components/landing/CategoriesSection";
 import { ServicesSection } from "@/components/landing/ServicesSection";
-import { PromocionesSection } from "@/components/landing/PromocionesSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { LocationSection } from "@/components/landing/LocationSection";
-import { ScheduleSection } from "@/components/landing/ScheduleSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { BookingProvider } from "@/contexts/BookingContext";
 
@@ -40,17 +38,11 @@ const Index = () => {
         {/* Services Section - Filtered by categories */}
         <ServicesSection />
 
-        {/* Promociones Section */}
-        <PromocionesSection />
-
         {/* Testimonials Section */}
         <TestimonialsSection />
 
         {/* Map Location Section */}
         <LocationSection />
-
-        {/* Horario Section */}
-        <ScheduleSection />
 
         {/* Final CTA Section */}
         <CTASection />
