@@ -50,26 +50,17 @@ export const LocationSection = () => {
         
         {/* Interactive Map - Directly under title */}
         <div className="mb-12">
-          <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-muted-foreground/20 relative group">
-            {/* Static Map Image */}
-            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center relative">
-              <MapPin className="h-16 w-16 text-red-500 absolute z-10 animate-pulse" />
-              <div className="absolute inset-0 bg-muted/20"></div>
+          <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-muted-foreground/20">
+            {/* Embedded Google Maps */}
+            <div style={{ position: 'relative', paddingBottom: '75%', height: 0, overflow: 'hidden' }}>
+              <iframe 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                loading="lazy" 
+                allowFullScreen 
+                src="https://maps.google.com/maps?q=9.944241,-84.146250&z=15&t=m&output=embed"
+                title="Ubicación de Stella Studio en Google Maps"
+              />
             </div>
-            
-            {/* Overlay with click action */}
-            <a 
-              href={settings?.google_maps_link || 'https://maps.google.com'} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-            >
-              <div className="bg-white/90 rounded-lg p-4 text-center">
-                <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="text-primary font-medium text-sm">Ver en Google Maps</p>
-                <p className="text-xs text-muted-foreground">Haz clic para abrir</p>
-              </div>
-            </a>
           </div>
         </div>
 
