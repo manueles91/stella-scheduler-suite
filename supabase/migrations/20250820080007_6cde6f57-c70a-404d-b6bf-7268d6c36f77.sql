@@ -1,0 +1,2 @@
+-- Apply pending database migration
+-- This will execute any pending migrations in the migration queue
