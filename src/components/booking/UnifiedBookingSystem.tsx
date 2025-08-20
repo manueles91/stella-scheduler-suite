@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBookableItems } from "@/hooks/useBookableItems";
 import { useBookingContext } from "@/contexts/BookingContext";
@@ -61,7 +59,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     handleEmployeeSelect,
     handleNotesChange,
     resetForm,
-    canGoNext,
   } = useBookingState({ selectedCustomer });
 
   const {
@@ -210,12 +207,10 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         }
         
         // Set the selected service and go directly to step 2 (date selection)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
+        // No default date - user must select their preferred date
         updateState({ 
           selectedService: service,
-          selectedDate: tomorrow,
+          selectedDate: undefined, // No default date
           currentStep: 2 
         });
       }
@@ -305,6 +300,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             onServiceSelect={handleServiceSelect}
             onEmployeeSelect={handleEmployeeSelect}
             onCategorySelect={setSelectedCategory}
+            onBack={handleGoBack}
             formatPrice={formatPrice}
           />
         );
@@ -315,6 +311,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             selectedService={state.selectedService}
             selectedDate={state.selectedDate}
             onDateSelect={handleDateSelect}
+            onBack={() => updateState({ currentStep: 1 })}
           />
         );
 
@@ -327,6 +324,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             availableSlots={availableSlots}
             slotsLoading={slotsLoading}
             onSlotSelect={handleSlotSelect}
+            onBack={() => updateState({ currentStep: 2 })}
           />
         );
 
@@ -364,6 +362,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             notes={state.notes}
             formatPrice={formatPrice}
             onNotesChange={handleNotesChange}
+            onBack={() => updateState({ currentStep: 3 })}
             onConfirm={handleBooking}
             isSubmitting={state.submitting}
           />
@@ -386,15 +385,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     }
   };
 
-  const handleNext = () => {
-    if (state.currentStep === 4 && !config.isGuest) {
-      // For authenticated users, book directly from confirmation step
-      handleBooking();
-    } else if (canGoNext()) {
-      updateState({ currentStep: state.currentStep + 1 });
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -411,47 +401,6 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       <BookingProgress steps={steps} currentStep={state.currentStep} />
       
       {renderStepContent()}
-
-      {/* Navigation Buttons - Only show when not on guest step 4 (which has its own navigation) */}
-      {!(config.isGuest && state.currentStep === 4) && (
-        <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={state.currentStep === 1 ? handleGoBack : handlePrevious}
-            className="w-full sm:w-auto"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-
-          {/* Next/Confirm Button */}
-          {state.currentStep < config.maxSteps && (
-            <Button
-              onClick={handleNext}
-              disabled={!canGoNext() || state.submitting}
-              className="w-full sm:w-auto"
-            >
-              {state.currentStep === 4 && !config.isGuest ? (
-                <>
-                  {state.submitting ? (
-                    "Procesando..."
-                  ) : (
-                    <>
-                      Confirmar reserva
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  Siguiente
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      )}
     </div>
   );
 };

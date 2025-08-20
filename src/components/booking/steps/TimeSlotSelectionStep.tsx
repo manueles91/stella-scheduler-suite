@@ -1,4 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { TimeSlotGrid } from "../TimeSlotGrid";
 import { TimeSlot, BookableItem } from "@/types/booking";
 import { format } from "date-fns";
@@ -11,6 +13,7 @@ interface TimeSlotSelectionStepProps {
   availableSlots: TimeSlot[];
   slotsLoading: boolean;
   onSlotSelect: (slot: TimeSlot) => void;
+  onBack: () => void;
 }
 
 export const TimeSlotSelectionStep = ({
@@ -20,6 +23,7 @@ export const TimeSlotSelectionStep = ({
   availableSlots,
   slotsLoading,
   onSlotSelect,
+  onBack,
 }: TimeSlotSelectionStepProps) => {
   return (
     <Card>
@@ -30,13 +34,24 @@ export const TimeSlotSelectionStep = ({
           {selectedDate && format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <TimeSlotGrid
           slots={availableSlots}
           selectedSlot={selectedSlot}
           onSlotSelect={onSlotSelect}
           loading={slotsLoading}
         />
+        
+        <div className="flex justify-start pt-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="w-full sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

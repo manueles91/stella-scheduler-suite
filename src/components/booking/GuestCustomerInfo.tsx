@@ -234,21 +234,21 @@ export const GuestCustomerInfo = ({
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button
+          onClick={onConfirm}
+          disabled={!canConfirm || submitting}
+          className="sm:flex-1"
+        >
+          {submitting ? "Confirmando..." : "Confirmar Cita"}
+        </Button>
+        
+        <Button
           variant="outline"
           onClick={onBack}
           disabled={submitting}
           className="sm:w-auto"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-        
-        <Button
-          onClick={onConfirm}
-          disabled={!canConfirm || submitting}
-          className="sm:flex-1"
-        >
-          {submitting ? "Confirmando..." : "Confirmar Cita"}
+          Volver
         </Button>
       </div>
       

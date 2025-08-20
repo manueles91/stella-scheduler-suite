@@ -14,7 +14,7 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
   const [state, setState] = useState<BookingState>({
     currentStep: 1,
     selectedService: null,
-    selectedDate: new Date(),
+    selectedDate: undefined, // No default date - user must select
     selectedSlot: null,
     selectedEmployee: null,
     notes: "",
@@ -67,7 +67,7 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
     setState({
       currentStep: 1,
       selectedService: null,
-      selectedDate: new Date(),
+      selectedDate: undefined, // No default date - user must select
       selectedSlot: null,
       selectedEmployee: null,
       notes: "",
@@ -79,23 +79,6 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
     });
   }, []);
 
-  const canGoNext = useCallback(() => {
-    switch (state.currentStep) {
-      case 1:
-        return !!state.selectedService;
-      case 2:
-        return !!state.selectedDate;
-      case 3:
-        return !!state.selectedSlot;
-      case 4:
-        return true;
-      case 5:
-        return !!state.customerName.trim() && !!state.customerEmail.trim() && state.customerEmail.includes('@') && !!state.customerPhone.trim();
-      default:
-        return false;
-    }
-  }, [state]);
-
   return {
     state,
     updateState,
@@ -105,6 +88,5 @@ export const useBookingState = ({ selectedCustomer }: UseBookingStateProps = {})
     handleEmployeeSelect,
     handleNotesChange,
     resetForm,
-    canGoNext,
   };
 };

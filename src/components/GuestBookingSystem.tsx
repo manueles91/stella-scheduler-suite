@@ -5,7 +5,7 @@ import { BookingProvider } from "@/contexts/BookingContext";
 const guestConfig: BookingConfig = {
   isGuest: true,
   showAuthStep: false,
-  allowEmployeeSelection: true,
+  allowEmployeeSelection: false, // Changed from true to false - employee selection happens later in booking flow
   showCategories: true,
   maxSteps: 4, // Service, Date, Time, Customer Info (removed Confirmation as separate step)
 };

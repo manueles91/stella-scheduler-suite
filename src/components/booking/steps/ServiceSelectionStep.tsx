@@ -1,7 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { CategoryFilter } from "../CategoryFilter";
 import { MemoizedServiceCard } from "../../optimized/MemoizedServiceCard";
 import { BookableItem, Employee } from "@/types/booking";
+
 interface ServiceSelectionStepProps {
   allBookableItems: BookableItem[];
   categories: any[];
@@ -14,8 +17,10 @@ interface ServiceSelectionStepProps {
   onServiceSelect: (service: BookableItem) => void;
   onEmployeeSelect: (employee: Employee | null) => void;
   onCategorySelect: (category: string | null) => void;
+  onBack: () => void;
   formatPrice: (cents: number) => string;
 }
+
 export const ServiceSelectionStep = ({
   allBookableItems,
   categories,
@@ -28,6 +33,7 @@ export const ServiceSelectionStep = ({
   onServiceSelect,
   onEmployeeSelect,
   onCategorySelect,
+  onBack,
   formatPrice
 }: ServiceSelectionStepProps) => {
   // Filter items based on selected category
@@ -53,11 +59,6 @@ export const ServiceSelectionStep = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Elige tu servicio</CardTitle>
-        {selectedService && (
-          <CardDescription className="text-green-600 font-medium">
-            ✓ Servicio pre-seleccionado: {selectedService.name}
-          </CardDescription>
-        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {showCategories && <CategoryFilter categories={categories} selectedCategory={selectedCategory} onCategorySelect={onCategorySelect} className="w-full" />}
@@ -83,6 +84,17 @@ export const ServiceSelectionStep = ({
             No hay servicios disponibles en esta categoría
           </div>
         )}
+        
+        <div className="flex justify-start pt-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="w-full sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

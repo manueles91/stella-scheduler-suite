@@ -3,7 +3,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryImage } from "@/components/landing/CategoryImages";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
 
 interface ServiceCategory {
   id: string;
@@ -44,17 +44,36 @@ export const CategoryFilter = ({
             <Card 
               className={`h-20 sm:h-24 md:h-28 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
                 selectedCategory === 'promociones' 
-                  ? 'ring-2 ring-primary shadow-lg bg-primary/10' 
-                  : 'hover:shadow-md'
+                  ? 'ring-3 ring-primary ring-offset-2 ring-offset-background shadow-xl bg-primary/5' 
+                  : 'hover:shadow-md hover:scale-105'
               }`} 
               onClick={() => onCategorySelect('promociones')}
             >
-              <div className="h-full w-full bg-gradient-to-br from-yellow-400/20 to-orange-500/10 flex items-center justify-center">
-                <div className="text-center">
-                  <Sparkles className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 text-yellow-600" />
-                  <div className="text-[9px] md:text-xs font-medium text-foreground">Promociones</div>
-                  <div className="text-[8px] md:text-xs text-muted-foreground">y ofertas</div>
+              <div className="h-full w-full bg-gradient-to-br from-yellow-400/20 to-orange-500/10 flex items-center justify-center relative">
+                {/* Selected state overlay */}
+                {selectedCategory === 'promociones' && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg" />
+                )}
+                
+                <div className="text-center relative z-10">
+                  <Sparkles className={`h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 transition-colors duration-300 ${
+                    selectedCategory === 'promociones' ? 'text-primary' : 'text-yellow-600'
+                  }`} />
+                  <div className={`text-[10px] md:text-sm font-medium transition-colors duration-300 ${
+                    selectedCategory === 'promociones' ? 'text-primary font-semibold' : 'text-foreground'
+                  }`}>
+                    Promociones
+                  </div>
                 </div>
+
+                {/* Enhanced selected indicator */}
+                {selectedCategory === 'promociones' && (
+                  <div className="absolute top-1 right-1 md:top-2 md:right-2">
+                    <div className="bg-primary text-primary-foreground rounded-full p-1 md:p-1.5 shadow-lg">
+                      <Check className="h-3 w-3 md:h-4 md:w-4" />
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </CarouselItem>
@@ -65,8 +84,8 @@ export const CategoryFilter = ({
               <Card 
                 className={`h-20 sm:h-24 md:h-28 cursor-pointer transition-all duration-300 relative overflow-hidden group hover:scale-105 ${
                   selectedCategory === category.id 
-                    ? 'ring-2 ring-primary shadow-lg' 
-                    : 'hover:shadow-md'
+                    ? 'ring-3 ring-primary ring-offset-2 ring-offset-background shadow-xl' 
+                    : 'hover:shadow-md hover:scale-105'
                 }`} 
                 onClick={() => onCategorySelect(category.id)}
               >
@@ -84,8 +103,15 @@ export const CategoryFilter = ({
                       <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-secondary/5" />
                     );
                   })()}
-                  {/* Enhanced overlay for better text readability - Stronger gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                  
+                  {/* Selected state overlay */}
+                  {selectedCategory === category.id && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg" />
+                  )}
+                  
+                  {/* Reduced overlay - only strong gradient at bottom for text contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  
                   {/* Hover glow effect */}
                   <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
@@ -93,17 +119,21 @@ export const CategoryFilter = ({
                 {/* Content - Moved to bottom with better shadow */}
                 <div className="relative z-10 h-full flex items-end justify-center p-1 md:p-2">
                   <div className="text-center">
-                    <div className="text-[9px] md:text-xs font-medium text-white drop-shadow-2xl">
+                    <div className={`text-[10px] md:text-sm font-medium text-white drop-shadow-lg transition-all duration-300 ${
+                      selectedCategory === category.id ? 'font-semibold text-primary-foreground' : ''
+                    }`}>
                       {category.name}
                     </div>
                   </div>
                 </div>
 
-                {/* Selected Indicator */}
+                {/* Enhanced selected indicator */}
                 {selectedCategory === category.id && (
-                  <Badge className="absolute top-0.5 right-0.5 md:top-1 md:right-1 text-[8px] md:text-xs h-3 md:h-4 bg-primary">
-                    ✓
-                  </Badge>
+                  <div className="absolute top-1 right-1 md:top-2 md:right-2">
+                    <div className="bg-primary text-primary-foreground rounded-full p-1 md:p-1.5 shadow-lg">
+                      <Check className="h-3 w-3 md:h-4 md:w-4" />
+                    </div>
+                  </div>
                 )}
               </Card>
             </CarouselItem>

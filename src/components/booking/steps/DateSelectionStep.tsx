@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { BookableItem } from "@/types/booking";
@@ -8,12 +10,14 @@ interface DateSelectionStepProps {
   selectedService: BookableItem | null;
   selectedDate: Date | undefined;
   onDateSelect: (date: Date | undefined) => void;
+  onBack: () => void;
 }
 
 export const DateSelectionStep = ({
   selectedService,
   selectedDate,
   onDateSelect,
+  onBack,
 }: DateSelectionStepProps) => {
   return (
     <Card>
@@ -23,7 +27,7 @@ export const DateSelectionStep = ({
           Elige la fecha para tu {selectedService?.type === 'combo' ? 'combo' : 'servicio'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -36,6 +40,17 @@ export const DateSelectionStep = ({
           className="rounded-md border"
           locale={es}
         />
+        
+        <div className="flex justify-start pt-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="w-full sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

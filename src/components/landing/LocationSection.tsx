@@ -48,22 +48,6 @@ export const LocationSection = () => {
           </h2>
         </div>
         
-        {/* Interactive Map - Directly under title */}
-        <div className="mb-12">
-          <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-muted-foreground/20">
-            {/* Embedded Google Maps */}
-            <div style={{ position: 'relative', paddingBottom: '75%', height: 0, overflow: 'hidden' }}>
-              <iframe 
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                loading="lazy" 
-                allowFullScreen 
-                src="https://maps.google.com/maps?q=9.944241,-84.146250&z=15&t=m&output=embed"
-                title="Ubicación de Stella Studio en Google Maps"
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Location Info - Below the map */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Address */}
@@ -114,6 +98,22 @@ export const LocationSection = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Interactive Map - Below business hours */}
+        <div className="mt-12 mb-8">
+          <div className="bg-muted rounded-lg overflow-hidden border border-muted-foreground/20" style={{ height: 'calc(75vh + 20%)' }}>
+            {/* Embedded Google Maps */}
+            <div style={{ position: 'relative', paddingBottom: '75%', height: 0, overflow: 'hidden' }}>
+              <iframe 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                loading="lazy" 
+                allowFullScreen 
+                src="https://maps.google.com/maps?q=Plaza+Itscazu,+San+Rafael+Escazu,+Costa+Rica&z=15&t=s&output=embed"
+                title="Ubicación de Stella Studio en Plaza Itscazu, San Rafael Escazu, Costa Rica"
+              />
+            </div>
+          </div>
         </div>
         
         <div className="text-center mt-8">

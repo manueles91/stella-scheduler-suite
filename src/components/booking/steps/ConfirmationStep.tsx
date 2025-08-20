@@ -20,6 +20,7 @@ interface ConfirmationStepProps {
   notes: string;
   formatPrice: (cents: number) => string;
   onNotesChange: (notes: string) => void;
+  onBack: () => void;
   onConfirm?: () => void;
   isSubmitting?: boolean;
 }
@@ -32,6 +33,7 @@ export const ConfirmationStep = ({
   notes,
   formatPrice,
   onNotesChange,
+  onBack,
   onConfirm,
   isSubmitting = false,
 }: ConfirmationStepProps) => {
@@ -164,7 +166,7 @@ export const ConfirmationStep = ({
         )}
 
         {onConfirm && (
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button 
               onClick={onConfirm}
               disabled={isSubmitting}
@@ -179,6 +181,13 @@ export const ConfirmationStep = ({
               ) : (
                 "Confirmar reserva"
               )}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={onBack}
+              className="min-w-[200px]"
+            >
+              Volver
             </Button>
           </div>
         )}
