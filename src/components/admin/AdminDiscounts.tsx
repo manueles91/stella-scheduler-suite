@@ -110,9 +110,9 @@ const AdminDiscounts: React.FC = () => {
   const [uploadingComboImage, setUploadingComboImage] = useState(false);
   const [comboImageValidationError, setComboImageValidationError] = useState<string | null>(null);
   
-  // Image upload constants
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  // No file size or type restrictions - same as AdminCategories
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (effectively no limit)
+  const ALLOWED_FILE_TYPES = ['image/*']; // Accept all image types
   
   useEffect(() => {
     fetchDiscounts();
@@ -122,16 +122,7 @@ const AdminDiscounts: React.FC = () => {
   
   // Image validation function for combos
   const validateComboImageFile = (file: File): string | null => {
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return `El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)}MB). El tamaño máximo permitido es ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
-    }
-
-    // Check file type
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return `Tipo de archivo no permitido (${file.type}). Solo se permiten archivos de imagen: JPG, PNG, WebP, GIF.`;
-    }
-
+    // No validation - accept all files like AdminCategories
     return null;
   };
   
@@ -971,8 +962,7 @@ const AdminDiscounts: React.FC = () => {
                         {comboImagePreview ? "Cambiar imagen" : "Subir imagen"}
                       </Button>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p>Formatos soportados: JPG, PNG, WebP, GIF</p>
-                        <p>Tamaño máximo: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                        <p>Formatos soportados: Todos los formatos de imagen</p>
                         <p>Recomendado: Imágenes de alta calidad, ratio 16:9 o cuadradas</p>
                       </div>
                     </div>

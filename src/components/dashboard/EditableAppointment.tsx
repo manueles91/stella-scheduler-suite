@@ -13,11 +13,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Appointment } from "@/types/appointment";
 import { Profile } from "@/types/booking";
+import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
 
 interface EditableAppointmentProps {
   appointment: Appointment;
   onUpdate: () => void;
   canEdit: boolean;
+}
+
+interface Customer {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  account_status: string;
+  created_at: string;
 }
 
 export const EditableAppointment = ({ appointment, onUpdate, canEdit }: EditableAppointmentProps) => {
@@ -31,45 +42,116 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     client_id: appointment.client_id,
     employee_id: appointment.employee_id || "unassigned",
   });
-  const [clients, setClients] = useState<Profile[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
-      fetchProfiles();
+      fetchEmployees();
+      // Fetch and set the selected customer based on the appointment's client_id
+      if (appointment.client_id) {
+        fetchCustomerData(appointment.client_id);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, appointment.client_id]);
 
-  const fetchProfiles = async () => {
+  const fetchEmployees = async () => {
     setLoading(true);
     try {
-      // Fetch clients
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('role', 'client')
-        .order('full_name');
-
-      // Fetch employees
       const { data: employeesData, error: employeesError } = await supabase
         .from('profiles')
-        .select('id, full_name, role')
+        .select('id, full_name, email, role, created_at')
         .in('role', ['employee', 'admin'])
+        .eq('account_status', 'active')
         .order('full_name');
 
-      if (!clientsError && clientsData) setClients(clientsData);
       if (!employeesError && employeesData) setEmployees(employeesData);
     } catch (error) {
-      console.error('Error fetching profiles:', error);
+      console.error('Error fetching employees:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchCustomerData = async (clientId: string) => {
+    try {
+      // First try to find in profiles table (including admins and employees)
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone, role, account_status, created_at')
+        .eq('id', clientId)
+        .in('role', ['client', 'employee', 'admin'])
+        .single();
+
+      if (profileData && !profileError) {
+        setSelectedCustomer({
+          id: profileData.id,
+          full_name: profileData.full_name,
+          email: profileData.email,
+          phone: profileData.phone,
+          role: profileData.role,
+          account_status: profileData.account_status || 'active',
+          created_at: profileData.created_at || new Date().toISOString()
+        });
+        return;
+      }
+
+      // If not found in profiles, try invited_users table
+      const { data: invitedData, error: invitedError } = await supabase
+        .from('invited_users')
+        .select('id, full_name, email, phone, role, account_status, invited_at')
+        .eq('id', clientId)
+        .single();
+
+      if (invitedData && !invitedError) {
+        setSelectedCustomer({
+          id: invitedData.id,
+          full_name: invitedData.full_name,
+          email: invitedData.email,
+          phone: invitedData.phone,
+          role: invitedData.role,
+          account_status: invitedData.account_status,
+          created_at: invitedData.invited_at
+        });
+        return;
+      }
+
+      // If customer not found in either table, create a fallback object
+      setSelectedCustomer({
+        id: clientId,
+        full_name: appointment.client_profile?.full_name || "Cliente no encontrado",
+        email: "",
+        role: "client",
+        account_status: "unknown",
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+      // Set fallback customer data
+      setSelectedCustomer({
+        id: clientId,
+        full_name: appointment.client_profile?.full_name || "Cliente no encontrado",
+        email: "",
+        role: "client",
+        account_status: "unknown",
+        created_at: new Date().toISOString()
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedCustomer) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un cliente",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
@@ -80,7 +162,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
           end_time: formData.end_time,
           status: formData.status,
           notes: formData.notes || null,
-          client_id: formData.client_id,
+          client_id: selectedCustomer.id,
           employee_id: formData.employee_id === "unassigned" ? null : formData.employee_id || null,
         })
         .eq('id', appointment.id);
@@ -178,22 +260,10 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
 
           <div>
             <Label>Cliente</Label>
-            <Select 
-              value={formData.client_id} 
-              onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-              disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CustomerSelectorModal
+              value={selectedCustomer}
+              onValueChange={setSelectedCustomer}
+            />
           </div>
 
           <div>

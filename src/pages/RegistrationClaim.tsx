@@ -115,21 +115,11 @@ export const RegistrationClaimPage = () => {
       }
 
       if (authData.user) {
-        // Update all guest reservations to be linked to the new user
-        const { error: updateError } = await supabase
-          .from('reservations')
-          .update({
-            client_id: authData.user.id,
-            is_guest_booking: false
-          })
-          .eq('customer_email', customerEmail)
-          .eq('is_guest_booking', true);
-
-        if (updateError) {
-          console.error('Error updating reservations:', updateError);
-          // Don't fail the registration, just log the error
-        }
-
+        // The claim_invited_profile function will automatically:
+        // 1. Claim the invited/guest user profile
+        // 2. Link all past guest bookings to the new user
+        // 3. Update the profile with the correct data
+        
         toast({
           title: "¡Registro completado!",
           description: "Tu cuenta ha sido creada exitosamente. Ahora puedes gestionar tus citas desde el panel de usuario.",

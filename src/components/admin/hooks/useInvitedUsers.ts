@@ -144,17 +144,60 @@ export const useInvitedUsers = () => {
             isExisting: true
           };
         }
+
+        // Check if there's an existing invited user
+        const { data: existingInvited } = await supabase
+          .from('invited_users')
+          .select('*')
+          .eq('email', userData.email.toLowerCase())
+          .is('claimed_at', null)
+          .maybeSingle();
+
+        if (existingInvited) {
+          return {
+            id: existingInvited.id,
+            full_name: existingInvited.full_name,
+            email: existingInvited.email,
+            phone: existingInvited.phone,
+            role: existingInvited.role,
+            account_status: existingInvited.account_status,
+            created_at: existingInvited.invited_at,
+            isExisting: true
+          };
+        }
       }
 
-      // Create guest customer data for booking
+      // Get current user (admin creating the appointment)
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        throw new Error("No estás autenticado");
+      }
+
+      // Create a proper invited user record for admin-created appointments
+      const { data: newInvitedUser, error: createError } = await supabase
+        .from('invited_users')
+        .insert({
+          email: userData.email.toLowerCase().trim(),
+          full_name: userData.full_name.trim(),
+          phone: userData.phone?.trim() || null,
+          role: 'client',
+          account_status: 'invited',
+          invited_by: currentUser.id,
+          is_guest_user: false
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
       return {
-        id: `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        full_name: userData.full_name.trim(),
-        email: userData.email.toLowerCase().trim(),
-        phone: userData.phone?.trim() || undefined,
-        role: 'client' as const,
-        account_status: 'guest',
-        created_at: new Date().toISOString(),
+        id: newInvitedUser.id,
+        full_name: newInvitedUser.full_name,
+        email: newInvitedUser.email,
+        phone: newInvitedUser.phone,
+        role: newInvitedUser.role,
+        account_status: newInvitedUser.account_status,
+        created_at: newInvitedUser.invited_at,
         isExisting: false
       };
     } catch (error) {

@@ -113,9 +113,9 @@ const DURATION_OPTIONS = [{
   label: "4 horas"
 }];
 
-// Increased file size limit to 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+// No file size or type restrictions - same as AdminCategories
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (effectively no limit)
+const ALLOWED_FILE_TYPES = ['image/*']; // Accept all image types
 export const AdminServices = () => {
   // Services state
   const [services, setServices] = useState<Service[]>([]);
@@ -388,17 +388,7 @@ export const AdminServices = () => {
     }
   };
   const validateImageFile = (file: File): string | null => {
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return `El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)}MB). El tamaño máximo permitido es ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
-    }
-
-    // Check file type
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return `Tipo de archivo no permitido (${file.type}). Solo se permiten archivos de imagen: JPG, PNG, WebP, GIF.`;
-    }
-
-    // Check if file is actually an image by trying to read it
+    // No validation - accept all files like AdminCategories
     return null;
   };
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -797,12 +787,7 @@ export const AdminServices = () => {
 
   // Combo handling functions
   const validateComboImageFile = (file: File): string | null => {
-    if (file.size > MAX_FILE_SIZE) {
-      return `El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)}MB). El tamaño máximo permitido es ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
-    }
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return `Tipo de archivo no permitido (${file.type}). Solo se permiten archivos de imagen: JPG, PNG, WebP, GIF.`;
-    }
+    // No validation - accept all files like AdminCategories
     return null;
   };
 
@@ -1322,8 +1307,7 @@ export const AdminServices = () => {
                     {imagePreview ? "Cambiar imagen" : "Subir imagen"}
                   </Button>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Formatos soportados: JPG, PNG, WebP, GIF</p>
-                    <p>Tamaño máximo: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                    <p>Formatos soportados: Todos los formatos de imagen</p>
                     <p>Recomendado: Imágenes de alta calidad, ratio 16:9 o cuadradas</p>
                   </div>
                 </div>
@@ -1857,8 +1841,7 @@ export const AdminServices = () => {
                             {comboImagePreview ? "Cambiar imagen" : "Subir imagen"}
                           </Button>
                           <div className="text-sm text-muted-foreground space-y-1">
-                            <p>Formatos soportados: JPG, PNG, WebP, GIF</p>
-                            <p>Tamaño máximo: {MAX_FILE_SIZE / 1024 / 1024}MB</p>
+                            <p>Formatos soportados: Todos los formatos de imagen</p>
                             <p>Recomendado: Imágenes de alta calidad, ratio 16:9 o cuadradas</p>
                           </div>
                         </div>

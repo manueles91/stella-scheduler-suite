@@ -59,22 +59,36 @@ export const CustomerSelectorModal = ({
   const fetchCustomers = async () => {
     setLoading(true);
     try {
+      // First, let's test if we can access the invited_users table at all
+      const { data: testData, error: testError } = await supabase
+        .from('invited_users')
+        .select('id, full_name, email, role, account_status')
+        .limit(5);
+
+      console.log('Test query result:', testData);
+      if (testError) console.log('Test query error:', testError);
+
       // Fetch both authenticated users and invited users who haven't been claimed
       const [profilesResponse, invitedResponse] = await Promise.all([
         supabase
           .from('profiles')
           .select('*')
-          .in('role', ['client', 'employee'])
+          .in('role', ['client', 'employee', 'admin'])
           .eq('account_status', 'active')
           .order('full_name'),
         supabase
           .from('invited_users')
           .select('*')
           .in('role', ['client', 'employee'])
-          .eq('account_status', 'invited')
+          // Include both 'invited' (admin-created) and 'guest' (landing page) users
+          .in('account_status', ['invited', 'guest'])
           .is('claimed_at', null)
           .order('full_name')
       ]);
+
+      // Debug logging to see what we're getting
+      console.log('Profiles response:', profilesResponse);
+      console.log('Invited users response:', invitedResponse);
 
       if (profilesResponse.error) throw profilesResponse.error;
       if (invitedResponse.error) throw invitedResponse.error;
@@ -88,6 +102,7 @@ export const CustomerSelectorModal = ({
         }))
       ];
 
+      console.log('Combined customers:', allCustomers);
       setCustomers(allCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -183,6 +198,8 @@ export const CustomerSelectorModal = ({
         return 'bg-blue-100 text-blue-800';
       case 'employee':
         return 'bg-green-100 text-green-800';
+      case 'admin':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -194,6 +211,8 @@ export const CustomerSelectorModal = ({
         return 'Cliente';
       case 'employee':
         return 'Empleado';
+      case 'admin':
+        return 'Administrador';
       default:
         return role;
     }
