@@ -607,12 +607,12 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 </div>
                 <div>
                   <Label>Empleado (opcional)</Label>
-                  <Select value={appointmentData.employeeId} onValueChange={(value) => setAppointmentData({...appointmentData, employeeId: value})}>
+                  <Select value={appointmentData.employeeId || 'unassigned'} onValueChange={(value) => setAppointmentData({...appointmentData, employeeId: value === 'unassigned' ? '' : value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="unassigned">Sin asignar</SelectItem>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}
@@ -722,12 +722,12 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 </div>
                 <div>
                   <Label>Empleado (opcional)</Label>
-                  <Select value={saleData.employeeId} onValueChange={(value) => setSaleData({...saleData, employeeId: value})}>
+                  <Select value={saleData.employeeId || 'unassigned'} onValueChange={(value) => setSaleData({...saleData, employeeId: value === 'unassigned' ? '' : value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="unassigned">Sin asignar</SelectItem>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}

@@ -226,15 +226,15 @@ export const ComboServiceAssignmentModal = ({
                       <div className="flex items-center gap-3">
                         <Label className="text-sm font-medium">Empleado Asignado:</Label>
                         <Select
-                          value={assignment.assigned_employee_id || ''}
-                          onValueChange={(value) => handleEmployeeAssignment(assignment.id, value || null)}
+                          value={assignment.assigned_employee_id || 'unassigned'}
+                          onValueChange={(value) => handleEmployeeAssignment(assignment.id, value === 'unassigned' ? null : value)}
                           disabled={updating}
                         >
                           <SelectTrigger className="w-64">
                             <SelectValue placeholder="Seleccionar empleado" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Sin asignar</SelectItem>
+                            <SelectItem value="unassigned">Sin asignar</SelectItem>
                             {availableEmployees.map((employee) => (
                               <SelectItem key={employee.id} value={employee.id}>
                                 {employee.full_name}
