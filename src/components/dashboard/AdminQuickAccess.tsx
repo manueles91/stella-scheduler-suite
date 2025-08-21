@@ -29,9 +29,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
     employeeId: "",
     date: "",
     time: "",
-    notes: ""
+    notes: "",
+    isCombo: false
   });
   const [services, setServices] = useState<any[]>([]);
+  const [combos, setCombos] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
 
   // New service sale state
@@ -42,7 +44,8 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
     date: format(new Date(), 'yyyy-MM-dd'),
     time: format(new Date(), 'HH:mm'),
     chargedPrice: "",
-    notes: ""
+    notes: "",
+    isCombo: false
   });
 
   // New cost state
@@ -87,6 +90,40 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
     }
   };
 
+  const fetchCombos = async () => {
+    try {
+      const now = new Date();
+      const nowISO = now.toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('combos')
+        .select(`
+          *,
+          combo_services (
+            service_id,
+            quantity,
+            services (
+              id,
+              name,
+              description,
+              duration_minutes,
+              price_cents,
+              image_url
+            )
+          )
+        `)
+        .eq('is_active', true)
+        .lte('start_date', nowISO)
+        .gte('end_date', nowISO)
+        .order('name');
+      
+      if (error) throw error;
+      setCombos(data || []);
+    } catch (error) {
+      console.error('Error fetching combos:', error);
+    }
+  };
+
   const fetchEmployees = async () => {
     try {
       const { data, error } = await supabase
@@ -127,22 +164,56 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
     }
 
     try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .insert({
-          client_id: selectedCustomer.id,
-          service_id: appointmentData.serviceId,
-          employee_id: appointmentData.employeeId || null,
-          appointment_date: appointmentData.date,
-          start_time: appointmentData.time,
-          end_time: appointmentData.time, // Add required end_time
-          notes: appointmentData.notes,
-          status: 'confirmed'
-        })
-        .select()
-        .single();
+      if (appointmentData.isCombo) {
+        // Handle combo appointment - create multiple reservations
+        const selectedCombo = combos.find(c => c.id === appointmentData.serviceId);
+        if (!selectedCombo) {
+          toast({
+            title: "Error",
+            description: "Combo no encontrado",
+            variant: "destructive"
+          });
+          return;
+        }
 
-      if (error) throw error;
+        // Create reservations for each service in the combo
+        for (const comboService of selectedCombo.combo_services) {
+          for (let i = 0; i < comboService.quantity; i++) {
+            const { error } = await supabase
+              .from('reservations')
+              .insert({
+                client_id: selectedCustomer.id,
+                service_id: comboService.service_id,
+                employee_id: appointmentData.employeeId || null,
+                appointment_date: appointmentData.date,
+                start_time: appointmentData.time,
+                end_time: appointmentData.time,
+                notes: `Parte del combo: ${selectedCombo.name}. ${appointmentData.notes}`,
+                status: 'confirmed'
+              });
+
+            if (error) throw error;
+          }
+        }
+      } else {
+        // Handle individual service appointment
+        const { data, error } = await supabase
+          .from('reservations')
+          .insert({
+            client_id: selectedCustomer.id,
+            service_id: appointmentData.serviceId,
+            employee_id: appointmentData.employeeId || null,
+            appointment_date: appointmentData.date,
+            start_time: appointmentData.time,
+            end_time: appointmentData.time,
+            notes: appointmentData.notes,
+            status: 'confirmed'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Éxito",
@@ -156,7 +227,8 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
         employeeId: "",
         date: "",
         time: "",
-        notes: ""
+        notes: "",
+        isCombo: false
       });
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -179,21 +251,54 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
     }
 
     try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .insert({
-          service_id: saleData.serviceId,
-          employee_id: saleData.employeeId || null,
-          appointment_date: saleData.date,
-          start_time: saleData.time,
-          end_time: saleData.time, // Add required end_time
-          notes: saleData.notes,
-          status: 'completed'
-        })
-        .select()
-        .single();
+      if (saleData.isCombo) {
+        // Handle combo sale - create multiple reservations
+        const selectedCombo = combos.find(c => c.id === saleData.serviceId);
+        if (!selectedCombo) {
+          toast({
+            title: "Error",
+            description: "Combo no encontrado",
+            variant: "destructive"
+          });
+          return;
+        }
 
-      if (error) throw error;
+        // Create reservations for each service in the combo
+        for (const comboService of selectedCombo.combo_services) {
+          for (let i = 0; i < comboService.quantity; i++) {
+            const { error } = await supabase
+              .from('reservations')
+              .insert({
+                service_id: comboService.service_id,
+                employee_id: saleData.employeeId || null,
+                appointment_date: saleData.date,
+                start_time: saleData.time,
+                end_time: saleData.time,
+                notes: `Parte del combo: ${selectedCombo.name}. ${saleData.notes}`,
+                status: 'completed'
+              });
+
+            if (error) throw error;
+          }
+        }
+      } else {
+        // Handle individual service sale
+        const { data, error } = await supabase
+          .from('reservations')
+          .insert({
+            service_id: saleData.serviceId,
+            employee_id: saleData.employeeId || null,
+            appointment_date: saleData.date,
+            start_time: saleData.time,
+            end_time: saleData.time,
+            notes: saleData.notes,
+            status: 'completed'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Éxito",
@@ -207,7 +312,8 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
         date: format(new Date(), 'yyyy-MM-dd'),
         time: format(new Date(), 'HH:mm'),
         chargedPrice: "",
-        notes: ""
+        notes: "",
+        isCombo: false
       });
     } catch (error) {
       console.error('Error creating sale:', error);
@@ -237,10 +343,10 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           description: costData.description,
           amount_cents: Math.round(parseFloat(costData.amount) * 100),
           cost_type: costData.cost_type,
-          cost_category: 'other' as const, // Add required cost_category
+          cost_category: 'other' as const,
           cost_category_id: costData.cost_category_id,
           date_incurred: costData.date_incurred,
-          created_by: selectedCustomer?.id || '', // Add required created_by
+          created_by: selectedCustomer?.id || '',
           is_active: true
         })
         .select()
@@ -304,7 +410,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       const { data, error } = await supabase
         .from('profiles')
         .insert({
-          id: userId, // Add required id field
+          id: userId,
           email: userData.email,
           full_name: userData.full_name,
           phone: userData.phone || null,
@@ -361,6 +467,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 className="h-20 flex flex-col gap-2"
                 onClick={() => {
                   fetchServices();
+                  fetchCombos();
                   fetchEmployees();
                 }}
               >
@@ -368,11 +475,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <span className="text-sm">Nueva Cita</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="appointment-description">
               <DialogHeader>
                 <DialogTitle>Nueva Cita</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4" id="appointment-description">
                  <div>
                    <Label>Cliente</Label>
                    <CustomerSelectorModal
@@ -381,17 +488,44 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                    />
                  </div>
                 <div>
-                  <Label>Servicio</Label>
-                  <Select value={appointmentData.serviceId} onValueChange={(value) => setAppointmentData({...appointmentData, serviceId: value})}>
+                  <Label>Tipo de Servicio</Label>
+                  <Select 
+                    value={appointmentData.isCombo ? "combo" : "service"} 
+                    onValueChange={(value) => setAppointmentData({
+                      ...appointmentData, 
+                      isCombo: value === "combo",
+                      serviceId: ""
+                    })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar servicio" />
+                      <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          {service.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="service">Servicio Individual</SelectItem>
+                      <SelectItem value="combo">Combo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{appointmentData.isCombo ? "Combo" : "Servicio"}</Label>
+                  <Select value={appointmentData.serviceId} onValueChange={(value) => setAppointmentData({...appointmentData, serviceId: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={appointmentData.isCombo ? "Seleccionar combo" : "Seleccionar servicio"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {appointmentData.isCombo ? (
+                        combos.map((combo) => (
+                          <SelectItem key={combo.id} value={combo.id}>
+                            {combo.name} - ₡{Math.round(combo.total_price_cents / 100)}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - ₡{Math.round(service.price_cents / 100)}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -449,6 +583,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 className="h-20 flex flex-col gap-2"
                 onClick={() => {
                   fetchServices();
+                  fetchCombos();
                   fetchEmployees();
                 }}
               >
@@ -456,23 +591,50 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <span className="text-sm">Registrar Venta</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="sale-description">
               <DialogHeader>
                 <DialogTitle>Registrar Venta</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4" id="sale-description">
                 <div>
-                  <Label>Servicio</Label>
-                  <Select value={saleData.serviceId} onValueChange={(value) => setSaleData({...saleData, serviceId: value})}>
+                  <Label>Tipo de Servicio</Label>
+                  <Select 
+                    value={saleData.isCombo ? "combo" : "service"} 
+                    onValueChange={(value) => setSaleData({
+                      ...saleData, 
+                      isCombo: value === "combo",
+                      serviceId: ""
+                    })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar servicio" />
+                      <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          {service.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="service">Servicio Individual</SelectItem>
+                      <SelectItem value="combo">Combo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{saleData.isCombo ? "Combo" : "Servicio"}</Label>
+                  <Select value={saleData.serviceId} onValueChange={(value) => setSaleData({...saleData, serviceId: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={saleData.isCombo ? "Seleccionar combo" : "Seleccionar servicio"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {saleData.isCombo ? (
+                        combos.map((combo) => (
+                          <SelectItem key={combo.id} value={combo.id}>
+                            {combo.name} - ₡{Math.round(combo.total_price_cents / 100)}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - ₡{Math.round(service.price_cents / 100)}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -508,7 +670,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                   />
                 </div>
                 <div>
-                  <Label>Precio Cobrado (€)</Label>
+                  <Label>Precio Cobrado (₡)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -546,11 +708,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <span className="text-sm">Nuevo Costo</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="cost-description">
               <DialogHeader>
                 <DialogTitle>Nuevo Costo</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4" id="cost-description">
                 <div>
                   <Label>Nombre del Costo</Label>
                   <Input
@@ -568,7 +730,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                   />
                 </div>
                 <div>
-                  <Label>Monto (€)</Label>
+                  <Label>Monto (₡)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -633,11 +795,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <span className="text-sm">Nuevo Usuario</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="user-description">
               <DialogHeader>
                 <DialogTitle>Nuevo Usuario</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4" id="user-description">
                 <div>
                   <Label>Email</Label>
                   <Input
@@ -687,4 +849,4 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       </CardContent>
     </Card>
   );
-}; 
+};
