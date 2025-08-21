@@ -147,226 +147,60 @@ export type Database = {
           },
         ]
       }
-      combo_reservations: {
-        Row: {
-          id: string
-          client_id: string | null
-          guest_user_id: string | null
-          combo_id: string
-          primary_employee_id: string
-          appointment_date: string
-          start_time: string
-          end_time: string
-          status: string
-          notes: string | null
-          final_price_cents: number | null
-          original_price_cents: number | null
-          savings_cents: number | null
-          is_guest_booking: boolean
-          customer_email: string | null
-          customer_name: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          client_id?: string | null
-          guest_user_id?: string | null
-          combo_id: string
-          primary_employee_id: string
-          appointment_date: string
-          start_time: string
-          end_time: string
-          status?: string
-          notes?: string | null
-          final_price_cents?: number | null
-          original_price_cents?: number | null
-          savings_cents?: number | null
-          is_guest_booking?: boolean
-          customer_email?: string | null
-          customer_name?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          client_id?: string | null
-          guest_user_id?: string | null
-          combo_id?: string
-          primary_employee_id?: string
-          appointment_date?: string
-          start_time?: string
-          end_time?: string
-          status?: string
-          notes?: string | null
-          final_price_cents?: number | null
-          original_price_cents?: number | null
-          savings_cents?: number | null
-          is_guest_booking?: boolean
-          customer_email?: string | null
-          customer_name?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "combo_reservations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_reservations_guest_user_id_fkey"
-            columns: ["guest_user_id"]
-            isOneToOne: false
-            referencedRelation: "invited_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_reservations_combo_id_fkey"
-            columns: ["combo_id"]
-            isOneToOne: false
-            referencedRelation: "combos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_reservations_primary_employee_id_fkey"
-            columns: ["primary_employee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      combo_service_assignments: {
-        Row: {
-          id: string
-          combo_reservation_id: string
-          service_id: string
-          assigned_employee_id: string | null
-          estimated_start_time: string | null
-          estimated_duration: number
-          actual_start_time: string | null
-          actual_end_time: string | null
-          status: string
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          combo_reservation_id: string
-          service_id: string
-          assigned_employee_id?: string | null
-          estimated_start_time?: string | null
-          estimated_duration: number
-          actual_start_time?: string | null
-          actual_end_time?: string | null
-          status?: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          combo_reservation_id?: string
-          service_id?: string
-          assigned_employee_id?: string | null
-          estimated_start_time?: string | null
-          estimated_duration?: number
-          actual_start_time?: string | null
-          actual_end_time?: string | null
-          status?: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "combo_service_assignments_combo_reservation_id_fkey"
-            columns: ["combo_reservation_id"]
-            isOneToOne: false
-            referencedRelation: "combo_reservations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_service_assignments_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_service_assignments_assigned_employee_id_fkey"
-            columns: ["assigned_employee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       combos: {
         Row: {
-          id: string
-          name: string
-          description: string | null
-          image_url: string | null
-          total_price_cents: number
-          original_price_cents: number
-          start_date: string
-          end_date: string
-          is_active: boolean
-          created_by: string
           created_at: string
-          updated_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          original_price_cents: number
           primary_employee_id: string | null
+          start_date: string
+          total_price_cents: number
+          updated_at: string
         }
         Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          image_url?: string | null
-          total_price_cents: number
-          original_price_cents: number
-          start_date: string
-          end_date: string
-          is_active?: boolean
-          created_by: string
           created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          original_price_cents: number
+          primary_employee_id?: string | null
+          start_date: string
+          total_price_cents: number
           updated_at?: string
-          primary_employee_id: string
         }
         Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          image_url?: string | null
-          total_price_cents?: number
-          original_price_cents?: number
-          start_date?: string
-          end_date?: string
-          is_active?: boolean
-          created_by?: string
           created_at?: string
-          updated_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          original_price_cents?: number
           primary_employee_id?: string | null
+          start_date?: string
+          total_price_cents?: number
+          updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "combos_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "combos_primary_employee_id_fkey"
             columns: ["primary_employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       cost_categories: {
