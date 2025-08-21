@@ -66,7 +66,7 @@ export const AdminStaff = () => {
     const {
       data,
       error
-    } = await supabase.from('services').select('id, name').eq('is_active', true).order('name');
+    } = await supabase.from('services').select('id, name, description, duration_minutes, price_cents, variable_price').eq('is_active', true).order('name');
     if (error) {
       console.error('Error fetching services:', error);
     } else {

@@ -55,6 +55,7 @@ interface Combo {
   start_date: string;
   end_date: string;
   created_at: string;
+  primary_employee_id?: string;
   combo_services: {
     service_id: string;
     quantity: number;
@@ -95,6 +96,7 @@ const AdminDiscounts: React.FC = () => {
     start_date: "",
     end_date: "",
     is_active: true,
+    primary_employee_id: "",
     services: [] as {
       service_id: string;
       quantity: number;
@@ -435,6 +437,7 @@ const AdminDiscounts: React.FC = () => {
       start_date: "",
       end_date: "",
       is_active: true,
+      primary_employee_id: "",
       services: [],
       pricing_type: "percentage",
       discount_percentage: "20",
@@ -505,7 +508,8 @@ const AdminDiscounts: React.FC = () => {
         start_date: new Date(comboFormData.start_date).toISOString(),
         end_date: new Date(comboFormData.end_date + 'T23:59:59').toISOString(),
         is_active: comboFormData.is_active,
-        created_by: user.id
+        created_by: user.id,
+        primary_employee_id: comboFormData.primary_employee_id
       };
       let error;
       let comboId: string;
@@ -569,6 +573,7 @@ const AdminDiscounts: React.FC = () => {
       start_date: combo.start_date.split('T')[0],
       end_date: combo.end_date.split('T')[0],
       is_active: combo.is_active,
+      primary_employee_id: combo.primary_employee_id || "",
       services: combo.combo_services.map(cs => ({
         service_id: cs.service_id,
         quantity: cs.quantity

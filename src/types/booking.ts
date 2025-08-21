@@ -18,6 +18,7 @@ export interface Combo {
   is_active: boolean;
   start_date: string;
   end_date: string;
+  primary_employee_id?: string;
   combo_services: {
     service_id: string;
     quantity: number;

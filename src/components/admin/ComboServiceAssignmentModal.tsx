@@ -46,7 +46,10 @@ export const ComboServiceAssignmentModal = ({
         .order('estimated_start_time');
 
       if (error) throw error;
-      setServiceAssignments(data || []);
+      setServiceAssignments((data || []).map((item: any) => ({
+        ...item,
+        status: item.status as 'pending' | 'in_progress' | 'completed' | 'cancelled'
+      })));
     } catch (error) {
       console.error('Error fetching service assignments:', error);
       toast({
