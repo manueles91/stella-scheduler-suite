@@ -99,20 +99,67 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       const dayOfWeek = date.getDay();
       
       // Get all employees who can perform this service
-      const { data: employeeServices } = await supabase
-        .from('employee_services')
-        .select(`
-          employee_id,
-          profiles!inner(id, full_name, role)
-        `)
-        .eq('service_id', service.id);
+      let availableEmployees;
+      if (service.type === 'combo') {
+        // For combos, get employees who can perform ALL services in the combo
+        const { data: employeeServices } = await supabase
+          .from('employee_services')
+          .select(`
+            employee_id,
+            profiles!inner(id, full_name, role)
+          `)
+          .in('service_id', service.combo_services?.map(cs => cs.service_id) || []);
 
-      if (!employeeServices || employeeServices.length === 0) {
-        return [];
+        if (!employeeServices || employeeServices.length === 0) {
+          return [];
+        }
+
+        // Group by employee and check if they can perform all services
+        const employeeServiceCount = employeeServices.reduce((acc, es) => {
+          acc[es.employee_id] = (acc[es.employee_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const requiredServiceCount = service.combo_services?.length || 0;
+        const eligibleEmployeeIds = Object.entries(employeeServiceCount)
+          .filter(([_, count]) => count === requiredServiceCount)
+          .map(([id, _]) => id);
+
+        if (eligibleEmployeeIds.length === 0) {
+          return [];
+        }
+
+        availableEmployees = eligibleEmployeeIds.map(id => ({
+          id,
+          full_name: employeeServices.find(es => es.employee_id === id)?.profiles?.full_name || ''
+        }));
+      } else {
+        // For individual services
+        const { data: employeeServices } = await supabase
+          .from('employee_services')
+          .select(`
+            employee_id,
+            profiles!inner(id, full_name, role)
+          `)
+          .eq('service_id', service.id);
+
+        if (!employeeServices || employeeServices.length === 0) {
+          return [];
+        }
+
+        availableEmployees = employeeServices.map(es => ({
+          id: es.employee_id,
+          full_name: es.profiles?.full_name || ''
+        }));
+      }
+
+      // Filter by selected employee if specified
+      if (selectedEmployee) {
+        availableEmployees = availableEmployees.filter(emp => emp.id === selectedEmployee.id);
       }
 
       // Get employee schedules for this day of week
-      const employeeIds = employeeServices.map(es => es.employee_id);
+      const employeeIds = availableEmployees.map(emp => emp.id);
       const { data: schedules } = await supabase
         .from('employee_schedules')
         .select('*')
@@ -125,7 +172,14 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
         .from('reservations')
         .select('start_time, end_time, employee_id')
         .eq('appointment_date', dateStr)
-        .neq('status', 'Cancelada');
+        .neq('status', 'cancelled');
+
+      // Get existing combo reservations for this date
+      const { data: comboReservations } = await supabase
+        .from('combo_reservations')
+        .select('start_time, end_time, primary_employee_id')
+        .eq('appointment_date', dateStr)
+        .neq('status', 'cancelled');
 
       // Get blocked times for this date
       const { data: blockedTimes } = await supabase
@@ -137,51 +191,63 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
       const slots: TimeSlot[] = [];
 
       // Generate slots for each available employee
-      employeeServices.forEach(empService => {
-        const employee = empService.profiles;
-        const employeeSchedule = schedules?.find(s => s.employee_id === employee.id);
-        
-        if (!employeeSchedule) return;
+      schedules?.forEach(schedule => {
+        const startHour = parseInt(schedule.start_time.split(':')[0]);
+        const endHour = parseInt(schedule.end_time.split(':')[0]);
+        const serviceDuration = service.duration_minutes;
 
-        // Convert schedule times to minutes for easier calculation
-        const [startHour, startMinute] = employeeSchedule.start_time.split(':').map(Number);
-        const [endHour, endMinute] = employeeSchedule.end_time.split(':').map(Number);
-        const scheduleStart = startHour * 60 + startMinute;
-        const scheduleEnd = endHour * 60 + endMinute;
+        // Generate 30-minute slots
+        for (let hour = startHour; hour < endHour; hour++) {
+          for (let minute = 0; minute < 60; minute += 30) {
+            const slotStart = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            const slotStartMinutes = hour * 60 + minute;
+            const slotEndMinutes = slotStartMinutes + serviceDuration;
 
-        // Generate 30-minute time slots within schedule
-        for (let timeInMinutes = scheduleStart; timeInMinutes < scheduleEnd; timeInMinutes += 30) {
-          const hour = Math.floor(timeInMinutes / 60);
-          const minute = timeInMinutes % 60;
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            // Check if this slot conflicts with existing reservations
+            const hasReservationConflict = reservations?.some(reservation => {
+              if (reservation.employee_id !== schedule.employee_id) return false;
+              
+              const resStart = parseInt(reservation.start_time.split(':')[0]) * 60 + parseInt(reservation.start_time.split(':')[1]);
+              const resEnd = parseInt(reservation.end_time.split(':')[0]) * 60 + parseInt(reservation.end_time.split(':')[1]);
+              
+              return (slotStartMinutes < resEnd && slotEndMinutes > resStart);
+            }) || false;
 
-          // Check for conflicts with existing reservations
-          const hasReservationConflict = reservations?.some(res => {
-            if (res.employee_id !== employee.id) return false;
-            const resStartTime = res.start_time;
-            const resEndTime = res.end_time;
-            return timeString >= resStartTime && timeString < resEndTime;
-          });
+            // Check if this slot conflicts with existing combo reservations
+            const hasComboConflict = comboReservations?.some(comboRes => {
+              if (comboRes.primary_employee_id !== schedule.employee_id) return false;
+              
+              const comboStart = parseInt(comboRes.start_time.split(':')[0]) * 60 + parseInt(comboRes.start_time.split(':')[1]);
+              const comboEnd = parseInt(comboRes.end_time.split(':')[0]) * 60 + parseInt(comboRes.end_time.split(':')[1]);
+              
+              return (slotStartMinutes < comboEnd && slotEndMinutes > comboStart);
+            }) || false;
 
-          // Check for blocked times
-          const hasBlockedConflict = blockedTimes?.some(blocked => {
-            if (blocked.employee_id !== employee.id) return false;
-            const blockedStartTime = blocked.start_time;
-            const blockedEndTime = blocked.end_time;
-            return timeString >= blockedStartTime && timeString < blockedEndTime;
-          });
+            // Check if this slot conflicts with blocked times
+            const isBlocked = blockedTimes?.some(blocked => {
+              if (blocked.employee_id !== schedule.employee_id) return false;
+              
+              const blockStart = parseInt(blocked.start_time.split(':')[0]) * 60 + parseInt(blocked.start_time.split(':')[1]);
+              const blockEnd = parseInt(blocked.end_time.split(':')[0]) * 60 + parseInt(blocked.end_time.split(':')[1]);
+              
+              return (slotStartMinutes < blockEnd && slotEndMinutes > blockStart);
+            }) || false;
 
-          if (!hasReservationConflict && !hasBlockedConflict) {
-            slots.push({
-              start_time: timeString,
-              employee_id: employee.id,
-              employee_name: employee.full_name,
-              available: true
-            });
+            // Check if slot extends beyond schedule
+            const extendsBeyondSchedule = slotEndMinutes > endHour * 60;
+
+            if (!hasReservationConflict && !hasComboConflict && !isBlocked && !extendsBeyondSchedule) {
+              slots.push({
+                start_time: slotStart,
+                employee_id: schedule.employee_id,
+                employee_name: availableEmployees.find(emp => emp.id === schedule.employee_id)?.full_name || '',
+                available: true
+              });
+            }
           }
         }
       });
-      
+
       return slots.sort((a, b) => a.start_time.localeCompare(b.start_time));
     } catch (error) {
       console.error('Error fetching available slots:', error);

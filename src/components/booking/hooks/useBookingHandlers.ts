@@ -53,21 +53,24 @@ export const useBookingHandlers = ({
 
     try {
       if (service.type === 'combo') {
-        // Handle combo booking
-        const reservations = service.combo_services?.map((cs: any) => ({
-          client_id: user.id,
-          employee_id: slot.employee_id,
-          service_id: cs.service_id,
-          appointment_date: format(bookingDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: bookingNotes || null,
-          final_price_cents: service.final_price_cents
-        })) || [];
-
-        const { error } = await supabase
-          .from('reservations')
-          .insert(reservations);
+        // Handle combo booking - create single combo reservation
+        const { data: comboReservation, error } = await supabase
+          .from('combo_reservations')
+          .insert({
+            client_id: user.id,
+            combo_id: service.id,
+            primary_employee_id: slot.employee_id,
+            appointment_date: format(bookingDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+            notes: bookingNotes || null,
+            final_price_cents: service.final_price_cents,
+            original_price_cents: service.original_price_cents,
+            savings_cents: service.savings_cents || 0,
+            is_guest_booking: false
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
@@ -76,8 +79,8 @@ export const useBookingHandlers = ({
           description: "Tu combo ha sido reservado exitosamente.",
         });
       } else {
-        // Handle single service booking
-        const { error } = await supabase
+        // Handle individual service booking
+        const { data, error } = await supabase
           .from('reservations')
           .insert({
             client_id: user.id,
@@ -88,7 +91,9 @@ export const useBookingHandlers = ({
             end_time: endTime,
             notes: bookingNotes || null,
             final_price_cents: service.final_price_cents
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
@@ -128,21 +133,24 @@ export const useBookingHandlers = ({
 
     try {
       if (state.selectedService.type === 'combo') {
-        // Handle combo booking
-        const reservations = state.selectedService.combo_services?.map((cs: any) => ({
-          client_id: user.id,
-          employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
-          service_id: cs.service_id,
-          appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: state.notes || null,
-          final_price_cents: state.selectedService.final_price_cents
-        })) || [];
-
-        const { error } = await supabase
-          .from('reservations')
-          .insert(reservations);
+        // Handle combo booking - create single combo reservation
+        const { data: comboReservation, error } = await supabase
+          .from('combo_reservations')
+          .insert({
+            client_id: user.id,
+            combo_id: state.selectedService.id,
+            primary_employee_id: state.selectedSlot.employee_id,
+            appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+            notes: state.notes || null,
+            final_price_cents: state.selectedService.final_price_cents,
+            original_price_cents: state.selectedService.original_price_cents,
+            savings_cents: state.selectedService.savings_cents || 0,
+            is_guest_booking: false
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
@@ -151,8 +159,8 @@ export const useBookingHandlers = ({
           description: "Tu combo ha sido reservado exitosamente.",
         });
       } else {
-        // Handle single service booking
-        const { error } = await supabase
+        // Handle individual service booking
+        const { data, error } = await supabase
           .from('reservations')
           .insert({
             client_id: user.id,
@@ -163,7 +171,9 @@ export const useBookingHandlers = ({
             end_time: endTime,
             notes: state.notes || null,
             final_price_cents: state.selectedService.final_price_cents
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
@@ -242,25 +252,50 @@ export const useBookingHandlers = ({
         guestUserId = newGuest.id;
       }
 
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
-          client_id: null,
-          guest_user_id: guestUserId,
-          employee_id: state.selectedSlot.employee_id,
-          service_id: state.selectedService.id,
-          appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: state.notes || null,
-          customer_email: state.customerEmail,
-          customer_name: state.customerName,
-          is_guest_booking: true,
-          status: 'confirmed',
-          final_price_cents: state.selectedService.final_price_cents
-        });
+      if (state.selectedService.type === 'combo') {
+        // Handle guest combo booking - create single combo reservation
+        const { data: comboReservation, error } = await supabase
+          .from('combo_reservations')
+          .insert({
+            guest_user_id: guestUserId,
+            combo_id: state.selectedService.id,
+            primary_employee_id: state.selectedSlot.employee_id,
+            appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+            notes: state.notes || null,
+            customer_email: state.customerEmail,
+            customer_name: state.customerName,
+            is_guest_booking: true,
+            status: 'confirmed',
+            final_price_cents: state.selectedService.final_price_cents,
+            original_price_cents: state.selectedService.original_price_cents,
+            savings_cents: state.selectedService.savings_cents || 0
+          })
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Handle individual service booking
+        const { error } = await supabase
+          .from('reservations')
+          .insert({
+            service_id: state.selectedService.id,
+            employee_id: state.selectedSlot.employee_id,
+            appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+            notes: state.notes || null,
+            customer_email: state.customerEmail,
+            customer_name: state.customerName,
+            is_guest_booking: true,
+            status: 'confirmed',
+            final_price_cents: state.selectedService.final_price_cents
+          });
+
+        if (error) throw error;
+      }
 
       // Send confirmation email
       try {

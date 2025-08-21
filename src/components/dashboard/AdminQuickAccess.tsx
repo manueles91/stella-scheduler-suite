@@ -165,7 +165,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
 
     try {
       if (appointmentData.isCombo) {
-        // Handle combo appointment - create multiple reservations
+        // Handle combo appointment - create single combo reservation
         const selectedCombo = combos.find(c => c.id === appointmentData.serviceId);
         if (!selectedCombo) {
           toast({
@@ -176,27 +176,65 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           return;
         }
 
-        // Create reservations for each service in the combo
-        for (const comboService of selectedCombo.combo_services) {
-          for (let i = 0; i < comboService.quantity; i++) {
-            const { error } = await supabase
-              .from('reservations')
-              .insert({
-                client_id: selectedCustomer.id,
-                service_id: comboService.service_id,
-                employee_id: appointmentData.employeeId || null,
-                appointment_date: appointmentData.date,
-                start_time: appointmentData.time,
-                end_time: appointmentData.time,
-                notes: `Parte del combo: ${selectedCombo.name}. ${appointmentData.notes}`,
-                status: 'confirmed'
-              });
-
-            if (error) throw error;
-          }
+        // Use the combo's primary employee if no specific employee is selected
+        const employeeId = appointmentData.employeeId || selectedCombo.primary_employee_id;
+        if (!employeeId) {
+          toast({
+            title: "Error",
+            description: "El combo debe tener un empleado principal asignado",
+            variant: "destructive"
+          });
+          return;
         }
+
+        // Calculate total duration for the combo
+        const totalDuration = selectedCombo.combo_services.reduce((total, cs) => {
+          const service = services.find(s => s.id === cs.service_id);
+          return total + (service?.duration_minutes || 0) * cs.quantity;
+        }, 0);
+
+        // Calculate end time
+        const startTime = new Date(`2000-01-01T${appointmentData.time}`);
+        const endTime = new Date(startTime.getTime() + totalDuration * 60000);
+        const endTimeStr = endTime.toTimeString().slice(0, 5);
+
+        const { data, error } = await supabase
+          .from('combo_reservations')
+          .insert({
+            client_id: selectedCustomer.id,
+            combo_id: selectedCombo.id,
+            primary_employee_id: employeeId,
+            appointment_date: appointmentData.date,
+            start_time: appointmentData.time,
+            end_time: endTimeStr,
+            notes: appointmentData.notes,
+            status: 'confirmed',
+            final_price_cents: selectedCombo.total_price_cents,
+            original_price_cents: selectedCombo.original_price_cents,
+            savings_cents: selectedCombo.original_price_cents - selectedCombo.total_price_cents,
+            is_guest_booking: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
       } else {
         // Handle individual service appointment
+        const selectedService = services.find(s => s.id === appointmentData.serviceId);
+        if (!selectedService) {
+          toast({
+            title: "Error",
+            description: "Servicio no encontrado",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Calculate end time
+        const startTime = new Date(`2000-01-01T${appointmentData.time}`);
+        const endTime = new Date(startTime.getTime() + selectedService.duration_minutes * 60000);
+        const endTimeStr = endTime.toTimeString().slice(0, 5);
+
         const { data, error } = await supabase
           .from('reservations')
           .insert({
@@ -205,7 +243,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             employee_id: appointmentData.employeeId || null,
             appointment_date: appointmentData.date,
             start_time: appointmentData.time,
-            end_time: appointmentData.time,
+            end_time: endTimeStr,
             notes: appointmentData.notes,
             status: 'confirmed'
           })
@@ -252,7 +290,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
 
     try {
       if (saleData.isCombo) {
-        // Handle combo sale - create multiple reservations
+        // Handle combo sale - create single combo reservation
         const selectedCombo = combos.find(c => c.id === saleData.serviceId);
         if (!selectedCombo) {
           toast({
@@ -263,26 +301,64 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           return;
         }
 
-        // Create reservations for each service in the combo
-        for (const comboService of selectedCombo.combo_services) {
-          for (let i = 0; i < comboService.quantity; i++) {
-            const { error } = await supabase
-              .from('reservations')
-              .insert({
-                service_id: comboService.service_id,
-                employee_id: saleData.employeeId || null,
-                appointment_date: saleData.date,
-                start_time: saleData.time,
-                end_time: saleData.time,
-                notes: `Parte del combo: ${selectedCombo.name}. ${saleData.notes}`,
-                status: 'completed'
-              });
-
-            if (error) throw error;
-          }
+        // Use the combo's primary employee if no specific employee is selected
+        const employeeId = saleData.employeeId || selectedCombo.primary_employee_id;
+        if (!employeeId) {
+          toast({
+            title: "Error",
+            description: "El combo debe tener un empleado principal asignado",
+            variant: "destructive"
+          });
+          return;
         }
+
+        // Calculate total duration for the combo
+        const totalDuration = selectedCombo.combo_services.reduce((total, cs) => {
+          const service = services.find(s => s.id === cs.service_id);
+          return total + (service?.duration_minutes || 0) * cs.quantity;
+        }, 0);
+
+        // Calculate end time
+        const startTime = new Date(`2000-01-01T${saleData.time}`);
+        const endTime = new Date(startTime.getTime() + totalDuration * 60000);
+        const endTimeStr = endTime.toTimeString().slice(0, 5);
+
+        const { data, error } = await supabase
+          .from('combo_reservations')
+          .insert({
+            combo_id: selectedCombo.id,
+            primary_employee_id: employeeId,
+            appointment_date: saleData.date,
+            start_time: saleData.time,
+            end_time: endTimeStr,
+            notes: saleData.notes,
+            status: 'completed',
+            final_price_cents: Math.round(parseFloat(saleData.chargedPrice) * 100),
+            original_price_cents: selectedCombo.original_price_cents,
+            savings_cents: selectedCombo.original_price_cents - Math.round(parseFloat(saleData.chargedPrice) * 100),
+            is_guest_booking: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
       } else {
         // Handle individual service sale
+        const selectedService = services.find(s => s.id === saleData.serviceId);
+        if (!selectedService) {
+          toast({
+            title: "Error",
+            description: "Servicio no encontrado",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Calculate end time
+        const startTime = new Date(`2000-01-01T${saleData.time}`);
+        const endTime = new Date(startTime.getTime() + selectedService.duration_minutes * 60000);
+        const endTimeStr = endTime.toTimeString().slice(0, 5);
+
         const { data, error } = await supabase
           .from('reservations')
           .insert({
@@ -290,7 +366,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             employee_id: saleData.employeeId || null,
             appointment_date: saleData.date,
             start_time: saleData.time,
-            end_time: saleData.time,
+            end_time: endTimeStr,
             notes: saleData.notes,
             status: 'completed'
           })
@@ -536,6 +612,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">Sin asignar</SelectItem>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}
@@ -543,6 +620,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                       ))}
                     </SelectContent>
                   </Select>
+                  {appointmentData.isCombo && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Si no seleccionas un empleado, se usará el empleado principal del combo
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Fecha</Label>
@@ -645,6 +727,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                       <SelectValue placeholder="Seleccionar empleado" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">Sin asignar</SelectItem>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           {employee.full_name}
@@ -652,6 +735,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                       ))}
                     </SelectContent>
                   </Select>
+                  {saleData.isCombo && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Si no seleccionas un empleado, se usará el empleado principal del combo
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Fecha</Label>

@@ -110,4 +110,48 @@ export interface Profile {
   role: 'client' | 'employee' | 'admin';
   created_at?: string;
   image_url?: string;
+}
+
+export interface ComboServiceAssignment {
+  id: string;
+  combo_reservation_id: string;
+  service_id: string;
+  assigned_employee_id?: string;
+  estimated_start_time?: string;
+  estimated_duration: number;
+  actual_start_time?: string;
+  actual_end_time?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  // Related data
+  service?: Service;
+  assigned_employee?: Employee;
+}
+
+export interface ComboReservation {
+  id: string;
+  client_id?: string;
+  guest_user_id?: string;
+  combo_id: string;
+  primary_employee_id: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'in_progress';
+  notes?: string;
+  final_price_cents?: number;
+  original_price_cents?: number;
+  savings_cents?: number;
+  is_guest_booking: boolean;
+  customer_email?: string;
+  customer_name?: string;
+  created_at: string;
+  updated_at: string;
+  // Related data
+  combo?: Combo;
+  primary_employee?: Employee;
+  client?: any;
+  service_assignments?: ComboServiceAssignment[];
 } 

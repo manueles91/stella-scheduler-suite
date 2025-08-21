@@ -178,6 +178,7 @@ export const AdminServices = () => {
     start_date: "",
     end_date: "",
     is_active: true,
+    primary_employee_id: "", // Add primary employee field
     services: [] as {
       service_id: string;
       quantity: number;
@@ -886,10 +887,14 @@ export const AdminServices = () => {
 
   const handleComboSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comboFormData.name || !comboFormData.start_date || !comboFormData.end_date || comboFormData.services.length === 0) {
+    if (!comboFormData.name ||
+        !comboFormData.start_date ||
+        !comboFormData.end_date ||
+        comboFormData.services.length === 0 ||
+        !comboFormData.primary_employee_id) { // Add primary employee validation
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos requeridos y selecciona al menos un servicio",
+        description: "Por favor completa todos los campos requeridos, incluyendo el empleado principal",
         variant: "destructive"
       });
       return;
@@ -940,6 +945,7 @@ export const AdminServices = () => {
         start_date: new Date(comboFormData.start_date).toISOString(),
         end_date: new Date(comboFormData.end_date + 'T23:59:59').toISOString(),
         is_active: comboFormData.is_active,
+        primary_employee_id: comboFormData.primary_employee_id, // Add primary employee
         created_by: user.id
       };
 
@@ -1003,6 +1009,7 @@ export const AdminServices = () => {
       start_date: combo.start_date.split('T')[0],
       end_date: combo.end_date.split('T')[0],
       is_active: combo.is_active,
+      primary_employee_id: combo.combo_services[0].service_id, // Set primary employee
       services: combo.combo_services.map(cs => ({
         service_id: cs.service_id,
         quantity: cs.quantity
@@ -1086,6 +1093,7 @@ export const AdminServices = () => {
       start_date: "",
       end_date: "",
       is_active: true,
+      primary_employee_id: "",
       services: [],
       pricing_type: "percentage",
       discount_percentage: "20",
@@ -1862,6 +1870,29 @@ export const AdminServices = () => {
                             end_date: e.target.value
                           })} />
                         </div>
+                      </div>
+
+                      {/* Primary Employee Selection */}
+                      <div>
+                        <Label htmlFor="combo_primary_employee">Empleado Principal *</Label>
+                        <Select value={comboFormData.primary_employee_id} onValueChange={value => setComboFormData({
+                          ...comboFormData,
+                          primary_employee_id: value
+                        })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar empleado principal" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {employees.map(employee => (
+                              <SelectItem key={employee.id} value={employee.id}>
+                                {employee.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          El empleado principal será responsable de coordinar la ejecución del combo
+                        </p>
                       </div>
 
                       <div className="space-y-4">
