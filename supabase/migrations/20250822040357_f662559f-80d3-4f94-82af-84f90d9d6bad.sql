@@ -1,0 +1,51 @@
+-- Upload placeholder images to storage and update services table
+-- First, let's update each service with its corresponding placeholder image URL
+
+-- Update services with placeholder image URLs from the service-images bucket
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/alisado-organico.jpg' WHERE name = 'Alisado Orgánico';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/balayage.jpg' WHERE name = 'Balayage';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/bano-color-tratamiento.jpg' WHERE name = 'Baño de Color con Tratamiento';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/bioplastia.jpg' WHERE name = 'Bioplastia';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/botox-capilar.jpg' WHERE name = 'Botox Capilar';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/corte-hombre-barba.jpg' WHERE name = 'Corte Hombre & Perfilado de Barba';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/corte-mujer-blower.jpg' WHERE name = 'Corte Mujer & Blower';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/diseno-cejas.jpg' WHERE name = 'Diseño de Cejas';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/esmaltado-gel.jpg' WHERE name = 'Esmaltado en Gel';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/exfoliacion-corporal.jpg' WHERE name = 'Exfoliación Corporal';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/gel-x-apres.jpg' WHERE name = 'Gel X Après';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/henna.jpg' WHERE name = 'Henna';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/highlights.jpg' WHERE name = 'Highlights';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/laminado.jpg' WHERE name = 'Laminado';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/lifting-tintura.jpg' WHERE name = 'Lifting y Tintura';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-hidratante.jpg' WHERE name = 'Limpieza Facial Básica Hidratante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-relajante.jpg' WHERE name = 'Limpieza Facial Básica Relajante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-acne.jpg' WHERE name = 'Limpieza Facial para Acné';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-premium.jpg' WHERE name = 'Limpieza Facial Premium';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-profunda.jpg' WHERE name = 'Limpieza Facial Profunda';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-caballero.jpg' WHERE name = 'Limpieza Facial Profunda Caballero';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/limpieza-facial-profunda-hidratante.jpg' WHERE name = 'Limpieza Facial Profunda Hidratante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/manicura-acrilico.jpg' WHERE name = 'Manicura Acrílico';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/manicura-caballero.jpg' WHERE name = 'Manicura Caballero';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/manicura-luminary.jpg' WHERE name = 'Manicura Luminary';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/manicura-regular.jpg' WHERE name = 'Manicura Regular';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/manicura-spa.jpg' WHERE name = 'Manicura Spa';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/masaje-descontracturante.jpg' WHERE name = 'Masaje Descontracturante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/masaje-drenaje-linfatico.jpg' WHERE name = 'Masaje Drenaje Linfático';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/masaje-piedras-calientes.jpg' WHERE name = 'Masaje Piedras Calientes';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/masaje-relajante.jpg' WHERE name = 'Masaje Relajante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/masaje-sueco-relajante.jpg' WHERE name = 'Masaje Sueco Relajante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/pedicura.jpg' WHERE name = 'Pedicura';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/pedicura-caballero.jpg' WHERE name = 'Pedicura Caballero';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/pedicura-spa.jpg' WHERE name = 'Pedicura Spa';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/peinado-lavado.jpg' WHERE name = 'Peinado con Lavado';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/peinado-sin-lavado.jpg' WHERE name = 'Peinado sin Lavado';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-anti-edad.jpg' WHERE name = 'Tratamiento Anti-edad';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-hidratante.jpg' WHERE name = 'Tratamiento Hidratante';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-poros.jpg' WHERE name = 'Tratamiento de Poros';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-keratina.jpg' WHERE name = 'Tratamiento de Keratina';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-vitamina-c.jpg' WHERE name = 'Tratamiento Vitamina C';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tratamiento-brasileño.jpg' WHERE name = 'Tratamiento Brasileño';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/color-touch.jpg' WHERE name = 'Color Touch';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tintura-cejas.jpg' WHERE name = 'Tintura de Cejas';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/tintura-pestanas.jpg' WHERE name = 'Tintura de Pestañas';
+UPDATE services SET image_url = 'https://eygyyswmlsqyvfdbmwfw.supabase.co/storage/v1/object/public/service-images/services/extensiones-pestanas.jpg' WHERE name = 'Extensiones de Pestañas';
