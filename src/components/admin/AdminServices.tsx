@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Trash2, Clock, DollarSign, Image, Tag, Users, Calendar, Upload, X, AlertTriangle, CheckCircle, Loader2, Filter, Settings, Percent, Package } from "lucide-react";
+import { serviceFormSchema, discountFormSchema, comboFormSchema } from "@/lib/validation/serviceSchemas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ServiceCard } from "@/components/cards/ServiceCard";
@@ -502,28 +503,17 @@ export const AdminServices = () => {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      toast({
-        title: "Error de validación",
-        description: "El nombre del servicio es requerido",
-        variant: "destructive"
-      });
+    const parsed = serviceFormSchema.safeParse({
+      ...formData,
+      price_cents: formData.variable_price ? 0 : Math.round(formData.price_cents * 100),
+    });
+    if (!parsed.success) {
+      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      toast({ title: "Error de validación", description: msg, variant: "destructive" });
       return;
     }
     if (selectedEmployees.length === 0) {
-      toast({
-        title: "Error de validación",
-        description: "Selecciona al menos un miembro del personal para este servicio",
-        variant: "destructive"
-      });
-      return;
-    }
-    if (!formData.variable_price && formData.price_cents <= 0) {
-      toast({
-        title: "Error de validación",
-        description: "El precio debe ser mayor a 0 o activa 'Precio variable'",
-        variant: "destructive"
-      });
+      toast({ title: "Error de validación", description: "Selecciona al menos un miembro del personal para este servicio", variant: "destructive" });
       return;
     }
     try {
@@ -665,20 +655,13 @@ export const AdminServices = () => {
   // Discount handling functions
   const handleDiscountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!discountFormData.service_id || !discountFormData.discount_value || !discountFormData.start_date || !discountFormData.end_date) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos requeridos",
-        variant: "destructive"
-      });
-      return;
-    }
-    if (!discountFormData.is_public && !discountFormData.discount_code) {
-      toast({
-        title: "Error",
-        description: "Los descuentos privados requieren un código",
-        variant: "destructive"
-      });
+    const parsed = discountFormSchema.safeParse({
+      ...discountFormData,
+      discount_value: parseFloat(discountFormData.discount_value),
+    });
+    if (!parsed.success) {
+      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      toast({ title: "Error", description: msg, variant: "destructive" });
       return;
     }
     try {
@@ -887,16 +870,10 @@ export const AdminServices = () => {
 
   const handleComboSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comboFormData.name ||
-        !comboFormData.start_date ||
-        !comboFormData.end_date ||
-        comboFormData.services.length === 0 ||
-        !comboFormData.primary_employee_id) { // Add primary employee validation
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos requeridos, incluyendo el empleado principal",
-        variant: "destructive"
-      });
+    const parsed = comboFormSchema.safeParse(comboFormData);
+    if (!parsed.success) {
+      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      toast({ title: "Error", description: msg, variant: "destructive" });
       return;
     }
     try {

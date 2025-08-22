@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Profile, Service } from "@/types/booking";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { uploadToExactPath } from "@/lib/storage";
 interface EmployeeService {
   employee_id: string;
   service_id: string;
@@ -91,12 +92,19 @@ export const AdminStaff = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.full_name.trim() || !formData.email.trim()) {
-      toast({
-        title: "Error",
-        description: "Nombre y email son requeridos",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Nombre y email son requeridos", variant: "destructive" });
       return;
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast({ title: "Error", description: "Formato de email inválido", variant: "destructive" });
+      return;
+    }
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      if (!phoneRegex.test(formData.phone.replace(/\s+/g, ""))) {
+        toast({ title: "Error", description: "Formato de teléfono inválido (ej: +34 123 456 789)", variant: "destructive" });
+        return;
+      }
     }
     try {
       if (editingProfile) {
@@ -142,36 +150,16 @@ export const AdminStaff = () => {
   const handleImageUpload = async (file: File, profileId: string) => {
     setUploadingImage(true);
     try {
-      const fileName = `profiles/${profileId}`;
-      const { error: uploadError } = await supabase.storage
-        .from('service-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('service-images')
-        .getPublicUrl(fileName);
-
+      const publicUrl = await uploadToExactPath('service-images', `profiles/${profileId}`, file, { upsert: true });
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ image_url: publicUrl } as any)
         .eq('id', profileId);
-
       if (updateError) throw updateError;
-
-      toast({
-        title: "Éxito",
-        description: "Imagen actualizada correctamente"
-      });
-      
+      toast({ title: "Éxito", description: "Imagen actualizada correctamente" });
       fetchProfiles();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al subir la imagen",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Error al subir la imagen", variant: "destructive" });
     } finally {
       setUploadingImage(false);
     }
@@ -260,6 +248,34 @@ export const AdminStaff = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {editingProfile && (
+                <div className="flex items-center gap-4 pt-2">
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={editingProfile.image_url || undefined} />
+                      <AvatarFallback>
+                        {editingProfile.full_name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors" aria-label="Subir imagen de perfil">
+                      <Upload className="h-3 w-3" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, editingProfile.id);
+                        }}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Actualiza la imagen del empleado
+                  </div>
+                </div>
+              )}
               <div>
                 <Label htmlFor="full_name">Nombre completo *</Label>
                 <Input id="full_name" value={formData.full_name} onChange={e => setFormData({

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadToBucket } from "@/lib/storage";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ImageUp, Image as ImageIcon, Save, Building, Clock, Star, MapPin } from "lucide-react";
 
@@ -71,15 +72,7 @@ export const AdminSettings = () => {
   }, [settings]);
 
   const uploadFile = async (file: File, folder: string) => {
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${folder}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("site-assets").upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-    if (error) throw error;
-    const { data } = supabase.storage.from("site-assets").getPublicUrl(path);
-    return data.publicUrl;
+    return uploadToBucket('site-assets', folder, file);
   };
 
   const saveSetting = async (partial: any) => {

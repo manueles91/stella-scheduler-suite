@@ -471,7 +471,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           client_name,
           client_id,
           service_name,
-          duration_minutes,
+          service_duration,
           booking_type,
           combo_id,
           combo_name

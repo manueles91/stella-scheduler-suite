@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Search, User, Mail, Phone, Calendar, Edit, Ban, CheckCircle, Plus, Users, UserCheck, Filter, MoreVertical, Trash2, AlertCircle, Copy } from "lucide-react";
+import { Search, User, Mail, Phone, Calendar, Edit, Ban, CheckCircle, Plus, Users, UserCheck, Filter, MoreVertical, Trash2, AlertCircle, Copy, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CollapsibleFilter } from "./CollapsibleFilter";
 import { useInvitedUsers } from "./hooks/useInvitedUsers";
 import { InvitedUserData } from "@/lib/validation/userSchemas";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { uploadToExactPath } from "@/lib/storage";
 interface User {
   id: string;
   full_name: string;
@@ -28,6 +30,7 @@ interface User {
   invited_at?: string | null;
   claimed_at?: string | null;
   user_type?: 'authenticated' | 'invited';
+  image_url?: string | null;
   _count?: {
     reservations: number;
   };
@@ -57,6 +60,7 @@ export const AdminUsers = () => {
   const [servicesDialogOpen, setServicesDialogOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -259,6 +263,25 @@ const fetchUsers = async () => {
     });
     setDialogOpen(true);
   };
+
+  const handleImageUpload = async (file: File, userId: string) => {
+    setUploadingImage(true);
+    try {
+      const publicUrl = await uploadToExactPath('service-images', `profiles/${userId}`, file, { upsert: true });
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ image_url: publicUrl } as any)
+        .eq('id', userId);
+      if (updateError) throw updateError;
+      toast({ title: 'Éxito', description: 'Imagen actualizada correctamente' });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, image_url: publicUrl } : u));
+      if (editingUser && editingUser.id === userId) setEditingUser({ ...editingUser, image_url: publicUrl });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al subir la imagen', variant: 'destructive' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
   const resetForm = () => {
     setEditingUser(null);
     setFormData({
@@ -416,6 +439,36 @@ const getStatusText = (status: string) => {
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {editingUser && editingUser.user_type !== 'invited' && (
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={editingUser.image_url || undefined} />
+                        <AvatarFallback>
+                          {editingUser.full_name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <label className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors" aria-label="Subir imagen de perfil">
+                        <Upload className="h-3 w-3" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && editingUser) {
+                              handleImageUpload(file, editingUser.id);
+                            }
+                          }}
+                          disabled={uploadingImage}
+                        />
+                      </label>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Actualiza la imagen del usuario
+                    </div>
+                  </div>
+                )}
                 {Object.keys(formErrors).length > 0 && <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

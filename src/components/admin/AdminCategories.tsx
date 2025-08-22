@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadToBucket } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil, Trash2, Plus, Save, X, GripVertical, Upload, Image } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -114,6 +115,7 @@ export function AdminCategories() {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const formRef = useRef<HTMLDivElement | null>(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -159,27 +161,11 @@ export function AdminCategories() {
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `categories/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('service-images')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('service-images')
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
+      const publicUrl = await uploadToBucket('service-images', 'categories', file);
+      return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo subir la imagen",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
       return null;
     }
   };
@@ -308,6 +294,9 @@ export function AdminCategories() {
     setImagePreview(category.image_url || "");
     setImageFile(null);
     setIsCreating(false);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   };
 
   const startCreate = () => {
@@ -322,6 +311,9 @@ export function AdminCategories() {
     });
     setImagePreview("");
     setImageFile(null);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   };
 
   const resetForm = () => {
@@ -344,7 +336,7 @@ export function AdminCategories() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pr-12 md:pr-16">
         <h1 className="text-2xl font-bold">Categorías</h1>
         <Button onClick={startCreate} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
@@ -353,102 +345,104 @@ export function AdminCategories() {
       </div>
 
       {(isCreating || editingCategory) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {editingCategory ? "Editar Categoría" : "Nueva Categoría"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="name">Nombre</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nombre de la categoría"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Descripción de la categoría"
-              />
-            </div>
-            <div>
-              <Label htmlFor="display_order">Orden de visualización</Label>
-              <Input
-                id="display_order"
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="image">Imagen de la categoría</Label>
-              <div className="space-y-4">
-                {(imagePreview || formData.image_url) && (
-                  <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
-                    <img 
-                      src={imagePreview || formData.image_url} 
-                      alt="Vista previa"
-                      className="w-full h-full object-cover"
+        <div ref={formRef}>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {editingCategory ? "Editar Categoría" : "Nueva Categoría"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nombre</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nombre de la categoría"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descripción de la categoría"
+                />
+              </div>
+              <div>
+                <Label htmlFor="display_order">Orden de visualización</Label>
+                <Input
+                  id="display_order"
+                  type="number"
+                  value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="image">Imagen de la categoría</Label>
+                <div className="space-y-4">
+                  {(imagePreview || formData.image_url) && (
+                    <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
+                      <img 
+                        src={imagePreview || formData.image_url} 
+                        alt="Vista previa"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setImageFile(file);
+                          const reader = new FileReader();
+                          reader.onload = (e) => {
+                            setImagePreview(e.target?.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="image-upload"
                     />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {imagePreview || formData.image_url ? "Cambiar imagen" : "Subir imagen"}
+                    </Button>
                   </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImageFile(file);
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          setImagePreview(e.target?.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('image-upload')?.click()}
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    {imagePreview || formData.image_url ? "Cambiar imagen" : "Subir imagen"}
-                  </Button>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-              />
-              <Label htmlFor="is_active">Activa</Label>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSave} className="flex items-center gap-2">
-                <Save className="h-4 w-4" />
-                Guardar
-              </Button>
-              <Button variant="outline" onClick={resetForm} className="flex items-center gap-2">
-                <X className="h-4 w-4" />
-                Cancelar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+                <Label htmlFor="is_active">Activa</Label>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSave} className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Guardar
+                </Button>
+                <Button variant="outline" onClick={resetForm} className="flex items-center gap-2">
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <DndContext
