@@ -38,20 +38,6 @@ export type Database = {
             foreignKeyName: "fk_appointment_services_appointment_id"
             columns: ["appointment_id"]
             isOneToOne: false
-            referencedRelation: "admin_reservations_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_appointment_services_appointment_id"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "employee_calendar_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_appointment_services_appointment_id"
-            columns: ["appointment_id"]
-            isOneToOne: false
             referencedRelation: "reservations"
             referencedColumns: ["id"]
           },
@@ -851,13 +837,6 @@ export type Database = {
             foreignKeyName: "services_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "admin_reservations_view"
-            referencedColumns: ["category_id"]
-          },
-          {
-            foreignKeyName: "services_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
             referencedRelation: "service_categories"
             referencedColumns: ["id"]
           },
@@ -957,6 +936,7 @@ export type Database = {
       admin_reservations_view: {
         Row: {
           appointment_date: string | null
+          booking_type: string | null
           category_id: string | null
           category_name: string | null
           client_email: string | null
@@ -964,6 +944,8 @@ export type Database = {
           client_id: string | null
           client_name: string | null
           client_phone: string | null
+          combo_id: string | null
+          combo_name: string | null
           created_at: string | null
           employee_full_name: string | null
           employee_id: string | null
@@ -980,37 +962,18 @@ export type Database = {
           status: string | null
           updated_at: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "reservations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       employee_calendar_view: {
         Row: {
           appointment_date: string | null
+          booking_type: string | null
           client_email: string | null
           client_id: string | null
           client_name: string | null
           client_phone: string | null
+          combo_id: string | null
+          combo_name: string | null
           employee_id: string | null
           end_time: string | null
           id: string | null
@@ -1020,22 +983,7 @@ export type Database = {
           start_time: string | null
           status: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "reservations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
