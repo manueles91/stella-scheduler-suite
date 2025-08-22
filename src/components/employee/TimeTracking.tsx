@@ -25,6 +25,10 @@ interface Appointment {
   end_time: string;
   status: string;
   notes?: string;
+  // Combo-related fields
+  isCombo?: boolean;
+  comboId?: string | null;
+  comboName?: string | null;
 }
 
 interface BlockedTime {
@@ -356,12 +360,19 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     return appointments.map(appointment => (
       <div
         key={appointment.id}
-        className="bg-blue-500 text-white rounded-lg p-2 shadow-sm cursor-pointer hover:bg-blue-600 transition-colors"
+        className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors`}
         style={calculateEventStyle(appointment.start_time, appointment.end_time)}
         onClick={() => openEditAppointment(appointment)}
       >
-        <div className="text-sm font-medium truncate">{appointment.client_name}</div>
-        <div className="text-xs opacity-90 truncate">{appointment.service_name}</div>
+        <div className="text-sm font-medium truncate flex items-center gap-1">
+          {appointment.isCombo && (
+            <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
+          )}
+          {appointment.client_name}
+        </div>
+        <div className="text-xs opacity-90 truncate">
+          {appointment.isCombo ? `${appointment.service_name} (Combo)` : appointment.service_name}
+        </div>
         {profile?.role === 'admin' && appointment.employee_name && (
           <div className="text-xs opacity-75 truncate">Con: {appointment.employee_name}</div>
         )}
@@ -446,9 +457,9 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setLoading(true);
     
     try {
-      // Query reservations directly with proper joins for employee calendar
+      // Use the updated employee_calendar_view that includes both individual and combo reservations
       const { data, error } = await supabase
-        .from('reservations')
+        .from('employee_calendar_view')
         .select(`
           id,
           appointment_date,
@@ -457,11 +468,13 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           status,
           notes,
           employee_id,
-          customer_name,
+          client_name,
           client_id,
-          services (
-            name
-          )
+          service_name,
+          duration_minutes,
+          booking_type,
+          combo_id,
+          combo_name
         `)
         .eq('employee_id', effectiveEmployeeId)
         .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
@@ -474,42 +487,26 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       
       const formattedAppointments = data?.map(appointment => ({
         id: appointment.id,
-        client_name: appointment.customer_name || 'Cliente',
+        client_name: appointment.client_name || 'Cliente',
         employee_name: 'Empleado', // This will be the current employee
-        service_name: appointment.services?.name || 'Servicio',
+        service_name: appointment.service_name || 'Servicio',
         appointment_date: appointment.appointment_date,
         start_time: appointment.start_time,
         end_time: appointment.end_time,
         status: appointment.status,
-        notes: appointment.notes
+        notes: appointment.notes,
+        // Add combo information
+        isCombo: appointment.booking_type === 'combo',
+        comboId: appointment.combo_id,
+        comboName: appointment.combo_name
       })) || [];
-      
-      // For reservations with client_id but no customer_name, fetch client names
-      if (data) {
-        const clientIds = data.filter(a => a.client_id && !a.customer_name).map(a => a.client_id);
-        if (clientIds.length > 0) {
-          const { data: clientData } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .in('id', clientIds);
-            
-          if (clientData) {
-            const clientMap = new Map(clientData.map(c => [c.id, c.full_name]));
-            formattedAppointments.forEach((appointment, index) => {
-              const originalAppointment = data[index];
-              if (originalAppointment.client_id && !originalAppointment.customer_name) {
-                appointment.client_name = clientMap.get(originalAppointment.client_id) || 'Cliente';
-              }
-            });
-          }
-        }
-      }
       
       setAppointments(formattedAppointments);
     } catch (error) {
+      console.error('Error fetching appointments:', error);
       toast({
         title: "Error",
-        description: "Error al cargar las citas",
+        description: "No se pudieron cargar las citas",
         variant: "destructive"
       });
     } finally {

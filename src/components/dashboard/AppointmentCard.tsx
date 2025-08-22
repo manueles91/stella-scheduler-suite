@@ -104,27 +104,20 @@ export const AppointmentCard = ({
   };
 
   const renderServiceNames = () => {
-    if (!appointment.services || appointment.services.length === 0) {
-      return 'Servicio no especificado';
+    if (appointment.services && appointment.services.length > 0) {
+      const serviceNames = appointment.services.map(s => s.name).join(', ');
+      return (
+        <div className="flex items-center gap-2">
+          {appointment.isCombo && (
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+              COMBO
+            </Badge>
+          )}
+          <span>{serviceNames}</span>
+        </div>
+      );
     }
-    
-    if (appointment.services.length === 1) {
-      return appointment.services[0].name;
-    }
-    
-    // For multiple services, show first service + count
-    const firstService = appointment.services[0].name;
-    const remainingCount = appointment.services.length - 1;
-    return (
-      <div className="space-y-1">
-        <div className="font-semibold">{firstService}</div>
-        {remainingCount > 0 && (
-          <div className="text-xs text-muted-foreground">
-            +{remainingCount} servicio{remainingCount > 1 ? 's' : ''} más
-          </div>
-        )}
-      </div>
-    );
+    return 'Servicio no especificado';
   };
 
   const renderClientInfo = () => {

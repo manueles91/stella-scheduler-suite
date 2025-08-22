@@ -28,6 +28,9 @@ interface ReservationLite {
   service_name: string;
   service_price_cents: number;
   category_name: string | null;
+  booking_type?: 'service' | 'combo';
+  combo_id?: string | null;
+  combo_name?: string | null;
 }
 
 const DAYS_WINDOW_DEFAULT = 30;
@@ -57,7 +60,10 @@ export const AdminIngresos = () => {
           client_name,
           service_name,
           service_price_cents,
-          category_name
+          category_name,
+          booking_type,
+          combo_id,
+          combo_name
         `)
         .gte("appointment_date", startStr)
         .order("appointment_date", { ascending: false });
@@ -355,9 +361,16 @@ export const AdminIngresos = () => {
                 <div key={reservation.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-base">{reservation.service_name}</h4>
+                      <h4 className="font-medium text-base flex items-center gap-2">
+                        {reservation.booking_type === 'combo' && (
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                            COMBO
+                          </Badge>
+                        )}
+                        {reservation.service_name}
+                      </h4>
                       <Badge variant="outline" className="text-xs">
-                        {reservation.category_name || "Sin categoría"}
+                        {reservation.booking_type === 'combo' ? 'Combo' : (reservation.category_name || "Sin categoría")}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
@@ -371,6 +384,12 @@ export const AdminIngresos = () => {
                         </span>
                         <span className="hidden sm:inline text-muted-foreground">•</span>
                         <span>{reservation.start_time}</span>
+                        {reservation.booking_type === 'combo' && (
+                          <>
+                            <span className="hidden sm:inline text-muted-foreground">•</span>
+                            <span className="text-blue-600 font-medium">Combo completo</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

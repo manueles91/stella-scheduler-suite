@@ -16,4 +16,8 @@ export interface Appointment {
   employee_profile?: {
     full_name: string;
   };
+  // Combo-related fields
+  isCombo?: boolean;
+  comboId?: string | null;
+  comboName?: string | null;
 }

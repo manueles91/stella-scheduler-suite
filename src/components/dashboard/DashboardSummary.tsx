@@ -100,7 +100,10 @@ export const DashboardSummary = ({
           service_duration,
           category_name,
           client_full_name,
-          employee_full_name
+          employee_full_name,
+          booking_type,
+          combo_id,
+          combo_name
         `);
 
       // Apply filters based on user role
@@ -124,7 +127,14 @@ export const DashboardSummary = ({
 
       // Transform the data to match our interface - Now with correct service names
       const transformedAppointments = appointments?.map(appt => ({
-        ...appt,
+        id: appt.id,
+        appointment_date: appt.appointment_date,
+        start_time: appt.start_time,
+        end_time: appt.end_time,
+        status: appt.status,
+        notes: appt.notes,
+        client_id: appt.client_id,
+        employee_id: appt.employee_id,
         services: [{
           id: 'temp-id',
           name: appt.service_name || 'Servicio no especificado',
@@ -137,7 +147,11 @@ export const DashboardSummary = ({
         },
         employee_profile: appt.employee_full_name ? {
           full_name: appt.employee_full_name
-        } : undefined
+        } : undefined,
+        // Add combo information
+        isCombo: appt.booking_type === 'combo',
+        comboId: appt.combo_id,
+        comboName: appt.combo_name
       })) || [];
       
       const today = new Date();

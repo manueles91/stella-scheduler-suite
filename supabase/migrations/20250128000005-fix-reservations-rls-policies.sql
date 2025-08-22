@@ -105,6 +105,7 @@ GRANT EXECUTE ON FUNCTION public.is_employee(UUID) TO authenticated;
 
 -- Create a view for admin dashboard analytics that's safe and performant
 CREATE OR REPLACE VIEW public.admin_reservations_view AS
+-- Individual service reservations
 SELECT 
   r.id,
   r.appointment_date,
@@ -130,19 +131,69 @@ SELECT
   s.price_cents as service_price_cents,
   s.duration_minutes,
   -- Category information
-  sc.name as category_name
+  sc.name as category_name,
+  -- Type indicator
+  'service' as booking_type,
+  NULL as combo_id,
+  NULL as combo_name
 FROM public.reservations r
 LEFT JOIN public.profiles cp ON r.client_id = cp.id
 LEFT JOIN public.profiles ep ON r.employee_id = ep.id
 LEFT JOIN public.services s ON r.service_id = s.id
 LEFT JOIN public.service_categories sc ON s.category_id = sc.id
-WHERE r.is_guest_booking = false OR r.is_guest_booking IS NULL;
+WHERE r.is_guest_booking = false OR r.is_guest_booking IS NULL
+
+UNION ALL
+
+-- Combo reservations
+SELECT 
+  cr.id,
+  cr.appointment_date,
+  cr.start_time,
+  cr.end_time,
+  cr.status,
+  cr.notes,
+  cr.client_id,
+  cr.primary_employee_id as employee_id,
+  NULL as service_id,
+  cr.final_price_cents,
+  cr.original_price_cents,
+  cr.savings_cents,
+  cr.created_at,
+  cr.updated_at,
+  -- Client information
+  COALESCE(cp.full_name, cr.customer_name) as client_name,
+  COALESCE(cp.email, cr.customer_email) as client_email,
+  -- Employee information
+  ep.full_name as employee_name,
+  -- Service information (combo name)
+  c.name as service_name,
+  cr.final_price_cents as service_price_cents,
+  -- Calculate total duration from combo services
+  COALESCE((
+    SELECT SUM(cs.quantity * s.duration_minutes)
+    FROM combo_service_assignments csa
+    JOIN services s ON csa.service_id = s.id
+    WHERE csa.combo_reservation_id = cr.id
+  ), 0) as duration_minutes,
+  -- Category information (combo category)
+  'Combo' as category_name,
+  -- Type indicator
+  'combo' as booking_type,
+  cr.combo_id,
+  c.name as combo_name
+FROM public.combo_reservations cr
+LEFT JOIN public.profiles cp ON cr.client_id = cp.id
+LEFT JOIN public.profiles ep ON cr.primary_employee_id = ep.id
+LEFT JOIN public.combos c ON cr.combo_id = c.id
+WHERE cr.is_guest_booking = false OR cr.is_guest_booking IS NULL;
 
 -- Grant access to the admin view
 GRANT SELECT ON public.admin_reservations_view TO authenticated;
 
 -- Create a view for employee calendar that's safe and performant
 CREATE OR REPLACE VIEW public.employee_calendar_view AS
+-- Individual service reservations
 SELECT 
   r.id,
   r.appointment_date,
@@ -157,11 +208,53 @@ SELECT
   COALESCE(cp.full_name, r.customer_name) as client_name,
   -- Service information
   s.name as service_name,
-  s.duration_minutes
+  s.duration_minutes,
+  -- Type indicator
+  'service' as booking_type,
+  NULL as combo_id,
+  NULL as combo_name
 FROM public.reservations r
 LEFT JOIN public.profiles cp ON r.client_id = cp.id
 LEFT JOIN public.services s ON r.service_id = s.id
-WHERE r.employee_id = auth.uid() OR get_user_role(auth.uid()) = 'admin';
+WHERE r.employee_id = auth.uid() OR get_user_role(auth.uid()) = 'admin'
+
+UNION ALL
+
+-- Combo reservations where employee is primary or assigned to services
+SELECT 
+  cr.id,
+  cr.appointment_date,
+  cr.start_time,
+  cr.end_time,
+  cr.status,
+  cr.notes,
+  cr.primary_employee_id as employee_id,
+  cr.client_id,
+  NULL as service_id,
+  -- Client information (limited for privacy)
+  COALESCE(cp.full_name, cr.customer_name) as client_name,
+  -- Service information (combo name)
+  c.name as service_name,
+  -- Calculate total duration from combo services
+  COALESCE((
+    SELECT SUM(cs.quantity * s.duration_minutes)
+    FROM combo_service_assignments csa
+    JOIN services s ON csa.service_id = s.id
+    WHERE csa.combo_reservation_id = cr.id
+  ), 0) as duration_minutes,
+  -- Type indicator
+  'combo' as booking_type,
+  cr.combo_id,
+  c.name as combo_name
+FROM public.combo_reservations cr
+LEFT JOIN public.profiles cp ON cr.client_id = cp.id
+LEFT JOIN public.combos c ON cr.combo_id = c.id
+WHERE (cr.primary_employee_id = auth.uid() OR get_user_role(auth.uid()) = 'admin')
+  OR EXISTS (
+    SELECT 1 FROM combo_service_assignments csa 
+    WHERE csa.combo_reservation_id = cr.id 
+    AND csa.assigned_employee_id = auth.uid()
+  );
 
 -- Grant access to the employee calendar view
 GRANT SELECT ON public.employee_calendar_view TO authenticated;
