@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, User, Sparkles } from "lucide-react";
+import { Calendar, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { EditableAppointment } from "./EditableAppointment";
-import { EditableDiscount } from "./EditableDiscount";
 import { ServiceCard } from "@/components/cards/ServiceCard";
 import { Appointment } from "@/types/appointment";
 import { AdminQuickAccess } from "./AdminQuickAccess";
-import { AppointmentCard } from "./AppointmentCard";
+import { BookingCard } from "@/components/cards/BookingCard";
 
 interface DashboardSummaryProps {
   effectiveProfile: any;
@@ -20,7 +16,6 @@ interface DashboardSummaryProps {
 export const DashboardSummary = ({
   effectiveProfile
 }: DashboardSummaryProps) => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
@@ -100,10 +95,7 @@ export const DashboardSummary = ({
           service_duration,
           category_name,
           client_full_name,
-          employee_full_name,
-          booking_type,
-          combo_id,
-          combo_name
+          employee_full_name
         `);
 
       // Apply filters based on user role
@@ -126,7 +118,7 @@ export const DashboardSummary = ({
       }
 
       // Transform the data to match our interface - Now with correct service names
-      const transformedAppointments = appointments?.map(appt => ({
+      const transformedAppointments = appointments?.map((appt: any) => ({
         id: appt.id,
         appointment_date: appt.appointment_date,
         start_time: appt.start_time,
@@ -148,23 +140,35 @@ export const DashboardSummary = ({
         employee_profile: appt.employee_full_name ? {
           full_name: appt.employee_full_name
         } : undefined,
-        // Add combo information
-        isCombo: appt.booking_type === 'combo',
-        comboId: appt.combo_id,
-        comboName: appt.combo_name
+        // Combo fields omitted in this view
+        isCombo: false,
+        comboId: undefined,
+        comboName: undefined
       })) || [];
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const upcoming = transformedAppointments?.filter(appt => {
-        const apptDate = new Date(appt.appointment_date);
-        return apptDate >= today;
-      }).sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()) || [];
-      
-      const past = transformedAppointments?.filter(appt => {
-        const apptDate = new Date(appt.appointment_date);
-        return apptDate < today;
-      }).sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime()) || [];
+      const upcoming = transformedAppointments
+        ?.filter(appt => {
+          const apptDate = new Date(appt.appointment_date);
+          // Only show pending or confirmed in upcoming
+          const status = (appt.status || '').toLowerCase();
+          const isUpcomingDate = apptDate >= today;
+          const isUpcomingStatus = status === 'pending' || status === 'confirmed';
+          return isUpcomingDate && isUpcomingStatus;
+        })
+        .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()) || [];
+
+      const past = transformedAppointments
+        ?.filter(appt => {
+          const apptDate = new Date(appt.appointment_date);
+          // Only show completed or cancelled in past
+          const status = (appt.status || '').toLowerCase();
+          const isPastDate = apptDate < today;
+          const isPastStatus = status === 'completed' || status === 'cancelled';
+          return isPastDate && isPastStatus;
+        })
+        .sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime()) || [];
       
       setUpcomingAppointments(upcoming);
       setPastAppointments(past);
@@ -189,11 +193,10 @@ export const DashboardSummary = ({
   if (loading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl sm:text-3xl font-serif font-bold">
-          ¡Bienvenido de nuevo, {effectiveProfile?.full_name}!
-        </h2>
-        <div className="text-center py-8">
-          <p>Cargando...</p>
+        <div className="h-7 w-48 rounded-md bg-muted animate-pulse" />
+        <div className="space-y-4">
+          <div className="h-24 w-full rounded-md bg-muted animate-pulse" />
+          <div className="h-24 w-full rounded-md bg-muted animate-pulse" />
         </div>
       </div>
     );
@@ -225,13 +228,24 @@ export const DashboardSummary = ({
           ) : (
             <div className="space-y-4">
               {upcomingAppointments.slice(0, 5).map((appointment) => (
-                <AppointmentCard
+                <BookingCard
                   key={appointment.id}
-                  appointment={appointment}
+                  id={appointment.id}
+                  serviceName={appointment.services?.[0]?.name || 'Servicio no especificado'}
+                  appointmentDate={appointment.appointment_date}
+                  startTime={appointment.start_time}
+                  endTime={appointment.end_time}
+                  status={appointment.status}
+                  notes={appointment.notes}
+                  clientName={appointment.client_profile?.full_name}
+                  employeeName={appointment.employee_profile?.full_name}
+                  isCombo={appointment.isCombo}
+                  comboName={appointment.comboName}
+                  comboId={appointment.comboId}
                   onUpdate={fetchAppointments}
                   canEdit={canEditAppointment(appointment)}
                   effectiveProfile={effectiveProfile}
-                  variant="default"
+                  variant="upcoming"
                 />
               ))}
               {upcomingAppointments.length > 5 && (
@@ -323,13 +337,24 @@ export const DashboardSummary = ({
           ) : (
             <div className="space-y-4">
               {pastAppointments.slice(0, 5).map((appointment) => (
-                <AppointmentCard
+                <BookingCard
                   key={appointment.id}
-                  appointment={appointment}
+                  id={appointment.id}
+                  serviceName={appointment.services?.[0]?.name || 'Servicio no especificado'}
+                  appointmentDate={appointment.appointment_date}
+                  startTime={appointment.start_time}
+                  endTime={appointment.end_time}
+                  status={appointment.status}
+                  notes={appointment.notes}
+                  clientName={appointment.client_profile?.full_name}
+                  employeeName={appointment.employee_profile?.full_name}
+                  isCombo={appointment.isCombo}
+                  comboName={appointment.comboName}
+                  comboId={appointment.comboId}
                   onUpdate={fetchAppointments}
                   canEdit={canEditAppointment(appointment)}
                   effectiveProfile={effectiveProfile}
-                  variant="compact"
+                  variant="past"
                 />
               ))}
               {pastAppointments.length > 5 && (

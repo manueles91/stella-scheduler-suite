@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { useBookingData } from "@/hooks/useBookingData";
 import { EnhancedCategoryFilter } from "@/components/landing/EnhancedCategoryFilter";
@@ -8,7 +9,7 @@ import heroImage from "@/assets/hero-salon.jpg";
 export const HeroSection = () => {
   const navigate = useNavigate();
   const { categories, selectedCategory, setSelectedCategory } = useBookingData();
-  const { settings } = useSiteSettings();
+  const { settings, isLoading } = useSiteSettings();
 
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
@@ -44,15 +45,28 @@ export const HeroSection = () => {
             )}
             
             {/* Main Heading - Dynamic from Site Settings */}
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-serif font-bold leading-tight px-1 sm:px-2 md:px-4">
-              {settings?.hero_title || 'Descubre tu Belleza Natural'}
-            </h1>
+            {isLoading ? (
+              <div className="px-8 sm:px-16 md:px-24 lg:px-32 mx-auto w-full max-w-3xl">
+                <Skeleton className="h-8 sm:h-10 md:h-12 w-full bg-white/20" />
+              </div>
+            ) : (
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-serif font-bold leading-tight px-1 sm:px-2 md:px-4">
+                {settings?.hero_title || ''}
+              </h1>
+            )}
 
             {/* Mission blurb - Dynamic from Site Settings */}
             <div className="px-4 sm:px-6 md:px-8">
-              <p className="mt-3 sm:mt-4 md:mt-5 text-white/90 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
-                {settings?.hero_subtitle || 'Tratamientos profesionales de belleza en un ambiente relajante y acogedor'}
-              </p>
+              {isLoading ? (
+                <div className="mx-auto w-full max-w-3xl space-y-2">
+                  <Skeleton className="h-4 w-11/12 bg-white/15" />
+                  <Skeleton className="h-4 w-10/12 bg-white/15" />
+                </div>
+              ) : (
+                <p className="mt-3 sm:mt-4 md:mt-5 text-white/90 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
+                  {settings?.hero_subtitle || ''}
+                </p>
+              )}
             </div>
             
             {/* CTA Buttons - Mobile Responsive Layout */}

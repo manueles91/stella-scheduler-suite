@@ -6,6 +6,7 @@ import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartToo
 import { formatCRC } from "@/lib/currency";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
+import { BookingCard } from "@/components/cards/BookingCard";
 import {
   Bar,
   BarChart,
@@ -31,6 +32,7 @@ interface ReservationLite {
   booking_type?: 'service' | 'combo';
   combo_id?: string | null;
   combo_name?: string | null;
+  employee_full_name?: string | null;
 }
 
 const DAYS_WINDOW_DEFAULT = 30;
@@ -61,9 +63,7 @@ export const AdminIngresos = () => {
           service_name,
           service_price_cents,
           category_name,
-          booking_type,
-          combo_id,
-          combo_name
+          employee_full_name
         `)
         .gte("appointment_date", startStr)
         .order("appointment_date", { ascending: false });
@@ -358,53 +358,20 @@ export const AdminIngresos = () => {
               </div>
             ) : (
               completedInWindow.slice(0, 10).map((reservation) => (
-                <div key={reservation.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-base flex items-center gap-2">
-                        {reservation.booking_type === 'combo' && (
-                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                            COMBO
-                          </Badge>
-                        )}
-                        {reservation.service_name}
-                      </h4>
-                      <Badge variant="outline" className="text-xs">
-                        {reservation.booking_type === 'combo' ? 'Combo' : (reservation.category_name || "Sin categoría")}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                        <span className="font-medium">
-                          {reservation.client_name || reservation.client_email || "Cliente invitado"}
-                        </span>
-                        <span className="hidden sm:inline text-muted-foreground">•</span>
-                        <span>
-                          {format(parseISO(reservation.appointment_date), "dd/MM/yyyy")}
-                        </span>
-                        <span className="hidden sm:inline text-muted-foreground">•</span>
-                        <span>{reservation.start_time}</span>
-                        {reservation.booking_type === 'combo' && (
-                          <>
-                            <span className="hidden sm:inline text-muted-foreground">•</span>
-                            <span className="text-blue-600 font-medium">Combo completo</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 mt-3 sm:mt-0">
-                    <div className="font-semibold text-green-600 text-lg">
-                      {formatCRC(reservation.service_price_cents)}
-                    </div>
-                    <Badge 
-                      variant={reservation.status === "completed" ? "secondary" : "outline"} 
-                      className="text-xs"
-                    >
-                      {reservation.status === "completed" ? "Completado" : "Confirmado"}
-                    </Badge>
-                  </div>
-                </div>
+                <BookingCard
+                  key={reservation.id}
+                  id={reservation.id}
+                  serviceName={reservation.service_name}
+                  appointmentDate={reservation.appointment_date}
+                  startTime={reservation.start_time}
+                  status={reservation.status}
+                  priceCents={reservation.service_price_cents}
+                  clientName={reservation.client_name || reservation.client_email || "Cliente invitado"}
+                  clientEmail={reservation.client_email}
+                  employeeName={reservation.employee_full_name || undefined}
+                  variant="revenue"
+                  showExpandable={true}
+                />
               ))
             )}
           </div>

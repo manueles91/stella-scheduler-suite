@@ -301,7 +301,7 @@ export const AdminSettings = () => {
             <Input 
               value={businessInfo.hero_title}
               onChange={(e) => setBusinessInfo({...businessInfo, hero_title: e.target.value})}
-              placeholder="Descubre tu Belleza Natural"
+              placeholder="Bienvenida a tu Salón de Belleza"
             />
           </div>
           <div className="space-y-2">
