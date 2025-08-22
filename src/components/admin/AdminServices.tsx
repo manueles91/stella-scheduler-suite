@@ -16,6 +16,7 @@ import { ServiceCard } from "@/components/cards/ServiceCard";
 import { ComboCard } from "@/components/cards/ComboCard";
 import { useToast } from "@/hooks/use-toast";
 import { AdminCategories } from "./AdminCategories";
+import { useServiceImageUpload } from "@/lib/hooks/useServiceImageUpload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,6 +133,7 @@ export const AdminServices = () => {
   const [imageValidationError, setImageValidationError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const { isUploading, uploadImages } = useServiceImageUpload();
 
   // Discounts and Combos state
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -1174,19 +1176,38 @@ export const AdminServices = () => {
         <TabsContent value="services" className="space-y-6">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="text-3xl font-serif font-bold">Servicios</h2>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo Servicio
-                </Button>
-              </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingService ? "Editar Servicio" : "Nuevo Servicio"}
-              </DialogTitle>
-            </DialogHeader>
+            <div className="flex gap-2">
+              <Button
+                onClick={uploadImages}
+                disabled={isUploading}
+                variant="outline"
+                size="sm"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Subiendo imágenes...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Subir Imágenes Placeholder
+                  </>
+                )}
+              </Button>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={resetForm}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuevo Servicio
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingService ? "Editar Servicio" : "Nuevo Servicio"}
+                    </DialogTitle>
+                  </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1382,10 +1403,11 @@ export const AdminServices = () => {
                   Cancelar
                 </Button>
               </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
 
       {/* Category Filter Row */}
       <div className="flex gap-2 items-center">
