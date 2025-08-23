@@ -70,6 +70,7 @@ export const BookingCard = ({
   showExpandable = true,
   className = ""
 }: BookingCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(isCombo || false); // Auto-expand combo bookings
   const [currentStatus, setCurrentStatus] = useState(status);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [fetchedComboServices, setFetchedComboServices] = useState<{ name: string; quantity: number }[] | null>(null);
@@ -430,6 +431,8 @@ export const BookingCard = ({
       id={id}
       className={className}
       showExpandable={showExpandable}
+      isExpanded={isExpanded}
+      onExpandChange={setIsExpanded}
       expandedContent={expandedContent}
     >
       {collapsedContent}

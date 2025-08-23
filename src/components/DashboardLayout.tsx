@@ -76,20 +76,22 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
 
   const menuItems = [
     { id: 'overview', label: 'Inicio', icon: Calendar },
-    ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
-      { id: 'admin-costs', label: 'Costos', icon: Receipt },
-      { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
-      { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
-      { id: 'admin-settings', label: 'Configuración', icon: Settings },
+    ...(effectiveProfile?.role === 'client' ? [
+      { id: 'bookings', label: 'Reservar', icon: Calendar },
     ] : []),
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'time-tracking', label: 'Mi agenda', icon: Users },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
+      { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
+      { id: 'admin-costs', label: 'Costos', icon: Receipt },
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
+      { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
     ] : []),
-    { id: 'bookings', label: 'Reservar', icon: Calendar },
+    { id: 'admin-settings', label: 'Configuración', icon: Settings },
+    ...(effectiveProfile?.role === 'admin' ? [
+      { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
+    ] : []),
   ];
 
   return (
