@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Clock, Users, Settings, LogOut, Eye, ArrowLeft, Scissors, Tags, UserPlus, CalendarPlus, UsersIcon, DollarSign, Receipt } from "lucide-react";
+import { Calendar, Clock, Users, Settings, LogOut, Eye, ArrowLeft, Scissors, Tags, UserPlus, CalendarPlus, UsersIcon, DollarSign, Receipt, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
@@ -80,6 +80,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
       { id: 'admin-costs', label: 'Costos', icon: Receipt },
       { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
+      { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
       { id: 'admin-settings', label: 'Configuración', icon: Settings },
     ] : []),
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [

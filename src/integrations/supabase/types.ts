@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_feedback: {
+        Row: {
+          admin_id: string
+          created_at: string
+          description: string
+          feedback_type: string
+          id: string
+          page_name: string
+          priority: string
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          description: string
+          feedback_type?: string
+          id?: string
+          page_name: string
+          priority?: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          description?: string
+          feedback_type?: string
+          id?: string
+          page_name?: string
+          priority?: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       appointment_services: {
         Row: {
           appointment_id: string

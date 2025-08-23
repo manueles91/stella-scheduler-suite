@@ -40,6 +40,10 @@ export const AdminSettings = lazy(() =>
   import("../admin/AdminSettings").then(module => ({ default: module.AdminSettings }))
 );
 
+export const AdminFeedback = lazy(() => 
+  import("../admin/AdminFeedback").then(module => ({ default: module.AdminFeedback }))
+);
+
 // Optimized loading fallback component
 export const AdminLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-[400px]">
