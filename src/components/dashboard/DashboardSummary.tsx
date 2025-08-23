@@ -95,7 +95,10 @@ export const DashboardSummary = ({
           service_duration,
           category_name,
           client_full_name,
-          employee_full_name
+          employee_full_name,
+          booking_type,
+          combo_id,
+          combo_name
         `);
 
       // Apply filters based on user role
@@ -140,10 +143,10 @@ export const DashboardSummary = ({
         employee_profile: appt.employee_full_name ? {
           full_name: appt.employee_full_name
         } : undefined,
-        // Combo fields omitted in this view
-        isCombo: false,
-        comboId: undefined,
-        comboName: undefined
+        // Handle combo data from view
+        isCombo: appt.booking_type === 'combo',
+        comboId: appt.combo_id,
+        comboName: appt.combo_name
       })) || [];
       
       const today = new Date();

@@ -63,7 +63,10 @@ export const AdminIngresos = () => {
           service_name,
           service_price_cents,
           category_name,
-          employee_full_name
+          employee_full_name,
+          booking_type,
+          combo_id,
+          combo_name
         `)
         .gte("appointment_date", startStr)
         .order("appointment_date", { ascending: false });
@@ -72,7 +75,12 @@ export const AdminIngresos = () => {
         console.error("Error loading reservations for ingresos dashboard:", error);
         setReservations([]);
       } else {
-        setReservations(data || []);
+        // Transform the data to properly type the booking_type field
+        const transformedData = data?.map((reservation: any) => ({
+          ...reservation,
+          booking_type: reservation.booking_type === 'combo' ? 'combo' as const : 'service' as const
+        })) || [];
+        setReservations(transformedData);
       }
       setLoading(false);
     };
@@ -369,6 +377,9 @@ export const AdminIngresos = () => {
                   clientName={reservation.client_name || reservation.client_email || "Cliente invitado"}
                   clientEmail={reservation.client_email}
                   employeeName={reservation.employee_full_name || undefined}
+                  isCombo={reservation.booking_type === 'combo'}
+                  comboName={reservation.combo_name}
+                  comboId={reservation.combo_id}
                   variant="revenue"
                   showExpandable={true}
                 />
