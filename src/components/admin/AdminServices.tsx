@@ -508,7 +508,7 @@ export const AdminServices = () => {
       price_cents: formData.variable_price ? 0 : Math.round(formData.price_cents * 100),
     });
     if (!parsed.success) {
-      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      const msg = parsed.error.issues[0]?.message || "Corrige los campos del formulario";
       toast({ title: "Error de validación", description: msg, variant: "destructive" });
       return;
     }
@@ -660,7 +660,7 @@ export const AdminServices = () => {
       discount_value: parseFloat(discountFormData.discount_value),
     });
     if (!parsed.success) {
-      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      const msg = parsed.error.issues[0]?.message || "Corrige los campos del formulario";
       toast({ title: "Error", description: msg, variant: "destructive" });
       return;
     }
@@ -872,7 +872,7 @@ export const AdminServices = () => {
     e.preventDefault();
     const parsed = comboFormSchema.safeParse(comboFormData);
     if (!parsed.success) {
-      const msg = parsed.error.errors[0]?.message || "Corrige los campos del formulario";
+      const msg = parsed.error.issues[0]?.message || "Corrige los campos del formulario";
       toast({ title: "Error", description: msg, variant: "destructive" });
       return;
     }
