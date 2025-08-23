@@ -348,32 +348,23 @@ export const BookingCard = ({
         {renderStatusInline()}
       </div>
 
-      {/* Additional service details */}
-      {isCombo && (
+      {/* Combo services details */}
+      {isCombo && (comboServices?.length || fetchedComboServices?.length) && (
         <div className="space-y-2">
-          <h5 className="font-medium text-sm text-muted-foreground">Detalles del combo</h5>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-              <Package className="h-3 w-3 mr-1" />
-              COMBO
-            </Badge>
-            {comboName && <span className="text-sm text-muted-foreground">{comboName}</span>}
-          </div>
-          {(comboServices?.length || fetchedComboServices?.length) ? (
-            <div className="mt-2 border rounded-md p-2 bg-muted/30">
-              <div className="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
-                <ListTree className="h-3 w-3" />
-                <span>Servicios incluidos</span>
-              </div>
-              <ul className="list-disc pl-4 space-y-1">
-                {(comboServices || fetchedComboServices || []).map((s, idx) => (
-                  <li key={idx} className="text-xs">
-                    {s.quantity > 1 ? `${s.quantity} x ${s.name}` : s.name}
-                  </li>
-                ))}
-              </ul>
+          <h5 className="font-medium text-sm text-muted-foreground">Servicios incluidos</h5>
+          <div className="border rounded-md p-2 bg-muted/30">
+            <div className="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
+              <ListTree className="h-3 w-3" />
+              <span>Detalles del combo</span>
             </div>
-          ) : null}
+            <ul className="list-disc pl-4 space-y-1">
+              {(comboServices || fetchedComboServices || []).map((s, idx) => (
+                <li key={idx} className="text-xs">
+                  {s.quantity > 1 ? `${s.quantity} x ${s.name}` : s.name}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
       

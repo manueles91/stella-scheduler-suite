@@ -107,6 +107,14 @@ export const AdminIngresos = () => {
     });
   }, [reservations, timeframeStartStr]);
 
+  const recentCompletedOnly = useMemo(() => {
+    return reservations.filter((r) => {
+      // Only completed reservations for recent revenue display
+      if (r.status !== "completed") return false;
+      return r.appointment_date >= timeframeStartStr;
+    });
+  }, [reservations, timeframeStartStr]);
+
   const dailyRevenueData = useMemo(() => {
     const centsByDay = new Map<string, number>();
     timeframeDays.forEach((d) => centsByDay.set(d, 0));
@@ -355,17 +363,17 @@ export const AdminIngresos = () => {
         <CardHeader>
           <CardTitle>Ingresos Recientes</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Incluye citas completadas y confirmadas de los últimos {daysWindow} días
+            Incluye solo citas completadas de los últimos {daysWindow} días
           </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {completedInWindow.length === 0 ? (
+            {recentCompletedOnly.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                No hay ingresos recientes
+                No hay ingresos recientes completados
               </div>
             ) : (
-              completedInWindow.slice(0, 10).map((reservation) => (
+              recentCompletedOnly.slice(0, 10).map((reservation) => (
                 <BookingCard
                   key={reservation.id}
                   id={reservation.id}
