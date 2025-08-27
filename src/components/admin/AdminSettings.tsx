@@ -199,75 +199,78 @@ export const AdminSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-serif font-bold">Configuración del Salón</h2>
-        <p className="text-muted-foreground">Gestiona toda la información que aparece en la página de inicio.</p>
+        <Button onClick={saveBusinessInfo} disabled={saving} size="lg">
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? "Guardando..." : "Guardar Configuración"}
+        </Button>
       </div>
 
       {/* Images Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Logo del salón</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm"><ImageIcon className="h-4 w-4" /> Logo del salón</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-center bg-muted/30 rounded-md p-4 min-h-[120px]">
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-center bg-muted/30 rounded-md p-3 min-h-[80px]">
               {settings?.logo_url ? (
-                <img src={settings.logo_url} alt="Logo del salón" className="h-24 w-auto object-contain" />
+                <img src={settings.logo_url} alt="Logo del salón" className="h-16 w-auto object-contain" />
               ) : (
-                <div className="text-center text-muted-foreground text-sm">Aún no se ha configurado un logo.</div>
+                <div className="text-center text-muted-foreground text-xs">No configurado</div>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <Input type="file" accept="image/*" onChange={onLogoChange} disabled={uploading.logo} />
-              <Button type="button" variant="secondary" disabled={uploading.logo}>
-                <ImageUp className="h-4 w-4 mr-2" /> Subir
+            <div className="flex items-center gap-2">
+              <Input type="file" accept="image/*" onChange={onLogoChange} disabled={uploading.logo} className="text-xs" />
+              <Button type="button" variant="secondary" size="sm" disabled={uploading.logo}>
+                <ImageUp className="h-3 w-3" />
               </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Fondo de la portada</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm"><ImageIcon className="h-4 w-4" /> Fondo de portada</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-center bg-muted/30 rounded-md p-4 min-h-[120px]">
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-center bg-muted/30 rounded-md p-3 min-h-[80px]">
               {settings?.landing_background_url ? (
-                <img src={settings.landing_background_url} alt="Imagen de fondo de la portada" className="h-24 w-auto object-cover" />
+                <img src={settings.landing_background_url} alt="Imagen de fondo" className="h-16 w-auto object-cover rounded" />
               ) : (
-                <div className="text-center text-muted-foreground text-sm">Aún no se ha configurado la imagen de fondo.</div>
+                <div className="text-center text-muted-foreground text-xs">No configurado</div>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <Input type="file" accept="image/*" onChange={onBackgroundChange} disabled={uploading.bg} />
-              <Button type="button" variant="secondary" disabled={uploading.bg}>
-                <ImageUp className="h-4 w-4 mr-2" /> Subir
+            <div className="flex items-center gap-2">
+              <Input type="file" accept="image/*" onChange={onBackgroundChange} disabled={uploading.bg} className="text-xs" />
+              <Button type="button" variant="secondary" size="sm" disabled={uploading.bg}>
+                <ImageUp className="h-3 w-3" />
               </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Ícono de la App</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm"><ImageIcon className="h-4 w-4" /> Ícono de App</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-center bg-muted/30 rounded-md p-4 min-h-[120px]">
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-center bg-muted/30 rounded-md p-3 min-h-[80px]">
               {settings?.pwa_icon_url ? (
-                <img src={settings.pwa_icon_url} alt="Ícono de la aplicación" className="h-24 w-24 object-cover rounded-2xl" />
+                <img src={settings.pwa_icon_url} alt="Ícono de la aplicación" className="h-16 w-16 object-cover rounded-xl" />
               ) : (
-                <div className="text-center text-muted-foreground text-sm">Aún no se ha configurado el ícono de la app.</div>
+                <div className="text-center text-muted-foreground text-xs">No configurado</div>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <Input type="file" accept="image/*" onChange={onPwaIconChange} disabled={uploading.pwa} />
-              <Button type="button" variant="secondary" disabled={uploading.pwa}>
-                <ImageUp className="h-4 w-4 mr-2" /> Subir
+            <div className="flex items-center gap-2">
+              <Input type="file" accept="image/*" onChange={onPwaIconChange} disabled={uploading.pwa} className="text-xs" />
+              <Button type="button" variant="secondary" size="sm" disabled={uploading.pwa}>
+                <ImageUp className="h-3 w-3" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Recomendado: imagen cuadrada de 512x512 px para mejor calidad en todos los dispositivos.
+              Recomendado: 512x512 px
             </p>
           </CardContent>
         </Card>
@@ -424,14 +427,6 @@ export const AdminSettings = () => {
           </Button>
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={saveBusinessInfo} disabled={saving} size="lg">
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? "Guardando..." : "Guardar Configuración"}
-        </Button>
-      </div>
     </div>
   );
 };
