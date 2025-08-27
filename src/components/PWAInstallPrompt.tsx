@@ -48,9 +48,9 @@ export const PWAInstallPrompt = () => {
 
   return (
     <>
-      {/* Mobile Banner - Top positioned */}
+      {/* Mobile Banner - Top positioned with more prominence */}
       {isMobile ? (
-        <div className="fixed top-4 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
+        <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
           <Card className="bg-card/95 backdrop-blur-sm border-primary/20 shadow-lg">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -90,8 +90,8 @@ export const PWAInstallPrompt = () => {
           </Card>
         </div>
       ) : (
-        /* Desktop Banner - Top positioned with enhanced design */
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-500">
+        /* Desktop Banner - Top positioned with enhanced design and more prominence */
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-500">
           <Card className="bg-gradient-to-r from-card/95 to-card/90 backdrop-blur-md border-primary/20 w-96 shadow-xl">
             <CardContent className="p-5">
               <div className="flex items-start gap-4">
