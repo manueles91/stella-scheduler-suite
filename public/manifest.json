@@ -1,0 +1,31 @@
+{
+  "name": "Stella Studio",
+  "short_name": "Stella Studio",
+  "description": "Sistema de reservas para Stella Studio - Salón de belleza y spa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8b5a2b",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "beauty", "health"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { LocationSection } from "@/components/landing/LocationSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { BookingProvider } from "@/contexts/BookingContext";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -46,6 +47,9 @@ const Index = () => {
 
         {/* Final CTA Section */}
         <CTASection />
+
+        {/* PWA Install Prompt */}
+        <PWAInstallPrompt />
       </div>
     </BookingProvider>
   );
