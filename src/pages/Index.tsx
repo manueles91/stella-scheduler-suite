@@ -10,6 +10,9 @@ import { CTASection } from "@/components/landing/CTASection";
 import { BookingProvider } from "@/contexts/BookingContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
+import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { ManifestUpdater } from "@/components/ManifestUpdater";
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +36,14 @@ const Index = () => {
   return (
     <BookingProvider>
       <div className="min-h-screen bg-background">
+        {/* Manifest updater for dynamic PWA icons */}
+        <ManifestUpdater />
+        
+        {/* Install button in top right corner */}
+        <div className="fixed top-4 right-4 z-40">
+          <PWAInstallButton />
+        </div>
+        
         {/* Hero Section with Integrated Categories */}
         <HeroSection />
 

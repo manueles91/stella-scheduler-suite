@@ -5,6 +5,7 @@ export interface SiteSettings {
   id: string;
   logo_url: string | null;
   landing_background_url: string | null;
+  pwa_icon_url: string | null;
   business_name: string;
   business_address: string;
   business_phone: string;
@@ -44,6 +45,7 @@ export const useSiteSettings = () => {
         id: rawData.id,
         logo_url: rawData.logo_url,
         landing_background_url: rawData.landing_background_url,
+        pwa_icon_url: (rawData as any).pwa_icon_url || null,
         business_name: rawData.business_name || 'Salón de Belleza',
         business_address: rawData.business_address || 'Dirección del Salón',
         business_phone: rawData.business_phone || '+506 1234-5678',

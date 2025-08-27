@@ -13,7 +13,7 @@ import { ImageUp, Image as ImageIcon, Save, Building, Clock, Star, MapPin } from
 export const AdminSettings = () => {
   const { toast } = useToast();
   const { settings, refetch } = useSiteSettings();
-  const [uploading, setUploading] = useState<{ logo: boolean; bg: boolean }>({ logo: false, bg: false });
+  const [uploading, setUploading] = useState<{ logo: boolean; bg: boolean; pwa: boolean }>({ logo: false, bg: false, pwa: false });
   const [saving, setSaving] = useState(false);
   
   // Form states for editable fields
@@ -180,6 +180,23 @@ export const AdminSettings = () => {
     }
   };
 
+  const onPwaIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading((u) => ({ ...u, pwa: true }));
+      const url = await uploadFile(file, "pwa-icons");
+      await saveSetting({ pwa_icon_url: url });
+      await refetch();
+      toast({ title: "Ícono de app actualizado", description: "El ícono de la aplicación se ha actualizado correctamente." });
+    } catch (err: any) {
+      toast({ title: "Error al subir ícono", description: err.message || "Intenta nuevamente", variant: "destructive" });
+    } finally {
+      setUploading((u) => ({ ...u, pwa: false }));
+      e.target.value = "";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -188,7 +205,7 @@ export const AdminSettings = () => {
       </div>
 
       {/* Images Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Logo del salón</CardTitle>
@@ -228,6 +245,30 @@ export const AdminSettings = () => {
                 <ImageUp className="h-4 w-4 mr-2" /> Subir
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Ícono de la App</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center bg-muted/30 rounded-md p-4 min-h-[120px]">
+              {settings?.pwa_icon_url ? (
+                <img src={settings.pwa_icon_url} alt="Ícono de la aplicación" className="h-24 w-24 object-cover rounded-2xl" />
+              ) : (
+                <div className="text-center text-muted-foreground text-sm">Aún no se ha configurado el ícono de la app.</div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <Input type="file" accept="image/*" onChange={onPwaIconChange} disabled={uploading.pwa} />
+              <Button type="button" variant="secondary" disabled={uploading.pwa}>
+                <ImageUp className="h-4 w-4 mr-2" /> Subir
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Recomendado: imagen cuadrada de 512x512 px para mejor calidad en todos los dispositivos.
+            </p>
           </CardContent>
         </Card>
       </div>
