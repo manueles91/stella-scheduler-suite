@@ -894,6 +894,7 @@ export type Database = {
           id: string
           landing_background_url: string | null
           logo_url: string | null
+          pwa_icon_url: string | null
           testimonials: Json | null
           updated_at: string
           updated_by: string | null
@@ -910,6 +911,7 @@ export type Database = {
           id?: string
           landing_background_url?: string | null
           logo_url?: string | null
+          pwa_icon_url?: string | null
           testimonials?: Json | null
           updated_at?: string
           updated_by?: string | null
@@ -926,6 +928,7 @@ export type Database = {
           id?: string
           landing_background_url?: string | null
           logo_url?: string | null
+          pwa_icon_url?: string | null
           testimonials?: Json | null
           updated_at?: string
           updated_by?: string | null

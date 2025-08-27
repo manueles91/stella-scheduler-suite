@@ -12,12 +12,12 @@ export const PWAInstallButton = () => {
   return (
     <Button
       variant="outline"
-      size="sm"
+      size="icon"
       onClick={promptInstall}
-      className="hidden sm:flex items-center gap-2 bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary hover:text-primary"
+      className="bg-card/90 backdrop-blur-sm border-primary/20 hover:bg-primary/10 text-primary hover:text-primary shadow-lg"
+      title="Instalar aplicación"
     >
-      <Download className="w-4 h-4" />
-      Instalar App
+      <Download className="w-5 h-5" />
     </Button>
   );
 };
