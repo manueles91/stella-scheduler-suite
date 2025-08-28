@@ -30,12 +30,12 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
       {/* Hero Content - Mobile First Design with Generous Spacing */}
-      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-24 md:pt-40 lg:pt-48 xl:pt-56">
+      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-10 sm:pt-20 md:pt-36 lg:pt-44 xl:pt-52">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
           <div className="space-y-10 sm:space-y-14 md:space-y-18 lg:space-y-24">
             {/* Logo - Mobile Responsive with Generous Top Spacing */}
             {settings?.logo_url && (
-              <div className="flex justify-center mb-12 sm:mb-16 md:mb-20">
+              <div className="flex justify-center mb-6 sm:mb-12 md:mb-16">
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
@@ -93,8 +93,8 @@ export const HeroSection = () => {
               </div>
             </div>
 
-            {/* Categories Section - Mobile Responsive with Generous Spacing */}
-            <div className="mt-20 sm:mt-24 md:mt-32 lg:mt-40 px-1 sm:px-2 md:px-4">
+            {/* Categories Section - Mobile Responsive with Adjusted Spacing */}
+            <div className="mt-12 sm:mt-20 md:mt-28 lg:mt-36 px-1 sm:px-2 md:px-4">
               <div className="text-center mb-4 sm:mb-6 md:mb-8">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-2 sm:mb-3">
                   ¿Qué buscas hoy?
