@@ -39,7 +39,7 @@ export const HeroSection = () => {
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
-                  className="h-10 w-auto object-contain drop-shadow sm:h-12 md:h-16 lg:h-20 xl:h-24"
+                  className="h-40 w-auto object-contain drop-shadow sm:h-48 md:h-64 lg:h-80 xl:h-96"
                 />
               </div>
             )}
