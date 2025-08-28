@@ -73,8 +73,8 @@ export default {
 				'soft': 'var(--shadow-soft)'
 			},
 			fontFamily: {
-				'sans': ['Didot', 'system-ui', 'serif'],
-				'serif': ['Didot', 'serif']
+				'sans': ['Georgia', 'Times New Roman', 'Times', 'serif'],
+				'serif': ['Georgia', 'Times New Roman', 'Times', 'serif']
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
