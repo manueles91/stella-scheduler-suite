@@ -279,7 +279,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
   };
 
   const createNewSale = async () => {
-    if (!saleData.serviceId || !saleData.date || !saleData.time || !saleData.chargedPrice) {
+    if (!selectedCustomer || !saleData.serviceId || !saleData.date || !saleData.time || !saleData.chargedPrice) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos requeridos",
@@ -326,6 +326,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
         const { data, error } = await supabase
           .from('combo_reservations')
           .insert({
+            client_id: selectedCustomer.id,
             combo_id: selectedCombo.id,
             primary_employee_id: employeeId,
             appointment_date: saleData.date,
@@ -362,6 +363,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
         const { data, error } = await supabase
           .from('reservations')
           .insert({
+            client_id: selectedCustomer.id,
             service_id: saleData.serviceId,
             employee_id: saleData.employeeId || null,
             appointment_date: saleData.date,
@@ -382,6 +384,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       });
 
       setShowNewSale(false);
+      setSelectedCustomer(null);
       setSaleData({
         serviceId: "",
         employeeId: "",
@@ -678,6 +681,13 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                 <DialogTitle>Registrar Venta</DialogTitle>
               </DialogHeader>
               <div className="space-y-4" id="sale-description">
+                <div>
+                  <Label>Cliente</Label>
+                  <CustomerSelectorModal
+                    value={selectedCustomer}
+                    onValueChange={setSelectedCustomer}
+                  />
+                </div>
                 <div>
                   <Label>Tipo de Servicio</Label>
                   <Select 

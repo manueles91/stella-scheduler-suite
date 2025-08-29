@@ -620,11 +620,15 @@ const getStatusText = (status: string) => {
 <div className="flex flex-col">
                         <div className="font-medium">{user.full_name}</div>
                         <div className="text-sm text-muted-foreground">{user.email}</div>
-                        {user.user_type === 'invited' && (
-                          <div className="mt-1">
-                            <Badge className="bg-yellow-100 text-yellow-800">Invitación pendiente</Badge>
-                          </div>
-                        )}
+                        <div className="mt-1 flex gap-2 flex-wrap">
+                          {user.user_type === 'invited' && (
+                            <Badge className="bg-yellow-100 text-yellow-800 text-xs">Invitación pendiente</Badge>
+                          )}
+                          {/* Show role badge in mobile view (hidden on md+ where it shows in separate column) */}
+                          <Badge className={`${getRoleBadgeColor(user.role)} text-xs md:hidden`}>
+                            {getRoleText(user.role)}
+                          </Badge>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">

@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeSchedule } from "./EmployeeSchedule";
+import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
 
 interface Appointment {
   id: string;
@@ -773,24 +774,15 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="client">Cliente</Label>
-                <Select 
-                  value={appointmentForm.client_id} 
-                  onValueChange={value => setAppointmentForm({
-                    ...appointmentForm,
-                    client_id: value
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomerSelectorModal
+                  value={clients.find(c => c.id === appointmentForm.client_id) || null}
+                  onValueChange={(customer) => {
+                    setAppointmentForm({
+                      ...appointmentForm,
+                      client_id: customer?.id || ''
+                    });
+                  }}
+                />
               </div>
 
               <div>
