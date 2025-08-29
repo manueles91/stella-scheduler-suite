@@ -38,7 +38,8 @@ const handler = async (req: Request): Promise<Response> => {
       notes
     }: BookingConfirmationRequest = await req.json();
 
-    const baseUrl = "https://eygyyswmlsqyvfdbmwfw.supabase.co";
+    // Use the app's actual URL - this should be your deployed app URL
+    const baseUrl = Deno.env.get("APP_URL") || "https://your-app-domain.com";
     const registrationUrl = registrationToken 
       ? `${baseUrl}/register?token=${registrationToken}`
       : `${baseUrl}/auth`;
