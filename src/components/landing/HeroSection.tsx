@@ -33,13 +33,16 @@ export const HeroSection = () => {
       <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-10 sm:pt-20 md:pt-36 lg:pt-44 xl:pt-52">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
           <div className="space-y-10 sm:space-y-14 md:space-y-18 lg:space-y-24">
-            {/* Logo - Mobile Responsive with Generous Top Spacing */}
+            {/* Logo - Mobile Responsive, 80% bigger, no padding */}
             {settings?.logo_url && (
-              <div className="flex justify-center mb-6 sm:mb-12 md:mb-16">
+              <div className="flex justify-center">
                 <img
                   src={settings.logo_url}
                   alt="Logo del salón Stella Studio"
-                  className="h-40 w-auto object-contain drop-shadow sm:h-48 md:h-64 lg:h-80 xl:h-96"
+                  className="w-auto object-contain drop-shadow"
+                  style={{
+                    height: 'clamp(288px, 20vw + 200px, 691px)', // Responsive: 80% bigger, grows from 288px to 691px
+                  }}
                 />
               </div>
             )}
