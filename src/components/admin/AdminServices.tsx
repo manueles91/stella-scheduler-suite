@@ -505,7 +505,7 @@ export const AdminServices = () => {
     e.preventDefault();
     const parsed = serviceFormSchema.safeParse({
       ...formData,
-      price_cents: formData.variable_price ? 0 : Math.round(formData.price_cents * 100),
+      price_cents: formData.variable_price ? 0 : Math.round(formData.price_cents),
     });
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message || "Corrige los campos del formulario";
@@ -539,7 +539,7 @@ export const AdminServices = () => {
       const serviceData = {
         ...formData,
         image_url: imageUrl,
-        price_cents: Math.round(formData.price_cents * 100) // Convert to cents
+        price_cents: Math.round(formData.price_cents) // Already in cents from form
       };
       let serviceId: string;
       if (editingService) {
@@ -1243,17 +1243,17 @@ export const AdminServices = () => {
 
               <div>
                 <Label htmlFor="price">Precio {formData.variable_price ? "(referencial opcional)" : "*"}</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-medium">₡</span>
                   <Input
                     id="price"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.price_cents}
+                    value={formData.price_cents / 100}
                     onChange={e => setFormData({
                       ...formData,
-                      price_cents: parseFloat(e.target.value) || 0
+                      price_cents: (parseFloat(e.target.value) || 0) * 100
                     })}
                     placeholder="0.00"
                     className="pl-10"

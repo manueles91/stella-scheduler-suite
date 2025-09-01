@@ -88,7 +88,9 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
       { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
     ] : []),
-    { id: 'admin-settings', label: 'Configuración', icon: Settings },
+    ...(effectiveProfile?.role === 'admin' ? [
+      { id: 'admin-settings', label: 'Configuración', icon: Settings },
+    ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
     ] : []),
