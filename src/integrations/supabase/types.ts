@@ -476,6 +476,41 @@ export type Database = {
           },
         ]
       }
+      customer_loyalty_progress: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          qr_code_token: string
+          total_visits: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          qr_code_token: string
+          total_visits?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          qr_code_token?: string
+          total_visits?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_loyalty_progress_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discounts: {
         Row: {
           created_at: string
@@ -662,6 +697,177 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
         }
         Relationships: []
+      }
+      loyalty_program_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          program_name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          program_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          program_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_reward_redemptions: {
+        Row: {
+          customer_id: string
+          id: string
+          notes: string | null
+          redeemed_at: string
+          redeemed_by_admin_id: string
+          reward_tier_id: string
+          visits_used: number
+        }
+        Insert: {
+          customer_id: string
+          id?: string
+          notes?: string | null
+          redeemed_at?: string
+          redeemed_by_admin_id: string
+          reward_tier_id: string
+          visits_used: number
+        }
+        Update: {
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          redeemed_at?: string
+          redeemed_by_admin_id?: string
+          reward_tier_id?: string
+          visits_used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_reward_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_reward_redemptions_redeemed_by_admin_id_fkey"
+            columns: ["redeemed_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_reward_redemptions_reward_tier_id_fkey"
+            columns: ["reward_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_reward_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_reward_tiers: {
+        Row: {
+          created_at: string
+          discount_percentage: number | null
+          display_order: number | null
+          id: string
+          is_active: boolean
+          is_free_service: boolean | null
+          reward_description: string | null
+          reward_title: string
+          updated_at: string
+          visits_required: number
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage?: number | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          is_free_service?: boolean | null
+          reward_description?: string | null
+          reward_title: string
+          updated_at?: string
+          visits_required: number
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          is_free_service?: boolean | null
+          reward_description?: string | null
+          reward_title?: string
+          updated_at?: string
+          visits_required?: number
+        }
+        Relationships: []
+      }
+      loyalty_visits: {
+        Row: {
+          added_by_admin_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          notes: string | null
+          visit_date: string
+        }
+        Insert: {
+          added_by_admin_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          visit_date?: string
+        }
+        Update: {
+          added_by_admin_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_visits_added_by_admin_id_fkey"
+            columns: ["added_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_visits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1032,6 +1238,10 @@ export type Database = {
       check_guest_reservation_access: {
         Args: { reservation_id: string; token: string }
         Returns: boolean
+      }
+      generate_loyalty_qr_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_registration_token: {
         Args: Record<PropertyKey, never>
