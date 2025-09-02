@@ -9,6 +9,8 @@ import { TimeTracking } from "@/components/employee/TimeTracking";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminIngresos } from "@/components/admin/AdminIngresos";
+import { AdminLoyaltyScanner } from "@/components/admin/AdminLoyaltyScanner";
+import { CustomerLoyaltyCard } from "@/components/loyalty/CustomerLoyaltyCard";
 import { 
   AdminServices,
   AdminUsers,
@@ -151,6 +153,10 @@ const Dashboard = () => {
         return <DashboardSummary effectiveProfile={effectiveProfile} />;
       case 'bookings':
         return <EnhancedBookingSystem />;
+      case 'loyalty-card':
+        return <CustomerLoyaltyCard />;
+      case 'loyalty-scanner':
+        return <AdminLoyaltyScanner />;
       case 'time-tracking':
         return <TimeTracking employeeId={effectiveProfile?.id} />;
       case 'admin-bookings':

@@ -78,6 +78,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     { id: 'overview', label: 'Inicio', icon: Calendar },
     ...(effectiveProfile?.role === 'client' ? [
       { id: 'bookings', label: 'Reservar', icon: Calendar },
+      { id: 'loyalty-card', label: 'Mi Tarjeta', icon: Calendar },
     ] : []),
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'time-tracking', label: 'Mi agenda', icon: Users },
@@ -87,6 +88,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       { id: 'admin-costs', label: 'Costos', icon: Receipt },
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
       { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
+      { id: 'loyalty-scanner', label: 'Marcar Visitas', icon: Calendar },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-settings', label: 'Configuración', icon: Settings },
