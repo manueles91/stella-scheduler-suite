@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Shield, Clock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, isToday, startOfDay, endOfDay, isSameDay, parseISO, addDays, subDays, startOfWeek, addMinutes, differenceInMinutes } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +77,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTime | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Add appointment form state
   const [appointmentForm, setAppointmentForm] = useState({
@@ -410,10 +412,30 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
               <Button variant="outline" size="sm" onClick={() => navigateDate('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <h1 className="text-lg font-semibold">
-                {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                {isToday(selectedDate) && <Badge className="ml-2">Hoy</Badge>}
-              </h1>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
+                    <h1 className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors">
+                      {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                      {isToday(selectedDate) && <Badge className="ml-2">Hoy</Badge>}
+                    </h1>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDate(date);
+                        setDatePickerOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <Button onClick={() => setSelectedDate(new Date())} variant="outline" size="sm">
               Hoy

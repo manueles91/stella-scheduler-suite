@@ -17,9 +17,10 @@ export const invitedUserSchema = z.object({
     .optional()
     .refine((phone) => {
       if (!phone || phone.trim() === "") return true;
-      // Spanish phone number validation (basic)
-      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
-      return phoneRegex.test(phone.replace(/\s+/g, ""));
+      // Permissive phone validation - allows various international formats
+      // Accepts digits, spaces, hyphens, parentheses, and + sign
+      const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,20}$/;
+      return phoneRegex.test(phone);
     }, "Formato de teléfono inválido"),
   
   role: z.enum(["client", "employee", "admin"])
