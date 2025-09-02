@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { QrCode, Award, Gift, Sparkles, RefreshCw } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -20,13 +19,12 @@ export const CustomerLoyaltyCard = () => {
   } = useLoyalty();
 
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-  const [showQR, setShowQR] = useState(false);
 
-  // Generate QR code when loyalty progress is available
+  // Generate QR code using customer ID instead of token for simplicity
   useEffect(() => {
-    if (loyaltyProgress?.qr_code_token) {
-      QRCode.toDataURL(loyaltyProgress.qr_code_token, {
-        width: 256,
+    if (loyaltyProgress?.customer_id) {
+      QRCode.toDataURL(loyaltyProgress.customer_id, {
+        width: 200,
         margin: 2,
         color: {
           dark: '#000000',
@@ -36,7 +34,7 @@ export const CustomerLoyaltyCard = () => {
         .then(setQrCodeDataUrl)
         .catch(console.error);
     }
-  }, [loyaltyProgress?.qr_code_token]);
+  }, [loyaltyProgress?.customer_id]);
 
   if (loading) {
     return (
@@ -68,13 +66,14 @@ export const CustomerLoyaltyCard = () => {
 
   const availableRewards = getAvailableRewards(loyaltyProgress.total_visits);
   const nextReward = getNextReward(loyaltyProgress.total_visits);
-  const progressToNext = nextReward 
-    ? Math.min((loyaltyProgress.total_visits / nextReward.visits_required) * 100, 100)
-    : 100;
-
   const visitsRemaining = nextReward 
     ? nextReward.visits_required - loyaltyProgress.total_visits
     : 0;
+
+  // Create punch card grid (10 holes per card)
+  const maxVisitsPerCard = 10;
+  const totalPunchHoles = Math.max(maxVisitsPerCard, Math.max(...rewardTiers.map(t => t.visits_required), loyaltyProgress.total_visits));
+  const punchHoles = Array.from({ length: totalPunchHoles }, (_, i) => i < loyaltyProgress.total_visits);
 
   return (
     <div className="space-y-6">
@@ -85,85 +84,75 @@ export const CustomerLoyaltyCard = () => {
         </p>
       </div>
 
-      {/* Loyalty Card */}
-      <Card className="overflow-hidden bg-gradient-to-br from-primary/5 to-secondary/5">
-        <CardHeader className="text-center space-y-4">
-          <CardTitle className="flex items-center justify-center gap-2">
+      {/* Punch Card */}
+      <Card className="overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+        <CardHeader className="text-center space-y-4 bg-gradient-to-r from-amber-100 to-orange-100">
+          <CardTitle className="flex items-center justify-center gap-2 text-amber-800">
             <Sparkles className="h-6 w-6" />
             {programConfig?.program_name || 'Programa de Lealtad'}
           </CardTitle>
           
           <div className="space-y-2">
-            <div className="text-3xl font-bold text-primary">
+            <div className="text-3xl font-bold text-amber-700">
               {loyaltyProgress.total_visits}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-amber-600">
               {loyaltyProgress.total_visits === 1 ? 'visita registrada' : 'visitas registradas'}
             </p>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* QR Code Section */}
-          <div className="text-center space-y-4">
-            {!showQR ? (
-              <Button 
-                onClick={() => setShowQR(true)}
-                size="lg"
-                className="w-full"
-              >
-                <QrCode className="h-5 w-5 mr-2" />
-                Mostrar Código QR
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="p-4 bg-white rounded-lg shadow-sm">
-                    {qrCodeDataUrl && (
-                      <img 
-                        src={qrCodeDataUrl} 
-                        alt="QR Code" 
-                        className="w-48 h-48"
-                      />
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                  Muestra este código QR al personal del salón para registrar tu visita
-                </p>
-                <Button 
-                  onClick={() => setShowQR(false)}
-                  variant="outline"
-                  size="sm"
+        <CardContent className="space-y-6 p-6">
+          {/* Punch Card Grid */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-5 gap-4 justify-items-center">
+              {punchHoles.map((isPunched, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "w-12 h-12 rounded-full border-4 flex items-center justify-center text-sm font-bold transition-all duration-300",
+                    isPunched
+                      ? "bg-amber-400 border-amber-600 text-amber-800 shadow-lg transform scale-105"
+                      : "bg-white border-amber-300 text-amber-300 shadow-inner"
+                  )}
                 >
-                  Ocultar Código
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Progress to Next Reward */}
-          {nextReward && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Progreso al siguiente nivel</span>
-                <span className="text-sm text-muted-foreground">
-                  {loyaltyProgress.total_visits} / {nextReward.visits_required}
-                </span>
-              </div>
-              
-              <Progress value={progressToNext} className="h-2" />
-              
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
+                  {isPunched ? "✓" : index + 1}
+                </div>
+              ))}
+            </div>
+            
+            {/* Progress message */}
+            {nextReward && (
+              <div className="text-center p-3 bg-amber-100 rounded-lg">
+                <p className="text-sm font-medium text-amber-800">
                   {visitsRemaining === 1 
                     ? `¡Solo necesitas 1 visita más para ${nextReward.reward_title}!`
                     : `Necesitas ${visitsRemaining} visitas más para ${nextReward.reward_title}`
                   }
                 </p>
               </div>
+            )}
+          </div>
+
+          {/* Always visible QR Code */}
+          <div className="text-center space-y-3">
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-lg shadow-sm border-2 border-amber-200">
+                {qrCodeDataUrl ? (
+                  <img 
+                    src={qrCodeDataUrl} 
+                    alt="QR Code" 
+                    className="w-40 h-40"
+                  />
+                ) : (
+                  <QrCode className="w-40 h-40 text-amber-300" />
+                )}
+              </div>
             </div>
-          )}
+            <p className="text-xs text-amber-700 max-w-xs mx-auto font-medium">
+              Muestra este código QR al personal del salón para registrar tu visita
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -215,7 +204,7 @@ export const CustomerLoyaltyCard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {rewardTiers.map((tier, index) => {
+            {rewardTiers.map((tier) => {
               const isUnlocked = loyaltyProgress.total_visits >= tier.visits_required;
               const isCurrent = nextReward?.id === tier.id;
               

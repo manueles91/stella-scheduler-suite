@@ -72,14 +72,14 @@ export const AdminLoyaltyScanner = () => {
   };
 
   // Handle QR code scan
-  const handleQRScan = async (qrToken: string) => {
+  const handleQRScan = async (customerId: string) => {
     try {
-      const customer = await findCustomerByQR(qrToken);
+      const customer = await findCustomerByQR(customerId);
       if (customer) {
         setSelectedCustomer(customer);
         setShowConfirmDialog(true);
       } else {
-        toast.error('Cliente no encontrado con este código QR');
+        toast.error('Cliente no encontrado en el programa de lealtad');
       }
     } catch (error) {
       console.error('Error processing QR:', error);
@@ -101,7 +101,7 @@ export const AdminLoyaltyScanner = () => {
   const confirmAddVisit = async () => {
     if (!selectedCustomer) return;
 
-    const success = await addVisitToCustomer(selectedCustomer.qr_code_token, notes);
+    const success = await addVisitToCustomer(selectedCustomer.customer_id, notes);
     if (success) {
       setShowConfirmDialog(false);
       setSelectedCustomer(null);
@@ -109,7 +109,7 @@ export const AdminLoyaltyScanner = () => {
       setManualCode('');
       
       // Refresh customer data
-      const updatedCustomer = await findCustomerByQR(selectedCustomer.qr_code_token);
+      const updatedCustomer = await findCustomerByQR(selectedCustomer.customer_id);
       if (updatedCustomer) {
         setSelectedCustomer(updatedCustomer);
       }

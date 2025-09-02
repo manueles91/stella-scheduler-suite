@@ -154,7 +154,7 @@ export const useLoyalty = () => {
   };
 
   // Add visit to customer
-  const addVisitToCustomer = async (qrToken: string, notes?: string) => {
+  const addVisitToCustomer = async (customerId: string, notes?: string) => {
     if (!user?.id) {
       toast.error('Debes estar autenticado');
       return false;
@@ -163,15 +163,15 @@ export const useLoyalty = () => {
     try {
       setLoading(true);
 
-      // First find the customer by QR token
+      // First find the customer progress
       const { data: customerProgress, error: findError } = await supabase
         .from('customer_loyalty_progress')
         .select('customer_id, total_visits')
-        .eq('qr_code_token', qrToken)
+        .eq('customer_id', customerId)
         .single();
 
       if (findError || !customerProgress) {
-        toast.error('Código QR inválido o no encontrado');
+        toast.error('Cliente no encontrado en el programa de lealtad');
         return false;
       }
 
@@ -207,8 +207,8 @@ export const useLoyalty = () => {
     }
   };
 
-  // Find customer by QR token for verification
-  const findCustomerByQR = async (qrToken: string) => {
+  // Find customer by ID for verification
+  const findCustomerByQR = async (customerId: string) => {
     try {
       const { data, error } = await supabase
         .from('customer_loyalty_progress')
@@ -221,13 +221,13 @@ export const useLoyalty = () => {
             phone
           )
         `)
-        .eq('qr_code_token', qrToken)
+        .eq('customer_id', customerId)
         .single();
 
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error finding customer by QR:', error);
+      console.error('Error finding customer by ID:', error);
       return null;
     }
   };
