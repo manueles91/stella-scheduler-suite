@@ -154,7 +154,8 @@ export const DashboardSummary = ({
       const upcoming = transformedAppointments
         ?.filter(appt => {
           const apptDate = new Date(appt.appointment_date);
-          // Only show pending or confirmed in upcoming
+          apptDate.setHours(0, 0, 0, 0);
+          // Only show pending or confirmed in upcoming (includes today regardless of time)
           const status = (appt.status || '').toLowerCase();
           const isUpcomingDate = apptDate >= today;
           const isUpcomingStatus = status === 'pending' || status === 'confirmed';
