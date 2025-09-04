@@ -39,15 +39,39 @@ export const CustomerSelector = ({ onSelect }: CustomerSelectorProps) => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['client', 'employee']) // Include both clients and employees
-        .eq('account_status', 'active')
-        .order('full_name');
+      // Fetch from both profiles and invited_users tables
+      const [profilesResponse, invitedUsersResponse] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .in('role', ['client', 'employee'])
+          .eq('account_status', 'active')
+          .order('full_name'),
+        supabase
+          .from('invited_users')
+          .select('*')
+          .eq('is_guest_user', true)
+          .order('full_name')
+      ]);
 
-      if (error) throw error;
-      setCustomers(data || []);
+      if (profilesResponse.error) throw profilesResponse.error;
+      if (invitedUsersResponse.error) throw invitedUsersResponse.error;
+
+      // Combine both datasets
+      const allCustomers = [
+        ...(profilesResponse.data || []),
+        ...(invitedUsersResponse.data || []).map(user => ({
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role || 'client',
+          account_status: user.account_status,
+          created_at: user.invited_at
+        }))
+      ];
+
+      setCustomers(allCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast({
@@ -97,6 +121,19 @@ export const CustomerSelector = ({ onSelect }: CustomerSelectorProps) => {
         return 'Administrador';
       default:
         return role;
+    }
+  };
+
+  const getAccountStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Activo';
+      case 'guest':
+        return 'Invitado';
+      case 'invited':
+        return 'Pendiente';
+      default:
+        return status;
     }
   };
 
@@ -166,6 +203,11 @@ export const CustomerSelector = ({ onSelect }: CustomerSelectorProps) => {
                         <Badge className={getRoleBadgeColor(customer.role)} variant="secondary">
                           {getRoleText(customer.role)}
                         </Badge>
+                        {customer.account_status === 'guest' && (
+                          <Badge className="bg-orange-100 text-orange-800" variant="secondary">
+                            {getAccountStatusText(customer.account_status)}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
