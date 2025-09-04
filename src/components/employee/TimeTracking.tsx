@@ -481,7 +481,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     
     try {
       // Use the updated employee_calendar_view that includes both individual and combo reservations
-      const { data, error } = await supabase
+      let query = supabase
         .from('employee_calendar_view')
         .select(`
           id,
@@ -498,8 +498,14 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           booking_type,
           combo_id,
           combo_name
-        `)
-        .eq('employee_id', effectiveEmployeeId)
+        `);
+
+      // Only filter by employee_id if the user is not an admin
+      if (profile?.role !== 'admin') {
+        query = query.eq('employee_id', effectiveEmployeeId);
+      }
+
+      const { data, error } = await query
         .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
         .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
         .neq('status', 'cancelled')
