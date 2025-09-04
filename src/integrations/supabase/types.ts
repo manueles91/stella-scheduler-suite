@@ -1118,16 +1118,15 @@ export type Database = {
         Row: {
           appointment_date: string | null
           booking_type: string | null
-          category_id: string | null
           category_name: string | null
-          client_email: string | null
           client_full_name: string | null
           client_id: string | null
-          client_name: string | null
-          client_phone: string | null
           combo_id: string | null
           combo_name: string | null
           created_at: string | null
+          created_by_admin: string | null
+          customer_email: string | null
+          customer_name: string | null
           employee_full_name: string | null
           employee_id: string | null
           end_time: string | null
@@ -1136,7 +1135,6 @@ export type Database = {
           is_guest_booking: boolean | null
           notes: string | null
           service_duration: number | null
-          service_id: string | null
           service_name: string | null
           service_price_cents: number | null
           start_time: string | null
@@ -1149,17 +1147,17 @@ export type Database = {
         Row: {
           appointment_date: string | null
           booking_type: string | null
-          client_email: string | null
           client_id: string | null
           client_name: string | null
-          client_phone: string | null
           combo_id: string | null
           combo_name: string | null
+          duration_minutes: number | null
           employee_id: string | null
+          employee_name: string | null
           end_time: string | null
           id: string | null
+          iscombo: boolean | null
           notes: string | null
-          service_duration: number | null
           service_name: string | null
           start_time: string | null
           status: string | null
