@@ -70,28 +70,85 @@ const { toast } = useToast();
   };
   const fetchReservations = async () => {
     setLoading(true);
-    const {
-      data,
-      error
-    } = await supabase.from('reservations').select(`
-        *,
-        profiles!reservations_client_id_fkey(full_name, email),
-        services(name, duration_minutes, price_cents, category_id, variable_price, service_categories(name)),
-        employee:profiles!reservations_employee_id_fkey(full_name)
-      `).order('appointment_date', {
-      ascending: false
-    }).order('start_time', {
-      ascending: false
-    });
-    if (error) {
+    
+    try {
+      // Since we removed foreign key constraints, we need to handle joins differently
+      // Let's use the admin_reservations_view which provides the data we need
+      const { data, error } = await supabase
+        .from('admin_reservations_view')
+        .select(`
+          id,
+          appointment_date,
+          start_time,
+          end_time,
+          status,
+          notes,
+          client_id,
+          employee_id,
+          service_id,
+          final_price_cents,
+          client_full_name,
+          client_email,
+          employee_full_name,
+          service_name,
+          service_duration,
+          service_price_cents,
+          category_name
+        `)
+        .order('appointment_date', { ascending: false })
+        .order('start_time', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching reservations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load reservations",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Transform the data to match the Reservation interface
+      const transformedReservations = data?.map(reservation => ({
+        id: reservation.id,
+        appointment_date: reservation.appointment_date,
+        start_time: reservation.start_time,
+        end_time: reservation.end_time,
+        status: reservation.status,
+        notes: reservation.notes,
+        client_id: reservation.client_id,
+        employee_id: reservation.employee_id,
+        service_id: reservation.service_id,
+        final_price_cents: reservation.final_price_cents,
+        profiles: {
+          full_name: reservation.client_full_name || 'Cliente no especificado',
+          email: reservation.client_email || 'Email no disponible'
+        },
+        services: {
+          name: reservation.service_name || 'Servicio no especificado',
+          duration_minutes: reservation.service_duration || 0,
+          price_cents: reservation.service_price_cents || 0,
+          variable_price: false, // We'll need to fetch this separately if needed
+          service_categories: {
+            name: reservation.category_name || 'Sin categoría'
+          }
+        },
+        employee: reservation.employee_full_name ? {
+          full_name: reservation.employee_full_name
+        } : undefined
+      })) || [];
+
+      setReservations(transformedReservations);
+    } catch (error) {
+      console.error('Error in fetchReservations:', error);
       toast({
         title: "Error",
         description: "Failed to load reservations",
         variant: "destructive"
       });
-    } else {
-      setReservations(data || []);
     }
+    
     setLoading(false);
   };
   const updateReservationStatus = async (res: Reservation, status: string) => {
