@@ -339,7 +339,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         <div key={hour} className="relative border-b border-gray-200" style={{ height: `${HOUR_HEIGHT}px` }}>
           <div className="absolute left-0 top-0 w-16 h-full flex items-start justify-end pr-2 pt-1">
             <span className="text-xs text-gray-500 font-medium">
-              {format(new Date().setHours(hour, 0, 0, 0), 'HH:mm')}
+              {format(new Date().setHours(hour, 0, 0, 0), 'h a')}
             </span>
           </div>
           <div className="ml-16 h-full bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors relative">
@@ -403,9 +403,9 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     return (
       <div className="flex flex-col h-screen bg-gray-50">
         {/* Header with date navigation */}
-        <div className="bg-white shadow-sm border-b px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="bg-white shadow-sm border-b px-2 sm:px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <Button variant="outline" size="sm" onClick={() => navigateDate('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -414,10 +414,14 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
               </Button>
               <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
-                    <h1 className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors">
-                      {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                      {isToday(selectedDate) && <Badge className="ml-2">Hoy</Badge>}
+                  <Button variant="ghost" className="h-auto p-0 hover:bg-transparent min-w-0 flex-1">
+                    <h1 className="text-sm sm:text-lg font-semibold cursor-pointer hover:text-primary transition-colors truncate">
+                      {(() => {
+                        const dayName = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][selectedDate.getDay()];
+                        const monthName = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][selectedDate.getMonth()];
+                        return `${dayName}, ${selectedDate.getDate()} ${monthName}, ${selectedDate.getFullYear()}`;
+                      })()}
+                      {isToday(selectedDate) && <Badge className="ml-2 hidden sm:inline-flex">Hoy</Badge>}
                     </h1>
                   </Button>
                 </PopoverTrigger>
@@ -437,7 +441,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                 </PopoverContent>
               </Popover>
             </div>
-            <Button onClick={() => setSelectedDate(new Date())} variant="outline" size="sm">
+            <Button onClick={() => setSelectedDate(new Date())} variant="outline" size="sm" className="flex-shrink-0">
               Hoy
             </Button>
           </div>
@@ -769,7 +773,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         </div>
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2 shadow-sm border-gray-200 hover:shadow-md transition-shadow">
               <Clock className="h-4 w-4" />
               Mi Horario
             </Button>
