@@ -151,6 +151,9 @@ export const DashboardSummary = ({
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      console.log('Today date for filtering:', today);
+      console.log('Raw appointments data:', transformedAppointments);
+      
       const upcoming = transformedAppointments
         ?.filter(appt => {
           const apptDate = new Date(appt.appointment_date);
@@ -159,6 +162,17 @@ export const DashboardSummary = ({
           const status = (appt.status || '').toLowerCase();
           const isUpcomingDate = apptDate >= today;
           const isUpcomingStatus = status === 'pending' || status === 'confirmed';
+          
+          console.log(`Appointment ${appt.id}:`, {
+            appointment_date: appt.appointment_date,
+            apptDate: apptDate,
+            today: today,
+            isUpcomingDate,
+            status,
+            isUpcomingStatus,
+            shouldShow: isUpcomingDate && isUpcomingStatus
+          });
+          
           return isUpcomingDate && isUpcomingStatus;
         })
         .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()) || [];
