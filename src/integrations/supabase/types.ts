@@ -100,14 +100,13 @@ export type Database = {
       combo_reservations: {
         Row: {
           appointment_date: string
-          client_id: string | null
+          client_id: string
           combo_id: string
           created_at: string
           customer_email: string | null
           customer_name: string | null
           end_time: string
           final_price_cents: number
-          guest_user_id: string | null
           id: string
           is_guest_booking: boolean
           notes: string | null
@@ -120,14 +119,13 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
-          client_id?: string | null
+          client_id: string
           combo_id: string
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           end_time: string
           final_price_cents: number
-          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean
           notes?: string | null
@@ -140,14 +138,13 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
-          client_id?: string | null
+          client_id?: string
           combo_id?: string
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           end_time?: string
           final_price_cents?: number
-          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean
           notes?: string | null
@@ -171,13 +168,6 @@ export type Database = {
             columns: ["combo_id"]
             isOneToOne: false
             referencedRelation: "combos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "combo_reservations_guest_user_id_fkey"
-            columns: ["guest_user_id"]
-            isOneToOne: false
-            referencedRelation: "invited_users"
             referencedColumns: ["id"]
           },
           {
@@ -872,7 +862,7 @@ export type Database = {
       reservations: {
         Row: {
           appointment_date: string
-          client_id: string | null
+          client_id: string
           created_at: string | null
           created_by_admin: string | null
           customer_email: string | null
@@ -880,7 +870,6 @@ export type Database = {
           employee_id: string | null
           end_time: string
           final_price_cents: number | null
-          guest_user_id: string | null
           id: string
           is_guest_booking: boolean | null
           notes: string | null
@@ -892,7 +881,7 @@ export type Database = {
         }
         Insert: {
           appointment_date: string
-          client_id?: string | null
+          client_id: string
           created_at?: string | null
           created_by_admin?: string | null
           customer_email?: string | null
@@ -900,7 +889,6 @@ export type Database = {
           employee_id?: string | null
           end_time: string
           final_price_cents?: number | null
-          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -912,7 +900,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string
-          client_id?: string | null
+          client_id?: string
           created_at?: string | null
           created_by_admin?: string | null
           customer_email?: string | null
@@ -920,7 +908,6 @@ export type Database = {
           employee_id?: string | null
           end_time?: string
           final_price_cents?: number | null
-          guest_user_id?: string | null
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -950,13 +937,6 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_guest_user_id_fkey"
-            columns: ["guest_user_id"]
-            isOneToOne: false
-            referencedRelation: "invited_users"
             referencedColumns: ["id"]
           },
           {
@@ -1163,7 +1143,6 @@ export type Database = {
           employee_id: string | null
           end_time: string | null
           final_price_cents: number | null
-          guest_user_id: string | null
           id: string | null
           is_guest_booking: boolean | null
           notes: string | null

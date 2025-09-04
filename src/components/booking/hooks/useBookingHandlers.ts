@@ -257,7 +257,7 @@ export const useBookingHandlers = ({
         const { data: comboReservation, error } = await supabase
           .from('combo_reservations')
           .insert({
-            guest_user_id: guestUserId,
+            client_id: guestUserId,
             combo_id: state.selectedService.id,
             primary_employee_id: state.selectedSlot.employee_id,
             appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
@@ -283,7 +283,7 @@ export const useBookingHandlers = ({
           .insert({
             service_id: state.selectedService.id,
             employee_id: state.selectedSlot.employee_id,
-            guest_user_id: guestUserId,
+            client_id: guestUserId,
             appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,

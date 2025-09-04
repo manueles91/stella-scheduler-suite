@@ -50,14 +50,12 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
   useEffect(() => {
     if (isOpen) {
       fetchEmployees();
-      // Fetch and set the selected customer based on the appointment's client_id or guest_user_id
+      // Fetch and set the selected customer based on the appointment's client_id
       if (appointment.client_id) {
         fetchCustomerData(appointment.client_id);
-      } else if (appointment.guest_user_id) {
-        fetchCustomerData(appointment.guest_user_id);
       }
     }
-  }, [isOpen, appointment.client_id, appointment.guest_user_id]);
+  }, [isOpen, appointment.client_id]);
 
   const fetchEmployees = async () => {
     setLoading(true);
