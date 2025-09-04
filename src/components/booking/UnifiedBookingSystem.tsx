@@ -72,6 +72,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     state,
     updateState,
     resetForm,
+    selectedCustomer,
   });
   
   // Fetch data using individual hooks

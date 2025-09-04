@@ -89,7 +89,6 @@ export const DashboardSummary = ({
           status,
           notes,
           client_id,
-          guest_user_id,
           employee_id,
           service_name,
           service_price_cents,
@@ -130,7 +129,6 @@ export const DashboardSummary = ({
         status: appt.status,
         notes: appt.notes,
         client_id: appt.client_id,
-        guest_user_id: appt.guest_user_id,
         employee_id: appt.employee_id,
         services: [{
           id: 'temp-id',
@@ -263,73 +261,75 @@ export const DashboardSummary = ({
         </CardContent>
       </Card>
 
-      {/* Promociones */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Promociones
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {activePromotions.length > 0 || activeCombos.length > 0 ? (
-            <div className="space-y-4">
-              {/* Display Combos */}
-              {activeCombos.map(combo => (
-                <ServiceCard 
-                  key={`combo-${combo.id}`} 
-                  id={combo.id} 
-                  name={combo.name} 
-                  description={combo.description} 
-                  originalPrice={combo.original_price_cents} 
-                  finalPrice={combo.total_price_cents} 
-                  savings={combo.original_price_cents - combo.total_price_cents} 
-                  duration={combo.combo_services?.reduce((total: number, cs: any) => total + cs.services.duration_minutes, 0) || 0} 
-                  imageUrl={combo.combo_services?.[0]?.services?.image_url} 
-                  type="combo" 
-                  comboServices={combo.combo_services?.map((cs: any) => ({
-                    name: cs.services.name,
-                    quantity: cs.quantity,
-                    service_id: cs.service_id
-                  })) || []} 
-                  variant="dashboard" 
-                  onSelect={() => navigate(`/book?service=${combo.id}`)} 
-                  showExpandable={true} 
-                />
-              ))}
-              
-              {/* Display Individual Discounts */}
-              {activePromotions.map(promo => (
-                <ServiceCard 
-                  key={`discount-${promo.id}`} 
-                  id={promo.services.id} 
-                  name={promo.services.name} 
-                  description={promo.services.description} 
-                  originalPrice={promo.services.price_cents} 
-                  finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100)} 
-                  savings={promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100} 
-                  duration={promo.services.duration_minutes} 
-                  imageUrl={promo.services.image_url} 
-                  type="service" 
-                  discountType={promo.discount_type} 
-                  discountValue={promo.discount_value} 
-                  variant="dashboard" 
-                  onSelect={() => navigate(`/book?service=${promo.services.id}`)} 
-                  showExpandable={true} 
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
-                <Sparkles className="h-8 w-8 text-muted-foreground" />
+      {/* Promociones - Only show for clients */}
+      {effectiveProfile?.role === 'client' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Promociones
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activePromotions.length > 0 || activeCombos.length > 0 ? (
+              <div className="space-y-4">
+                {/* Display Combos */}
+                {activeCombos.map(combo => (
+                  <ServiceCard 
+                    key={`combo-${combo.id}`} 
+                    id={combo.id} 
+                    name={combo.name} 
+                    description={combo.description} 
+                    originalPrice={combo.original_price_cents} 
+                    finalPrice={combo.total_price_cents} 
+                    savings={combo.original_price_cents - combo.total_price_cents} 
+                    duration={combo.combo_services?.reduce((total: number, cs: any) => total + cs.services.duration_minutes, 0) || 0} 
+                    imageUrl={combo.combo_services?.[0]?.services?.image_url} 
+                    type="combo" 
+                    comboServices={combo.combo_services?.map((cs: any) => ({
+                      name: cs.services.name,
+                      quantity: cs.quantity,
+                      service_id: cs.service_id
+                    })) || []} 
+                    variant="dashboard" 
+                    onSelect={() => navigate(`/book?service=${combo.id}`)} 
+                    showExpandable={true} 
+                  />
+                ))}
+                
+                {/* Display Individual Discounts */}
+                {activePromotions.map(promo => (
+                  <ServiceCard 
+                    key={`discount-${promo.id}`} 
+                    id={promo.services.id} 
+                    name={promo.services.name} 
+                    description={promo.services.description} 
+                    originalPrice={promo.services.price_cents} 
+                    finalPrice={promo.services.price_cents - (promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100)} 
+                    savings={promo.discount_type === 'percentage' ? promo.services.price_cents * promo.discount_value / 100 : promo.discount_value * 100} 
+                    duration={promo.services.duration_minutes} 
+                    imageUrl={promo.services.image_url} 
+                    type="service" 
+                    discountType={promo.discount_type} 
+                    discountValue={promo.discount_value} 
+                    variant="dashboard" 
+                    onSelect={() => navigate(`/book?service=${promo.services.id}`)} 
+                    showExpandable={true} 
+                  />
+                ))}
               </div>
-              <p>No hay promociones activas en este momento</p>
-              <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="p-4 rounded-full bg-muted/30 w-16 h-16 mx-auto flex items-center justify-center mb-4">
+                  <Sparkles className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p>No hay promociones activas en este momento</p>
+                <p className="text-sm mt-2">¡Mantente atento a futuras ofertas!</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Últimas Citas */}
       <Card>

@@ -11,6 +11,12 @@ interface UseBookingHandlersProps {
   state: BookingState;
   updateState: (updates: Partial<BookingState>) => void;
   resetForm: () => void;
+  selectedCustomer?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+  };
 }
 
 export const useBookingHandlers = ({
@@ -19,6 +25,7 @@ export const useBookingHandlers = ({
   state,
   updateState,
   resetForm,
+  selectedCustomer,
 }: UseBookingHandlersProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -64,6 +71,8 @@ export const useBookingHandlers = ({
             start_time: startTime,
             end_time: endTime,
             notes: bookingNotes || null,
+            customer_email: user.email,
+            customer_name: user.full_name,
             final_price_cents: service.final_price_cents,
             original_price_cents: service.original_price_cents,
             savings_cents: service.savings_cents || 0,
@@ -90,6 +99,8 @@ export const useBookingHandlers = ({
             start_time: startTime,
             end_time: endTime,
             notes: bookingNotes || null,
+            customer_email: user.email,
+            customer_name: user.full_name,
             final_price_cents: service.final_price_cents
           })
           .select()
@@ -131,19 +142,25 @@ export const useBookingHandlers = ({
       'HH:mm'
     );
 
+    // Determine if this is an admin booking for another client
+    const isAdminBooking = selectedCustomer && user.id !== selectedCustomer.id;
+    const clientId = selectedCustomer?.id || user.id;
+
     try {
       if (state.selectedService.type === 'combo') {
         // Handle combo booking - create single combo reservation
         const { data: comboReservation, error } = await supabase
           .from('combo_reservations')
           .insert({
-            client_id: user.id,
+            client_id: clientId,
             combo_id: state.selectedService.id,
             primary_employee_id: state.selectedSlot.employee_id,
             appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,
             notes: state.notes || null,
+            customer_email: selectedCustomer?.email || user.email,
+            customer_name: selectedCustomer?.full_name || user.full_name,
             final_price_cents: state.selectedService.final_price_cents,
             original_price_cents: state.selectedService.original_price_cents,
             savings_cents: state.selectedService.savings_cents || 0,
@@ -163,14 +180,17 @@ export const useBookingHandlers = ({
         const { data, error } = await supabase
           .from('reservations')
           .insert({
-            client_id: user.id,
-            employee_id: state.selectedEmployee?.id ? state.selectedSlot.employee_id : null,
+            client_id: clientId,
+            employee_id: state.selectedSlot.employee_id,
             service_id: state.selectedService.id,
             appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,
             notes: state.notes || null,
-            final_price_cents: state.selectedService.final_price_cents
+            customer_email: selectedCustomer?.email || user.email,
+            customer_name: selectedCustomer?.full_name || user.full_name,
+            final_price_cents: state.selectedService.final_price_cents,
+            created_by_admin: isAdminBooking ? user.id : null
           })
           .select()
           .single();
@@ -194,7 +214,7 @@ export const useBookingHandlers = ({
     } finally {
       updateState({ submitting: false });
     }
-  }, [user, state, updateState, resetForm, toast]);
+  }, [user, state, selectedCustomer, updateState, resetForm, toast]);
 
   const handleGuestBooking = useCallback(async () => {
     if (!state.selectedService || !state.selectedDate || !state.selectedSlot || 
