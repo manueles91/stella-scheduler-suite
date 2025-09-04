@@ -103,6 +103,7 @@ export type Database = {
           client_id: string
           combo_id: string
           created_at: string
+          created_by_admin: string | null
           customer_email: string | null
           customer_name: string | null
           end_time: string
@@ -122,6 +123,7 @@ export type Database = {
           client_id: string
           combo_id: string
           created_at?: string
+          created_by_admin?: string | null
           customer_email?: string | null
           customer_name?: string | null
           end_time: string
@@ -141,6 +143,7 @@ export type Database = {
           client_id?: string
           combo_id?: string
           created_at?: string
+          created_by_admin?: string | null
           customer_email?: string | null
           customer_name?: string | null
           end_time?: string
