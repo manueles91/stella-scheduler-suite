@@ -156,8 +156,10 @@ export const DashboardSummary = ({
       
       const upcoming = transformedAppointments
         ?.filter(appt => {
-          const apptDate = new Date(appt.appointment_date);
-          apptDate.setHours(0, 0, 0, 0);
+          // Parse date string properly to avoid timezone issues
+          const [year, month, day] = appt.appointment_date.split('-').map(Number);
+          const apptDate = new Date(year, month - 1, day); // month is 0-indexed
+          
           // Only show pending or confirmed in upcoming (includes today regardless of time)
           const status = (appt.status || '').toLowerCase();
           const isUpcomingDate = apptDate >= today;
@@ -175,18 +177,33 @@ export const DashboardSummary = ({
           
           return isUpcomingDate && isUpcomingStatus;
         })
-        .sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()) || [];
+        .sort((a, b) => {
+          const [yearA, monthA, dayA] = a.appointment_date.split('-').map(Number);
+          const [yearB, monthB, dayB] = b.appointment_date.split('-').map(Number);
+          const dateA = new Date(yearA, monthA - 1, dayA);
+          const dateB = new Date(yearB, monthB - 1, dayB);
+          return dateA.getTime() - dateB.getTime();
+        }) || [];
 
       const past = transformedAppointments
         ?.filter(appt => {
-          const apptDate = new Date(appt.appointment_date);
+          // Parse date string properly to avoid timezone issues
+          const [year, month, day] = appt.appointment_date.split('-').map(Number);
+          const apptDate = new Date(year, month - 1, day);
+          
           // Only show completed or cancelled in past
           const status = (appt.status || '').toLowerCase();
           const isPastDate = apptDate < today;
           const isPastStatus = status === 'completed' || status === 'cancelled';
           return isPastDate && isPastStatus;
         })
-        .sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime()) || [];
+        .sort((a, b) => {
+          const [yearA, monthA, dayA] = a.appointment_date.split('-').map(Number);
+          const [yearB, monthB, dayB] = b.appointment_date.split('-').map(Number);
+          const dateA = new Date(yearA, monthA - 1, dayA);
+          const dateB = new Date(yearB, monthB - 1, dayB);
+          return dateB.getTime() - dateA.getTime();
+        }) || [];
       
       setUpcomingAppointments(upcoming);
       setPastAppointments(past);
