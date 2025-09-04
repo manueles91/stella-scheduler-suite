@@ -16,13 +16,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeSchedule } from "./EmployeeSchedule";
 import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
-import { Appointment } from "@/types/appointment";
-import { EditableAppointment } from "@/components/dashboard/EditableAppointment";
 
-interface LocalAppointment extends Appointment {
+interface Appointment {
+  id: string;
   client_name: string;
   employee_name?: string;
   service_name: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes?: string;
+  // Combo-related fields
+  isCombo?: boolean;
+  comboId?: string | null;
+  comboName?: string | null;
 }
 
 interface BlockedTime {
@@ -53,7 +61,7 @@ interface TimeTrackingProps {
 }
 
 export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
-  const [appointments, setAppointments] = useState<LocalAppointment[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
@@ -66,7 +74,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const [clients, setClients] = useState<any[]>([]);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<LocalAppointment | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTime | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -184,7 +192,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setDialogOpen(true);
   };
 
-  const openEditAppointment = (appointment: LocalAppointment) => {
+  const openEditAppointment = (appointment: Appointment) => {
     setEditMode(true);
     setEditingAppointment(appointment);
     setDialogType('appointment');
@@ -357,12 +365,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         key={appointment.id}
         className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors`}
         style={calculateEventStyle(appointment.start_time, appointment.end_time)}
+        onClick={() => openEditAppointment(appointment)}
       >
-        <EditableAppointment 
-          appointment={appointment}
-          onUpdate={fetchAppointments}
-          canEdit={profile?.role === 'admin' || profile?.id === appointment.employee_id}
-        />
         <div className="text-sm font-medium truncate flex items-center gap-1">
           {appointment.isCombo && (
             <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
@@ -524,23 +528,6 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         end_time: appointment.end_time,
         status: appointment.status,
         notes: appointment.notes,
-        // Include critical IDs for EditableAppointment component
-        client_id: appointment.client_id,
-        employee_id: appointment.employee_id,
-        // Add service array for compatibility with Appointment interface
-        services: [{
-          id: 'temp-id',
-          name: appointment.service_name || 'Servicio no especificado',
-          description: '',
-          duration_minutes: appointment.service_duration || 0,
-          price_cents: 0
-        }],
-        client_profile: {
-          full_name: appointment.client_name || 'Cliente no especificado'
-        },
-        employee_profile: {
-          full_name: 'Empleado'
-        },
         // Add combo information
         isCombo: appointment.booking_type === 'combo',
         comboId: appointment.combo_id,
