@@ -212,7 +212,10 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             final_price_cents: selectedCombo.total_price_cents,
             original_price_cents: selectedCombo.original_price_cents,
             savings_cents: selectedCombo.original_price_cents - selectedCombo.total_price_cents,
-            is_guest_booking: false
+            is_guest_booking: false,
+            customer_email: selectedCustomer.email,
+            customer_name: selectedCustomer.full_name,
+            created_by_admin: effectiveProfile?.id
           })
           .select()
           .single();
@@ -245,7 +248,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             start_time: appointmentData.time,
             end_time: endTimeStr,
             notes: appointmentData.notes,
-            status: 'confirmed'
+            status: 'confirmed',
+            customer_email: selectedCustomer.email,
+            customer_name: selectedCustomer.full_name,
+            final_price_cents: selectedService.price_cents,
+            created_by_admin: effectiveProfile?.id
           })
           .select()
           .single();
@@ -337,7 +344,10 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             final_price_cents: Math.round(parseFloat(saleData.chargedPrice) * 100),
             original_price_cents: selectedCombo.original_price_cents,
             savings_cents: selectedCombo.original_price_cents - Math.round(parseFloat(saleData.chargedPrice) * 100),
-            is_guest_booking: false
+            is_guest_booking: false,
+            customer_email: selectedCustomer.email,
+            customer_name: selectedCustomer.full_name,
+            created_by_admin: effectiveProfile?.id
           })
           .select()
           .single();
@@ -370,7 +380,11 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
             start_time: saleData.time,
             end_time: endTimeStr,
             notes: saleData.notes,
-            status: 'completed'
+            status: 'completed',
+            customer_email: selectedCustomer.email,
+            customer_name: selectedCustomer.full_name,
+            final_price_cents: Math.round(parseFloat(saleData.chargedPrice) * 100),
+            created_by_admin: effectiveProfile?.id
           })
           .select()
           .single();

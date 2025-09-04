@@ -146,15 +146,6 @@ export const useBookingHandlers = ({
     const isAdminBooking = selectedCustomer && user.id !== selectedCustomer.id;
     const clientId = selectedCustomer?.id || user.id;
 
-    console.log('Booking Debug Info:', {
-      user: user,
-      selectedCustomer: selectedCustomer,
-      isAdminBooking: isAdminBooking,
-      clientId: clientId,
-      selectedService: state.selectedService,
-      finalPriceChents: state.selectedService.final_price_cents
-    });
-
     try {
       if (state.selectedService.type === 'combo') {
         // Handle combo booking - create single combo reservation
@@ -187,25 +178,21 @@ export const useBookingHandlers = ({
         });
       } else {
         // Handle individual service booking
-        const insertData = {
-          client_id: clientId,
-          employee_id: state.selectedSlot.employee_id,
-          service_id: state.selectedService.id,
-          appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
-          start_time: startTime,
-          end_time: endTime,
-          notes: state.notes || null,
-          customer_email: selectedCustomer?.email || user.email,
-          customer_name: selectedCustomer?.full_name || user.full_name,
-          final_price_cents: state.selectedService.final_price_cents,
-          created_by_admin: isAdminBooking ? user.id : null
-        };
-        
-        console.log('Individual service insert data:', insertData);
-        
         const { data, error } = await supabase
           .from('reservations')
-          .insert(insertData)
+          .insert({
+            client_id: clientId,
+            employee_id: state.selectedSlot.employee_id,
+            service_id: state.selectedService.id,
+            appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+            notes: state.notes || null,
+            customer_email: selectedCustomer?.email || user.email,
+            customer_name: selectedCustomer?.full_name || user.full_name,
+            final_price_cents: state.selectedService.final_price_cents,
+            created_by_admin: isAdminBooking ? user.id : null
+          })
           .select()
           .single();
 
