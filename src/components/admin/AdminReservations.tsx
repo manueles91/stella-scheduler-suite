@@ -72,72 +72,81 @@ const { toast } = useToast();
     setLoading(true);
     
     try {
-      // Since we removed foreign key constraints, we need to handle joins differently
-      // Let's use the admin_reservations_view which provides the data we need
-      const { data, error } = await supabase
-        .from('admin_reservations_view')
+      // Query reservations with manual joins to handle both profiles and invited_users
+      const { data: reservations, error } = await supabase
+        .from('reservations')
         .select(`
-          id,
-          appointment_date,
-          start_time,
-          end_time,
-          status,
-          notes,
-          client_id,
-          employee_id,
-          service_id,
-          final_price_cents,
-          client_full_name,
-          client_email,
-          employee_full_name,
-          service_name,
-          service_duration,
-          service_price_cents,
-          category_name
+          *,
+          services(name, duration_minutes, price_cents, category_id, variable_price, service_categories(name))
         `)
         .order('appointment_date', { ascending: false })
         .order('start_time', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching reservations:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load reservations",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
+      if (error) throw error;
+
+      // Fetch client and employee data separately
+      const clientIds = [...new Set(reservations?.map(r => r.client_id).filter(Boolean) || [])];
+      const employeeIds = [...new Set(reservations?.map(r => r.employee_id).filter(Boolean) || [])];
+
+      // Fetch clients from both profiles and invited_users
+      const [profilesData, invitedUsersData, employeesData] = await Promise.all([
+        clientIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email, phone')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        clientIds.length > 0 ? supabase
+          .from('invited_users')
+          .select('id, full_name, email, phone')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        employeeIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', employeeIds) : Promise.resolve({ data: [] })
+      ]);
+
+      // Create lookup maps
+      const clientsMap = new Map();
+      profilesData.data?.forEach(client => clientsMap.set(client.id, client));
+      invitedUsersData.data?.forEach(client => clientsMap.set(client.id, client));
+      
+      const employeesMap = new Map();
+      employeesData.data?.forEach(emp => employeesMap.set(emp.id, emp));
 
       // Transform the data to match the Reservation interface
-      const transformedReservations = data?.map(reservation => ({
-        id: reservation.id,
-        appointment_date: reservation.appointment_date,
-        start_time: reservation.start_time,
-        end_time: reservation.end_time,
-        status: reservation.status,
-        notes: reservation.notes,
-        client_id: reservation.client_id,
-        employee_id: reservation.employee_id,
-        service_id: reservation.service_id,
-        final_price_cents: reservation.final_price_cents,
-        profiles: {
-          full_name: reservation.client_full_name || 'Cliente no especificado',
-          email: reservation.client_email || 'Email no disponible'
-        },
-        services: {
-          name: reservation.service_name || 'Servicio no especificado',
-          duration_minutes: reservation.service_duration || 0,
-          price_cents: reservation.service_price_cents || 0,
-          variable_price: false, // We'll need to fetch this separately if needed
-          service_categories: {
-            name: reservation.category_name || 'Sin categoría'
-          }
-        },
-        employee: reservation.employee_full_name ? {
-          full_name: reservation.employee_full_name
-        } : undefined
-      })) || [];
+      const transformedReservations = reservations?.map(reservation => {
+        const client = clientsMap.get(reservation.client_id);
+        const employee = employeesMap.get(reservation.employee_id);
+        
+        return {
+          id: reservation.id,
+          appointment_date: reservation.appointment_date,
+          start_time: reservation.start_time,
+          end_time: reservation.end_time,
+          status: reservation.status,
+          notes: reservation.notes,
+          client_id: reservation.client_id,
+          employee_id: reservation.employee_id,
+          service_id: reservation.service_id,
+          final_price_cents: reservation.final_price_cents,
+          profiles: {
+            full_name: client?.full_name || reservation.customer_name || 'Cliente no especificado',
+            email: client?.email || reservation.customer_email || 'Email no disponible'
+          },
+          services: {
+            name: reservation.services?.name || 'Servicio no especificado',
+            duration_minutes: reservation.services?.duration_minutes || 0,
+            price_cents: reservation.services?.price_cents || 0,
+            variable_price: reservation.services?.variable_price || false,
+            category_id: reservation.services?.category_id,
+            service_categories: {
+              name: reservation.services?.service_categories?.name || 'Sin categoría'
+            }
+          },
+          employee: employee ? {
+            full_name: employee.full_name
+          } : undefined
+        };
+      }) || [];
 
       setReservations(transformedReservations);
     } catch (error) {

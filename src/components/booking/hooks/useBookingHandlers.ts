@@ -164,7 +164,8 @@ export const useBookingHandlers = ({
             final_price_cents: state.selectedService.final_price_cents,
             original_price_cents: state.selectedService.original_price_cents,
             savings_cents: state.selectedService.savings_cents || 0,
-            is_guest_booking: false
+            is_guest_booking: false,
+            created_by_admin: isAdminBooking ? user.id : null
           })
           .select()
           .single();
