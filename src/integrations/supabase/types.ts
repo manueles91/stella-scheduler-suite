@@ -157,13 +157,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "combo_reservations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "combo_reservations_combo_id_fkey"
             columns: ["combo_id"]
             isOneToOne: false
@@ -918,13 +911,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "reservations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "reservations_created_by_admin_fkey"
             columns: ["created_by_admin"]
