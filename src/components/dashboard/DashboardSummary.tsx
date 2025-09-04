@@ -151,31 +151,13 @@ export const DashboardSummary = ({
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      console.log('Today date for filtering:', today);
-      console.log('Raw appointments data:', transformedAppointments);
       
       const upcoming = transformedAppointments
         ?.filter(appt => {
-          // Parse date string properly to avoid timezone issues
-          const [year, month, day] = appt.appointment_date.split('-').map(Number);
-          const apptDate = new Date(year, month - 1, day); // month is 0-indexed
-          
-          // Only show pending or confirmed in upcoming (includes today regardless of time)
+          // Show pending or confirmed appointments regardless of date
+          // This allows past confirmed appointments to show until status is updated
           const status = (appt.status || '').toLowerCase();
-          const isUpcomingDate = apptDate >= today;
-          const isUpcomingStatus = status === 'pending' || status === 'confirmed';
-          
-          console.log(`Appointment ${appt.id}:`, {
-            appointment_date: appt.appointment_date,
-            apptDate: apptDate,
-            today: today,
-            isUpcomingDate,
-            status,
-            isUpcomingStatus,
-            shouldShow: isUpcomingDate && isUpcomingStatus
-          });
-          
-          return isUpcomingDate && isUpcomingStatus;
+          return status === 'pending' || status === 'confirmed';
         })
         .sort((a, b) => {
           const [yearA, monthA, dayA] = a.appointment_date.split('-').map(Number);
