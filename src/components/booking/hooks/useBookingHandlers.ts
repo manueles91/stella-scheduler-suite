@@ -283,6 +283,7 @@ export const useBookingHandlers = ({
           .insert({
             service_id: state.selectedService.id,
             employee_id: state.selectedSlot.employee_id,
+            guest_user_id: guestUserId,
             appointment_date: format(state.selectedDate, 'yyyy-MM-dd'),
             start_time: startTime,
             end_time: endTime,

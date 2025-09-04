@@ -89,6 +89,7 @@ export const DashboardSummary = ({
           status,
           notes,
           client_id,
+          guest_user_id,
           employee_id,
           service_name,
           service_price_cents,
@@ -129,6 +130,7 @@ export const DashboardSummary = ({
         status: appt.status,
         notes: appt.notes,
         client_id: appt.client_id,
+        guest_user_id: appt.guest_user_id,
         employee_id: appt.employee_id,
         services: [{
           id: 'temp-id',

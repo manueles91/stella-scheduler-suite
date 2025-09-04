@@ -7,7 +7,8 @@ export interface Appointment {
   end_time: string;
   status: string;
   notes?: string;
-  client_id: string;
+  client_id?: string;
+  guest_user_id?: string;
   employee_id?: string;
   services?: Service[];
   client_profile?: {

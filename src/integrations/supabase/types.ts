@@ -1199,6 +1199,7 @@ export type Database = {
           employee_id: string | null
           end_time: string | null
           final_price_cents: number | null
+          guest_user_id: string | null
           id: string | null
           is_guest_booking: boolean | null
           notes: string | null
