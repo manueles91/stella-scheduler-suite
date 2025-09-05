@@ -173,11 +173,11 @@ export const DashboardSummary = ({
           const [year, month, day] = appt.appointment_date.split('-').map(Number);
           const apptDate = new Date(year, month - 1, day);
           
-          // Only show completed or cancelled in past
+          // Show completed or cancelled appointments regardless of date
+          // This ensures completed appointments appear in Últimas Citas immediately
           const status = (appt.status || '').toLowerCase();
-          const isPastDate = apptDate < today;
           const isPastStatus = status === 'completed' || status === 'cancelled';
-          return isPastDate && isPastStatus;
+          return isPastStatus;
         })
         .sort((a, b) => {
           const [yearA, monthA, dayA] = a.appointment_date.split('-').map(Number);
