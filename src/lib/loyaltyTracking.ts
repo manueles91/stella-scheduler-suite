@@ -1,5 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Global callback for refreshing loyalty progress
+let refreshLoyaltyProgress: (() => void) | null = null;
+
+export const setRefreshLoyaltyProgress = (callback: () => void) => {
+  refreshLoyaltyProgress = callback;
+};
+
 /**
  * Automatically track a loyalty visit when a booking is completed
  * This function should be called whenever a reservation or combo reservation status changes to 'completed'
@@ -68,7 +75,11 @@ export const trackLoyaltyVisit = async (
       return false;
     }
 
-    console.log(`Loyalty visit tracked for customer ${customerId}`);
+    // Refresh loyalty progress in UI
+    if (refreshLoyaltyProgress) {
+      refreshLoyaltyProgress();
+    }
+
     return true;
   } catch (error) {
     console.error('Error tracking loyalty visit:', error);
@@ -146,7 +157,11 @@ export const trackGuestLoyaltyVisit = async (
       return false;
     }
 
-    console.log(`Loyalty visit tracked for guest user ${guestUserId} (${customerEmail})`);
+    // Refresh loyalty progress in UI
+    if (refreshLoyaltyProgress) {
+      refreshLoyaltyProgress();
+    }
+
     return true;
   } catch (error) {
     console.error('Error tracking guest loyalty visit:', error);

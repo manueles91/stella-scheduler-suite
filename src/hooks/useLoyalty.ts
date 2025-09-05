@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { setRefreshLoyaltyProgress } from '@/lib/loyaltyTracking';
 
 export interface LoyaltyRewardTier {
   id: string;
@@ -262,6 +263,13 @@ export const useLoyalty = () => {
       fetchCustomerProgress();
     }
   }, [user?.id]);
+
+  // Register refresh callback for loyalty tracking
+  useEffect(() => {
+    setRefreshLoyaltyProgress(() => {
+      fetchCustomerProgress();
+    });
+  }, []);
 
   return {
     loading,

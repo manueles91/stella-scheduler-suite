@@ -7,6 +7,9 @@ DROP TRIGGER IF EXISTS trg_generate_loyalty_qr_token ON public.customer_loyalty_
 -- Drop the function that generates QR tokens
 DROP FUNCTION IF EXISTS public.generate_loyalty_qr_token();
 
+-- Drop the trigger function
+DROP FUNCTION IF EXISTS public.set_loyalty_qr_token();
+
 -- Remove the qr_code_token column
 ALTER TABLE public.customer_loyalty_progress 
 DROP COLUMN IF EXISTS qr_code_token;
