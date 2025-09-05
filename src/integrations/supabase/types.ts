@@ -431,7 +431,7 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
-          qr_code_token: string
+          qr_code_token: string | null
           total_visits: number
           updated_at: string
         }
@@ -439,7 +439,7 @@ export type Database = {
           created_at?: string
           customer_id: string
           id?: string
-          qr_code_token: string
+          qr_code_token?: string | null
           total_visits?: number
           updated_at?: string
         }
@@ -447,7 +447,7 @@ export type Database = {
           created_at?: string
           customer_id?: string
           id?: string
-          qr_code_token?: string
+          qr_code_token?: string | null
           total_visits?: number
           updated_at?: string
         }
