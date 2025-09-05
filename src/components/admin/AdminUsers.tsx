@@ -92,10 +92,7 @@ const fetchUsers = async () => {
     // Fetch authenticated users from profiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select(`
-          *,
-          reservations!reservations_client_id_fkey(count)
-        `)
+      .select('*')
       .order('full_name');
     if (profilesError) throw profilesError;
 
@@ -115,7 +112,7 @@ const fetchUsers = async () => {
     const allUsers = [
       ...((profilesData || []).map((user: any) => ({
         ...user,
-        _count: { reservations: user.reservations?.length || 0 },
+        _count: { reservations: 0 },
         user_type: 'authenticated' as const
       }))),
       ...(pendingInvites.map((invited: any) => ({
