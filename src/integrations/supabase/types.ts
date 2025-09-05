@@ -431,7 +431,6 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
-          qr_code_token: string | null
           total_visits: number
           updated_at: string
         }
@@ -439,7 +438,6 @@ export type Database = {
           created_at?: string
           customer_id: string
           id?: string
-          qr_code_token?: string | null
           total_visits?: number
           updated_at?: string
         }
@@ -447,7 +445,6 @@ export type Database = {
           created_at?: string
           customer_id?: string
           id?: string
-          qr_code_token?: string | null
           total_visits?: number
           updated_at?: string
         }
@@ -1169,10 +1166,6 @@ export type Database = {
       check_guest_reservation_access: {
         Args: { reservation_id: string; token: string }
         Returns: boolean
-      }
-      generate_loyalty_qr_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
       generate_registration_token: {
         Args: Record<PropertyKey, never>
