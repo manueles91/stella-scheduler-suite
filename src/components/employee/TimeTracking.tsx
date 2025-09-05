@@ -38,6 +38,33 @@ for (let hour = 6; hour <= 22; hour++) {
   }
 }
 
+// Convert 24-hour format to 12-hour format for display
+const convertTo12Hour = (time24: string) => {
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
+// Convert 12-hour format back to 24-hour format for database storage
+const convertTo24Hour = (time12: string) => {
+  const [time, ampm] = time12.split(' ');
+  const [hours, minutes] = time.split(':');
+  let hour = parseInt(hours, 10);
+  
+  if (ampm === 'AM' && hour === 12) {
+    hour = 0;
+  } else if (ampm === 'PM' && hour !== 12) {
+    hour += 12;
+  }
+  
+  return `${hour.toString().padStart(2, '0')}:${minutes}`;
+};
+
+// Create 12-hour format time slots for display
+const TIME_SLOTS_12H = TIME_SLOTS.map(time => convertTo12Hour(time));
+
 // Add calendar view constants
 const HOUR_HEIGHT = 60; // pixels per hour
 const MINUTE_HEIGHT = HOUR_HEIGHT / 60; // pixels per minute
@@ -139,13 +166,30 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('role', 'client')
-        .order('full_name');
-      if (error) throw error;
-      setClients(data || []);
+      // Fetch both registered clients and invited users
+      const [profilesResult, invitedUsersResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('role', 'client')
+          .order('full_name'),
+        supabase
+          .from('invited_users')
+          .select('id, full_name, email')
+          .order('full_name')
+      ]);
+
+      if (profilesResult.error) throw profilesResult.error;
+      if (invitedUsersResult.error) throw invitedUsersResult.error;
+
+      // Combine both results
+      const allClients = [
+        ...(profilesResult.data || []),
+        ...(invitedUsersResult.data || [])
+      ];
+      
+      
+      setClients(allClients);
     } catch (error) {
       console.error('Error fetching clients:', error);
     }
@@ -191,15 +235,16 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         client_id: '',
         service_id: '',
         date: format(selectedDate, 'yyyy-MM-dd'),
-        start_time: timeSlot || '09:00',
-        end_time: '10:00',
+        start_time: timeSlot ? convertTo12Hour(timeSlot) : '9:00 AM',
+        end_time: '10:00 AM',
         notes: ''
       });
     } else {
+      const endTime = timeSlot ? format(addMinutes(parseISO(`2000-01-01T${timeSlot}`), 60), 'HH:mm') : '10:00';
       setBlockTimeForm({
         date: format(selectedDate, 'yyyy-MM-dd'),
-        start_time: timeSlot || '09:00',
-        end_time: timeSlot ? format(addMinutes(parseISO(`2000-01-01T${timeSlot}`), 60), 'HH:mm') : '10:00',
+        start_time: timeSlot ? convertTo12Hour(timeSlot) : '9:00 AM',
+        end_time: convertTo12Hour(endTime),
         reason: '',
         is_recurring: false
       });
@@ -213,18 +258,28 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setEditingAppointment(appointment);
     setDialogType('appointment');
     
+    // Convert database time format (HH:MM:SS) to 12-hour format for display
+    const formatTimeForSelect = (timeString: string) => {
+      if (!timeString) return '';
+      const time24 = timeString.substring(0, 5); // Remove seconds part
+      return convertTo12Hour(time24);
+    };
+    
     // Populate the form with appointment data
-    setAppointmentForm({
+    const formData = {
       client_id: appointment.client_id || '',
       service_id: appointment.services?.[0]?.id || '',
       date: appointment.appointment_date,
-      start_time: appointment.start_time,
-      end_time: appointment.end_time || '',
+      start_time: formatTimeForSelect(appointment.start_time),
+      end_time: formatTimeForSelect(appointment.end_time || ''),
       notes: appointment.notes || ''
-    });
+    };
+    
+    setAppointmentForm(formData);
     
     setDialogOpen(true);
   };
+
 
   const openEditBlockedTime = (blockedTime: BlockedTime) => {
     setEditMode(true);
@@ -233,8 +288,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     
     setBlockTimeForm({
       date: blockedTime.date,
-      start_time: blockedTime.start_time,
-      end_time: blockedTime.end_time,
+      start_time: convertTo12Hour(blockedTime.start_time),
+      end_time: convertTo12Hour(blockedTime.end_time),
       reason: blockedTime.reason,
       is_recurring: blockedTime.is_recurring
     });
@@ -248,7 +303,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       const selectedService = services.find(s => s.id === appointmentForm.service_id);
       if (!selectedService) return;
       
-      const startTime = appointmentForm.start_time;
+      const startTime = convertTo24Hour(appointmentForm.start_time);
       const endTime = format(
         addMinutes(parseISO(`${appointmentForm.date}T${startTime}`), selectedService.duration_minutes), 
         'HH:mm'
@@ -292,11 +347,16 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       const selectedService = services.find(s => s.id === editingAppointment.services?.[0]?.id);
       if (!selectedService) return;
       
-      const startTime = editingAppointment.start_time;
-      const endTime = format(
-        addMinutes(parseISO(`${editingAppointment.appointment_date}T${startTime}`), selectedService.duration_minutes), 
-        'HH:mm'
-      );
+      // Convert form time format (12-hour) back to database format (HH:MM:SS)
+      const formatTimeForDatabase = (timeString: string) => {
+        if (!timeString) return '';
+        const time24 = convertTo24Hour(timeString);
+        return `${time24}:00`;
+      };
+      
+      // Use form data for times, but convert to database format
+      const startTime = formatTimeForDatabase(appointmentForm.start_time);
+      const endTime = formatTimeForDatabase(appointmentForm.end_time);
       
       const { error } = await supabase
         .from('reservations')
@@ -322,6 +382,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       setDialogOpen(false);
       fetchAppointments();
     } catch (error) {
+      console.error('Error updating appointment:', error);
       toast({
         title: "Error",
         description: "Error al actualizar la cita",
@@ -396,7 +457,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         {profile?.role === 'admin' && appointment.employee_profile?.full_name && (
           <div className="text-xs opacity-75 truncate">Con: {appointment.employee_profile.full_name}</div>
         )}
-        <div className="text-xs opacity-75">{appointment.start_time} - {appointment.end_time}</div>
+        <div className="text-xs opacity-75">{convertTo12Hour(appointment.start_time)} - {convertTo12Hour(appointment.end_time)}</div>
       </div>
     ));
   };
@@ -411,7 +472,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       >
         <div className="text-sm font-medium truncate">Bloqueado</div>
         <div className="text-xs opacity-90 truncate">{blocked.reason}</div>
-        <div className="text-xs opacity-75">{blocked.start_time} - {blocked.end_time}</div>
+        <div className="text-xs opacity-75">{convertTo12Hour(blocked.start_time)} - {convertTo12Hour(blocked.end_time)}</div>
       </div>
     ));
   };
@@ -517,22 +578,12 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           final_price_cents,
           customer_name,
           customer_email,
-          services!inner(
+          services(
             id,
             name,
             description,
             duration_minutes,
             price_cents
-          ),
-          client_profile:profiles!client_id(
-            id,
-            full_name,
-            email
-          ),
-          employee_profile:profiles!employee_id(
-            id,
-            full_name,
-            email
           )
         `);
 
@@ -550,33 +601,70 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
 
       if (error) throw error;
       
-      const formattedAppointments = data?.map(appointment => ({
-        id: appointment.id,
-        appointment_date: appointment.appointment_date,
-        start_time: appointment.start_time,
-        end_time: appointment.end_time,
-        status: appointment.status,
-        notes: appointment.notes,
-        client_id: appointment.client_id,
-        employee_id: appointment.employee_id,
-        services: [{
-          id: appointment.service_id,
-          name: appointment.services?.name || 'Servicio',
-          description: appointment.services?.description || '',
-          duration_minutes: appointment.services?.duration_minutes || 0,
-          price_cents: appointment.services?.price_cents || 0
-        }],
-        client_profile: {
-          full_name: appointment.customer_name || appointment.client_profile?.full_name || 'Cliente'
-        },
-        employee_profile: appointment.employee_profile ? {
-          full_name: appointment.employee_profile.full_name
-        } : undefined,
-        // Add combo information (not applicable for individual reservations)
-        isCombo: false,
-        comboId: null,
-        comboName: null
-      })) || [];
+      // Get unique client and employee IDs
+      const clientIds = [...new Set(data?.map(a => a.client_id).filter(Boolean) || [])];
+      const employeeIds = [...new Set(data?.map(a => a.employee_id).filter(Boolean) || [])];
+      
+      // Fetch profiles and invited users in parallel
+      const [profilesResult, invitedUsersResult, employeesResult] = await Promise.all([
+        clientIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        clientIds.length > 0 ? supabase
+          .from('invited_users')
+          .select('id, full_name, email')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        employeeIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', employeeIds) : Promise.resolve({ data: [] })
+      ]);
+      
+      const clientsMap = new Map<string, any>();
+      const employeesMap = new Map<string, any>();
+      
+      // Add profiles to clients map
+      profilesResult.data?.forEach(c => clientsMap.set(c.id, c));
+      // Add invited users to clients map
+      invitedUsersResult.data?.forEach(c => clientsMap.set(c.id, c));
+      // Add employees to employees map
+      employeesResult.data?.forEach(e => employeesMap.set(e.id, e));
+      
+      const formattedAppointments = data?.map(appointment => {
+        const client = clientsMap.get(appointment.client_id);
+        const employee = employeesMap.get(appointment.employee_id);
+        
+        const formattedAppointment = {
+          id: appointment.id,
+          appointment_date: appointment.appointment_date,
+          start_time: appointment.start_time,
+          end_time: appointment.end_time,
+          status: appointment.status,
+          notes: appointment.notes,
+          client_id: appointment.client_id,
+          employee_id: appointment.employee_id,
+          services: [{
+            id: appointment.service_id,
+            name: appointment.services?.name || 'Servicio',
+            description: appointment.services?.description || '',
+            duration_minutes: appointment.services?.duration_minutes || 0,
+            price_cents: appointment.services?.price_cents || 0
+          }],
+          client_profile: {
+            full_name: appointment.customer_name || (client as any)?.full_name || 'Cliente'
+          },
+          employee_profile: employee ? {
+            full_name: (employee as any).full_name
+          } : undefined,
+          // Add combo information (not applicable for individual reservations)
+          isCombo: false,
+          comboId: null,
+          comboName: null
+        };
+        
+        return formattedAppointment;
+      }) || [];
       
       setAppointments(formattedAppointments);
     } catch (error) {
@@ -617,7 +705,6 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       }
       
       setBlockedTimes(data || []);
-      console.log('Blocked times loaded successfully:', data?.length || 0, 'entries');
     } catch (error) {
       console.error('Error fetching blocked times:', error);
       setBlockedTimes([]);
@@ -627,8 +714,12 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const createBlockedTime = async () => {
     if (!effectiveEmployeeId) return;
 
+    // Convert to 24-hour format for validation and storage
+    const startTime24 = convertTo24Hour(blockTimeForm.start_time);
+    const endTime24 = convertTo24Hour(blockTimeForm.end_time);
+    
     // Validate times before saving
-    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+    if (startTime24 >= endTime24) {
       toast({
         title: "Error",
         description: "La hora de inicio debe ser anterior a la hora de fin",
@@ -643,8 +734,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         .insert({
           employee_id: effectiveEmployeeId,
           date: blockTimeForm.date,
-          start_time: blockTimeForm.start_time,
-          end_time: blockTimeForm.end_time,
+          start_time: startTime24,
+          end_time: endTime24,
           reason: blockTimeForm.reason || 'Tiempo bloqueado',
           is_recurring: blockTimeForm.is_recurring
         });
@@ -680,8 +771,12 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const updateBlockedTime = async () => {
     if (!editingBlockedTime) return;
 
+    // Convert to 24-hour format for validation and storage
+    const startTime24 = convertTo24Hour(blockTimeForm.start_time);
+    const endTime24 = convertTo24Hour(blockTimeForm.end_time);
+    
     // Validate times before saving
-    if (blockTimeForm.start_time >= blockTimeForm.end_time) {
+    if (startTime24 >= endTime24) {
       toast({
         title: "Error",
         description: "La hora de inicio debe ser anterior a la hora de fin",
@@ -695,8 +790,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         .from('blocked_times')
         .update({
           date: blockTimeForm.date,
-          start_time: blockTimeForm.start_time,
-          end_time: blockTimeForm.end_time,
+          start_time: startTime24,
+          end_time: endTime24,
           reason: blockTimeForm.reason || 'Tiempo bloqueado',
           is_recurring: blockTimeForm.is_recurring
         })
@@ -747,8 +842,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const resetBlockTimeForm = () => {
     setBlockTimeForm({
       date: format(selectedDate, 'yyyy-MM-dd'),
-      start_time: '09:00',
-      end_time: '10:00',
+      start_time: '9:00 AM',
+      end_time: '10:00 AM',
       reason: '',
       is_recurring: false
     });
@@ -853,9 +948,21 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                   <div>
                     <Label>Cliente</Label>
                     <CustomerSelectorModal
-                      value={clients.find(c => c.id === editingAppointment.client_id) || null}
+                      value={clients.find(c => c.id === appointmentForm.client_id) || 
+                        (editingAppointment?.client_profile ? {
+                          id: appointmentForm.client_id,
+                          full_name: editingAppointment.client_profile.full_name,
+                          email: '',
+                          role: 'client',
+                          account_status: 'active',
+                          created_at: new Date().toISOString()
+                        } : null)}
                       onValueChange={(customer) => {
-                        // Update the appointment data
+                        setAppointmentForm({
+                          ...appointmentForm,
+                          client_id: customer?.id || ''
+                        });
+                        // Also update the appointment data
                         setEditingAppointment({
                           ...editingAppointment,
                           client_id: customer?.id || '',
@@ -868,8 +975,13 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                   <div>
                     <Label>Servicio</Label>
                     <Select 
-                      value={editingAppointment.services?.[0]?.id || ''} 
+                      value={appointmentForm.service_id} 
                       onValueChange={value => {
+                        setAppointmentForm({
+                          ...appointmentForm,
+                          service_id: value
+                        });
+                        // Also update the appointment data
                         const selectedService = services.find(s => s.id === value);
                         if (selectedService) {
                           setEditingAppointment({
@@ -902,11 +1014,17 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                     <Label>Fecha</Label>
                     <Input 
                       type="date" 
-                      value={editingAppointment.appointment_date} 
-                      onChange={e => setEditingAppointment({
-                        ...editingAppointment,
-                        appointment_date: e.target.value
-                      })} 
+                      value={appointmentForm.date} 
+                      onChange={e => {
+                        setAppointmentForm({
+                          ...appointmentForm,
+                          date: e.target.value
+                        });
+                        setEditingAppointment({
+                          ...editingAppointment,
+                          appointment_date: e.target.value
+                        });
+                      }} 
                     />
                   </div>
 
@@ -914,18 +1032,24 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                     <div>
                       <Label>Hora Inicio</Label>
                       <Select 
-                        value={editingAppointment.start_time} 
-                        onValueChange={value => setEditingAppointment({
-                          ...editingAppointment,
-                          start_time: value
-                        })}
+                        value={appointmentForm.start_time} 
+                        onValueChange={value => {
+                          setAppointmentForm({
+                            ...appointmentForm,
+                            start_time: value
+                          });
+                          setEditingAppointment({
+                            ...editingAppointment,
+                            start_time: value
+                          });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {TIME_SLOTS.map(time => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          {TIME_SLOTS.map((time, index) => (
+                            <SelectItem key={time} value={TIME_SLOTS_12H[index]}>{TIME_SLOTS_12H[index]}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -933,18 +1057,24 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                     <div>
                       <Label>Hora Fin</Label>
                       <Select 
-                        value={editingAppointment.end_time} 
-                        onValueChange={value => setEditingAppointment({
-                          ...editingAppointment,
-                          end_time: value
-                        })}
+                        value={appointmentForm.end_time} 
+                        onValueChange={value => {
+                          setAppointmentForm({
+                            ...appointmentForm,
+                            end_time: value
+                          });
+                          setEditingAppointment({
+                            ...editingAppointment,
+                            end_time: value
+                          });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {TIME_SLOTS.map(time => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          {TIME_SLOTS.map((time, index) => (
+                            <SelectItem key={time} value={TIME_SLOTS_12H[index]}>{TIME_SLOTS_12H[index]}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -999,11 +1129,17 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                     <Label>Notas</Label>
                     <Textarea 
                       placeholder="Notas adicionales..." 
-                      value={editingAppointment.notes || ''} 
-                      onChange={e => setEditingAppointment({
-                        ...editingAppointment,
-                        notes: e.target.value
-                      })} 
+                      value={appointmentForm.notes} 
+                      onChange={e => {
+                        setAppointmentForm({
+                          ...appointmentForm,
+                          notes: e.target.value
+                        });
+                        setEditingAppointment({
+                          ...editingAppointment,
+                          notes: e.target.value
+                        });
+                      }} 
                     />
                   </div>
 
@@ -1079,8 +1215,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TIME_SLOTS.map(time => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
+                        {TIME_SLOTS.map((time, index) => (
+                          <SelectItem key={time} value={TIME_SLOTS_12H[index]}>{TIME_SLOTS_12H[index]}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1139,8 +1275,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {TIME_SLOTS.map(time => (
-                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      {TIME_SLOTS.map((time, index) => (
+                        <SelectItem key={time} value={TIME_SLOTS_12H[index]}>{TIME_SLOTS_12H[index]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1159,8 +1295,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {TIME_SLOTS.map(time => (
-                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      {TIME_SLOTS.map((time, index) => (
+                        <SelectItem key={time} value={TIME_SLOTS_12H[index]}>{TIME_SLOTS_12H[index]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
