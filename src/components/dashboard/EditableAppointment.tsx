@@ -47,6 +47,20 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // Initialize selectedCustomer with appointment data on component mount
+  useEffect(() => {
+    if (appointment.client_id && appointment.client_profile?.full_name) {
+      setSelectedCustomer({
+        id: appointment.client_id,
+        full_name: appointment.client_profile.full_name,
+        email: "",
+        role: "client",
+        account_status: "active",
+        created_at: new Date().toISOString()
+      });
+    }
+  }, [appointment.client_id, appointment.client_profile?.full_name]);
+
   useEffect(() => {
     if (isOpen) {
       fetchEmployees();
@@ -274,7 +288,12 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
               disabled={loading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar estilista" />
+                <SelectValue placeholder="Seleccionar estilista">
+                  {formData.employee_id === "unassigned" 
+                    ? "Sin estilista asignado" 
+                    : employees.find(emp => emp.id === formData.employee_id)?.full_name || "Seleccionar estilista"
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Sin estilista asignado</SelectItem>

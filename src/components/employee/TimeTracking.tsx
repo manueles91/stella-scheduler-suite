@@ -16,22 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeSchedule } from "./EmployeeSchedule";
 import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
-
-interface Appointment {
-  id: string;
-  client_name: string;
-  employee_name?: string;
-  service_name: string;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  notes?: string;
-  // Combo-related fields
-  isCombo?: boolean;
-  comboId?: string | null;
-  comboName?: string | null;
-}
+import { EditableAppointment } from "@/components/dashboard/EditableAppointment";
+import { Appointment } from "@/types/appointment";
 
 interface BlockedTime {
   id: string;
@@ -72,6 +58,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
   const [services, setServices] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -80,11 +67,19 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Add appointment form state
-  const [appointmentForm, setAppointmentForm] = useState({
+  const [appointmentForm, setAppointmentForm] = useState<{
+    client_id: string;
+    service_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    notes: string;
+  }>({
     client_id: '',
     service_id: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     start_time: '09:00',
+    end_time: '10:00',
     notes: ''
   });
   
@@ -107,10 +102,15 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   
   useEffect(() => {
     if (effectiveEmployeeId) {
-      fetchAppointments();
-      fetchBlockedTimes();
-      fetchServices();
-      fetchClients();
+      // Fetch services first, then appointments
+      const loadData = async () => {
+        await fetchServices();
+        await fetchClients();
+        await fetchEmployees();
+        await fetchAppointments();
+        await fetchBlockedTimes();
+      };
+      loadData();
     }
   }, [effectiveEmployeeId, selectedDate]);
 
@@ -151,6 +151,21 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     }
   };
 
+  const fetchEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('role', ['employee', 'admin'])
+        .eq('account_status', 'active')
+        .order('full_name');
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
       setSelectedDate(subDays(selectedDate, 1));
@@ -177,6 +192,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         service_id: '',
         date: format(selectedDate, 'yyyy-MM-dd'),
         start_time: timeSlot || '09:00',
+        end_time: '10:00',
         notes: ''
       });
     } else {
@@ -197,17 +213,16 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setEditingAppointment(appointment);
     setDialogType('appointment');
     
-    // Find client and service IDs
-    const client = clients.find(c => c.full_name === appointment.client_name);
-    const service = services.find(s => s.name === appointment.service_name);
-    
+    // Populate the form with appointment data
     setAppointmentForm({
-      client_id: client?.id || '',
-      service_id: service?.id || '',
+      client_id: appointment.client_id || '',
+      service_id: appointment.services?.[0]?.id || '',
       date: appointment.appointment_date,
       start_time: appointment.start_time,
+      end_time: appointment.end_time || '',
       notes: appointment.notes || ''
     });
+    
     setDialogOpen(true);
   };
 
@@ -271,27 +286,29 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
   };
 
   const updateAppointment = async () => {
-    if (!editingAppointment || !appointmentForm.client_id || !appointmentForm.service_id) return;
+    if (!editingAppointment || !editingAppointment.client_id || !editingAppointment.services?.[0]?.id) return;
     
     try {
-      const selectedService = services.find(s => s.id === appointmentForm.service_id);
+      const selectedService = services.find(s => s.id === editingAppointment.services?.[0]?.id);
       if (!selectedService) return;
       
-      const startTime = appointmentForm.start_time;
+      const startTime = editingAppointment.start_time;
       const endTime = format(
-        addMinutes(parseISO(`${appointmentForm.date}T${startTime}`), selectedService.duration_minutes), 
+        addMinutes(parseISO(`${editingAppointment.appointment_date}T${startTime}`), selectedService.duration_minutes), 
         'HH:mm'
       );
       
       const { error } = await supabase
         .from('reservations')
         .update({
-          client_id: appointmentForm.client_id,
-          service_id: appointmentForm.service_id,
-          appointment_date: appointmentForm.date,
+          client_id: editingAppointment.client_id,
+          service_id: editingAppointment.services[0].id,
+          employee_id: editingAppointment.employee_id || null,
+          appointment_date: editingAppointment.appointment_date,
           start_time: startTime,
           end_time: endTime,
-          notes: appointmentForm.notes || null,
+          status: editingAppointment.status,
+          notes: editingAppointment.notes || null,
         })
         .eq('id', editingAppointment.id);
       
@@ -371,13 +388,13 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           {appointment.isCombo && (
             <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
           )}
-          {appointment.client_name}
+          {appointment.client_profile?.full_name}
         </div>
         <div className="text-xs opacity-90 truncate">
-          {appointment.isCombo ? `${appointment.service_name} (Combo)` : appointment.service_name}
+          {appointment.isCombo ? `${appointment.comboName} (Combo)` : appointment.services?.[0]?.name}
         </div>
-        {profile?.role === 'admin' && appointment.employee_name && (
-          <div className="text-xs opacity-75 truncate">Con: {appointment.employee_name}</div>
+        {profile?.role === 'admin' && appointment.employee_profile?.full_name && (
+          <div className="text-xs opacity-75 truncate">Con: {appointment.employee_profile.full_name}</div>
         )}
         <div className="text-xs opacity-75">{appointment.start_time} - {appointment.end_time}</div>
       </div>
@@ -484,9 +501,9 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setLoading(true);
     
     try {
-      // Use the updated employee_calendar_view that includes both individual and combo reservations
+      // Query reservations directly to get service_id and proper data
       let query = supabase
-        .from('employee_calendar_view')
+        .from('reservations')
         .select(`
           id,
           appointment_date,
@@ -494,14 +511,29 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           end_time,
           status,
           notes,
-          employee_id,
-          client_name,
           client_id,
-          service_name,
-          duration_minutes,
-          booking_type,
-          combo_id,
-          combo_name
+          employee_id,
+          service_id,
+          final_price_cents,
+          customer_name,
+          customer_email,
+          services!inner(
+            id,
+            name,
+            description,
+            duration_minutes,
+            price_cents
+          ),
+          client_profile:profiles!client_id(
+            id,
+            full_name,
+            email
+          ),
+          employee_profile:profiles!employee_id(
+            id,
+            full_name,
+            email
+          )
         `);
 
       // Only filter by employee_id if the user is not an admin
@@ -520,18 +552,30 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       
       const formattedAppointments = data?.map(appointment => ({
         id: appointment.id,
-        client_name: appointment.client_name || 'Cliente',
-        employee_name: 'Empleado', // This will be the current employee
-        service_name: appointment.service_name || 'Servicio',
         appointment_date: appointment.appointment_date,
         start_time: appointment.start_time,
         end_time: appointment.end_time,
         status: appointment.status,
         notes: appointment.notes,
-        // Add combo information
-        isCombo: appointment.booking_type === 'combo',
-        comboId: appointment.combo_id,
-        comboName: appointment.combo_name
+        client_id: appointment.client_id,
+        employee_id: appointment.employee_id,
+        services: [{
+          id: appointment.service_id,
+          name: appointment.services?.name || 'Servicio',
+          description: appointment.services?.description || '',
+          duration_minutes: appointment.services?.duration_minutes || 0,
+          price_cents: appointment.services?.price_cents || 0
+        }],
+        client_profile: {
+          full_name: appointment.customer_name || appointment.client_profile?.full_name || 'Cliente'
+        },
+        employee_profile: appointment.employee_profile ? {
+          full_name: appointment.employee_profile.full_name
+        } : undefined,
+        // Add combo information (not applicable for individual reservations)
+        isCombo: false,
+        comboId: null,
+        comboName: null
       })) || [];
       
       setAppointments(formattedAppointments);
@@ -804,95 +848,267 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
           
           {dialogType === 'appointment' ? (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="client">Cliente</Label>
-                <CustomerSelectorModal
-                  value={clients.find(c => c.id === appointmentForm.client_id) || null}
-                  onValueChange={(customer) => {
-                    setAppointmentForm({
-                      ...appointmentForm,
-                      client_id: customer?.id || ''
-                    });
-                  }}
-                />
-              </div>
+              {editMode && editingAppointment ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Cliente</Label>
+                    <CustomerSelectorModal
+                      value={clients.find(c => c.id === editingAppointment.client_id) || null}
+                      onValueChange={(customer) => {
+                        // Update the appointment data
+                        setEditingAppointment({
+                          ...editingAppointment,
+                          client_id: customer?.id || '',
+                          client_profile: customer ? { full_name: customer.full_name } : undefined
+                        });
+                      }}
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="service">Servicio</Label>
-                <Select 
-                  value={appointmentForm.service_id} 
-                  onValueChange={value => setAppointmentForm({
-                    ...appointmentForm,
-                    service_id: value
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar servicio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map(service => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name} ({service.duration_minutes} min)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label>Servicio</Label>
+                    <Select 
+                      value={editingAppointment.services?.[0]?.id || ''} 
+                      onValueChange={value => {
+                        const selectedService = services.find(s => s.id === value);
+                        if (selectedService) {
+                          setEditingAppointment({
+                            ...editingAppointment,
+                            services: [{
+                              id: selectedService.id,
+                              name: selectedService.name,
+                              description: selectedService.description || '',
+                              duration_minutes: selectedService.duration_minutes,
+                              price_cents: selectedService.price_cents
+                            }]
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar servicio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map(service => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} ({service.duration_minutes} min)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="date">Fecha</Label>
-                <Input 
-                  id="date" 
-                  type="date" 
-                  value={appointmentForm.date} 
-                  onChange={e => setAppointmentForm({
-                    ...appointmentForm,
-                    date: e.target.value
-                  })} 
-                />
-              </div>
+                  <div>
+                    <Label>Fecha</Label>
+                    <Input 
+                      type="date" 
+                      value={editingAppointment.appointment_date} 
+                      onChange={e => setEditingAppointment({
+                        ...editingAppointment,
+                        appointment_date: e.target.value
+                      })} 
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="start_time">Hora de inicio</Label>
-                <Select 
-                  value={appointmentForm.start_time} 
-                  onValueChange={value => setAppointmentForm({
-                    ...appointmentForm,
-                    start_time: value
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_SLOTS.map(time => (
-                      <SelectItem key={time} value={time}>{time}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Hora Inicio</Label>
+                      <Select 
+                        value={editingAppointment.start_time} 
+                        onValueChange={value => setEditingAppointment({
+                          ...editingAppointment,
+                          start_time: value
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_SLOTS.map(time => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Hora Fin</Label>
+                      <Select 
+                        value={editingAppointment.end_time} 
+                        onValueChange={value => setEditingAppointment({
+                          ...editingAppointment,
+                          end_time: value
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_SLOTS.map(time => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div>
-                <Label htmlFor="notes">Notas</Label>
-                <Textarea 
-                  id="notes" 
-                  placeholder="Notas adicionales..." 
-                  value={appointmentForm.notes} 
-                  onChange={e => setAppointmentForm({
-                    ...appointmentForm,
-                    notes: e.target.value
-                  })} 
-                />
-              </div>
+                  <div>
+                    <Label>Estilista</Label>
+                    <Select 
+                      value={editingAppointment.employee_id || 'unassigned'} 
+                      onValueChange={value => setEditingAppointment({
+                        ...editingAppointment,
+                        employee_id: value === 'unassigned' ? undefined : value
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar estilista" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Sin estilista asignado</SelectItem>
+                        {employees.map(employee => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="flex gap-2">
-                <Button onClick={editMode ? updateAppointment : createAppointment} className="flex-1">
-                  {editMode ? 'Actualizar Cita' : 'Crear Cita'}
-                </Button>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancelar
-                </Button>
-              </div>
+                  <div>
+                    <Label>Estado</Label>
+                    <Select 
+                      value={editingAppointment.status} 
+                      onValueChange={value => setEditingAppointment({
+                        ...editingAppointment,
+                        status: value
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmed">Confirmada</SelectItem>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="cancelled">Cancelada</SelectItem>
+                        <SelectItem value="completed">Completada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Notas</Label>
+                    <Textarea 
+                      placeholder="Notas adicionales..." 
+                      value={editingAppointment.notes || ''} 
+                      onChange={e => setEditingAppointment({
+                        ...editingAppointment,
+                        notes: e.target.value
+                      })} 
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={() => updateAppointment()} className="flex-1">
+                      Actualizar Cita
+                    </Button>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="client">Cliente</Label>
+                    <CustomerSelectorModal
+                      value={clients.find(c => c.id === appointmentForm.client_id) || null}
+                      onValueChange={(customer) => {
+                        setAppointmentForm({
+                          ...appointmentForm,
+                          client_id: customer?.id || ''
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="service">Servicio</Label>
+                    <Select 
+                      value={appointmentForm.service_id} 
+                      onValueChange={value => setAppointmentForm({
+                        ...appointmentForm,
+                        service_id: value
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar servicio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map(service => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} ({service.duration_minutes} min)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="date">Fecha</Label>
+                    <Input 
+                      id="date" 
+                      type="date" 
+                      value={appointmentForm.date} 
+                      onChange={e => setAppointmentForm({
+                        ...appointmentForm,
+                        date: e.target.value
+                      })} 
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="start_time">Hora de inicio</Label>
+                    <Select 
+                      value={appointmentForm.start_time} 
+                      onValueChange={value => setAppointmentForm({
+                        ...appointmentForm,
+                        start_time: value
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIME_SLOTS.map(time => (
+                          <SelectItem key={time} value={time}>{time}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notas</Label>
+                    <Textarea 
+                      id="notes" 
+                      placeholder="Notas adicionales..." 
+                      value={appointmentForm.notes} 
+                      onChange={e => setAppointmentForm({
+                        ...appointmentForm,
+                        notes: e.target.value
+                      })} 
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={createAppointment} className="flex-1">
+                      Crear Cita
+                    </Button>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

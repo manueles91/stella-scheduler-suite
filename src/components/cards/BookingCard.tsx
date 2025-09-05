@@ -22,7 +22,9 @@ export interface BookingCardProps {
   categoryName?: string;
   clientName?: string;
   clientEmail?: string;
+  clientId?: string;
   employeeName?: string;
+  employeeId?: string;
   notes?: string;
   
   // Combo-related fields
@@ -56,7 +58,9 @@ export const BookingCard = ({
   categoryName,
   clientName,
   clientEmail,
+  clientId,
   employeeName,
+  employeeId,
   notes,
   isCombo,
   comboName,
@@ -302,7 +306,8 @@ export const BookingCard = ({
                 end_time: endTime || '',
                 status: currentStatus,
                 notes,
-                client_id: '',
+                client_id: clientId || '',
+                employee_id: employeeId,
                 services: [{ id: '', name: serviceName, description: '', duration_minutes: 0, price_cents: priceCents || 0 }],
                 client_profile: { full_name: clientName || '' },
                 employee_profile: employeeName ? { full_name: employeeName } : undefined,

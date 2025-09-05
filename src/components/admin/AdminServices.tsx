@@ -595,8 +595,8 @@ export const AdminServices = () => {
       name: service.name,
       description: service.description || "",
       duration_minutes: service.duration_minutes,
-      price_cents: service.price_cents / 100,
-      // Convert from cents
+      price_cents: service.price_cents,
+      // Keep in cents - the input field will handle the display conversion
       image_url: service.image_url || "",
       is_active: service.is_active,
       category_id: service.category_id || "none",
