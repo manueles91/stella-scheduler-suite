@@ -117,9 +117,14 @@ const DURATION_OPTIONS = [{
 // No file size or type restrictions - same as AdminCategories
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (effectively no limit)
 const ALLOWED_FILE_TYPES = ['image/*']; // Accept all image types
-export const AdminServices = () => {
+interface AdminServicesProps {
+  effectiveProfile?: any;
+}
+
+export const AdminServices = ({ effectiveProfile }: AdminServicesProps) => {
   const { profile } = useAuth();
-  const isReadOnly = profile?.role === 'employee';
+  const currentProfile = effectiveProfile || profile;
+  const isReadOnly = currentProfile?.role === 'employee';
   
   // Services state
   const [services, setServices] = useState<Service[]>([]);

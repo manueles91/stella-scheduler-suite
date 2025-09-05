@@ -49,7 +49,7 @@ export interface LoyaltyProgramConfig {
   is_active: boolean;
 }
 
-export const useLoyalty = () => {
+export const useLoyalty = (effectiveUserId?: string) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loyaltyProgress, setLoyaltyProgress] = useState<CustomerLoyaltyProgress | null>(null);
@@ -91,9 +91,10 @@ export const useLoyalty = () => {
 
   // Fetch or create customer loyalty progress
   const fetchCustomerProgress = async (customerId?: string) => {
-    if (!customerId && !user?.id) return;
+    const userId = effectiveUserId || user?.id;
+    if (!customerId && !userId) return;
     
-    const targetCustomerId = customerId || user?.id;
+    const targetCustomerId = customerId || userId;
     
     try {
       setLoading(true);
@@ -119,11 +120,11 @@ export const useLoyalty = () => {
       }
 
         // If no progress exists and it's for current user, create it
-        if (!customerId && user?.id) {
+        if (!customerId && userId) {
           const { data: newProgress, error: createError } = await supabase
             .from('customer_loyalty_progress')
             .insert({
-              customer_id: user.id,
+              customer_id: userId,
               total_visits: 0
             })
             .select(`
@@ -259,10 +260,11 @@ export const useLoyalty = () => {
     fetchRewardTiers();
     fetchProgramConfig();
     
-    if (user?.id) {
+    const userId = effectiveUserId || user?.id;
+    if (userId) {
       fetchCustomerProgress();
     }
-  }, [user?.id]);
+  }, [effectiveUserId, user?.id]);
 
   // Register refresh callback for loyalty tracking
   useEffect(() => {

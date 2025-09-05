@@ -153,7 +153,7 @@ const Dashboard = () => {
       case 'bookings':
         return <EnhancedBookingSystem />;
       case 'loyalty-card':
-        return <CustomerLoyaltyCard />;
+        return <CustomerLoyaltyCard effectiveUserId={effectiveProfile?.id} />;
       case 'time-tracking':
         return <TimeTracking employeeId={effectiveProfile?.id} />;
       case 'admin-bookings':
@@ -161,7 +161,7 @@ const Dashboard = () => {
       case 'admin-services':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminServices />
+            <AdminServices effectiveProfile={effectiveProfile} />
           </Suspense>
         );
       case 'admin-users':

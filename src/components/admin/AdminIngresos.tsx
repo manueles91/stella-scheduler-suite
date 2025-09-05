@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, parseISO } from "date-fns";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -24,8 +25,8 @@ interface ReservationLite {
   start_time: string;
   status: string;
   client_id: string | null;
-  client_email: string | null;
-  client_name: string | null;
+  customer_email: string | null;
+  client_full_name: string | null;
   service_name: string;
   service_price_cents: number;
   category_name: string | null;
@@ -43,13 +44,12 @@ export const AdminIngresos = () => {
   const [daysWindow] = useState<number>(DAYS_WINDOW_DEFAULT);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const startDate = subDays(new Date(), daysWindow + 60);
-      const startStr = format(startDate, "yyyy-MM-dd");
+  const fetchData = async () => {
+    setLoading(true);
+    const startDate = subDays(new Date(), daysWindow + 60);
+    const startStr = format(startDate, "yyyy-MM-dd");
 
-      // Use the admin_reservations_view for better performance and reliability
+          // Use the admin_reservations_view for better performance and reliability
       const { data, error } = await supabase
         .from("admin_reservations_view")
         .select(`
@@ -58,8 +58,8 @@ export const AdminIngresos = () => {
           start_time,
           status,
           client_id,
-          client_email,
-          client_name,
+          customer_email,
+          client_full_name,
           service_name,
           service_price_cents,
           category_name,
@@ -68,23 +68,25 @@ export const AdminIngresos = () => {
           combo_id,
           combo_name
         `)
-        .gte("appointment_date", startStr)
-        .order("appointment_date", { ascending: false });
+      .gte("appointment_date", startStr)
+      .order("appointment_date", { ascending: false });
 
-      if (error) {
-        console.error("Error loading reservations for ingresos dashboard:", error);
-        setReservations([]);
-      } else {
-        // Transform the data to properly type the booking_type field
-        const transformedData = data?.map((reservation: any) => ({
-          ...reservation,
-          booking_type: reservation.booking_type === 'combo' ? 'combo' as const : 'service' as const
-        })) || [];
-        setReservations(transformedData);
-      }
-      setLoading(false);
-    };
+    if (error) {
+      console.error("Error loading reservations for ingresos dashboard:", error);
+      setReservations([]);
+    } else {
+      // Transform the data to properly type the booking_type field
+      const transformedData = data?.map((reservation: any) => ({
+        ...reservation,
+        booking_type: reservation.booking_type === 'combo' ? 'combo' as const : 'service' as const
+      })) || [];
+      console.log(`Fetched ${transformedData.length} reservations`);
+      setReservations(transformedData);
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchData();
   }, [daysWindow]);
 
@@ -382,8 +384,8 @@ export const AdminIngresos = () => {
                   startTime={reservation.start_time}
                   status={reservation.status}
                   priceCents={reservation.service_price_cents}
-                  clientName={reservation.client_name || reservation.client_email || "Cliente invitado"}
-                  clientEmail={reservation.client_email}
+                  clientName={reservation.client_full_name || reservation.customer_email || "Cliente invitado"}
+                  clientEmail={reservation.customer_email}
                   employeeName={reservation.employee_full_name || undefined}
                   isCombo={reservation.booking_type === 'combo'}
                   comboName={reservation.combo_name}

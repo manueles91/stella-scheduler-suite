@@ -6,7 +6,11 @@ import { Award, Gift, Sparkles, RefreshCw } from 'lucide-react';
 import { useLoyalty } from '@/hooks/useLoyalty';
 import { cn } from '@/lib/utils';
 
-export const CustomerLoyaltyCard = () => {
+interface CustomerLoyaltyCardProps {
+  effectiveUserId?: string;
+}
+
+export const CustomerLoyaltyCard = ({ effectiveUserId }: CustomerLoyaltyCardProps) => {
   const {
     loading,
     loyaltyProgress,
@@ -15,7 +19,7 @@ export const CustomerLoyaltyCard = () => {
     getAvailableRewards,
     getNextReward,
     refetchProgress
-  } = useLoyalty();
+  } = useLoyalty(effectiveUserId);
 
 
   if (loading) {
@@ -59,22 +63,11 @@ export const CustomerLoyaltyCard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Mi Tarjeta</h2>
-          <p className="text-muted-foreground">
-            Tu progreso en el programa de lealtad
-          </p>
-        </div>
-        <Button 
-          onClick={refetchProgress} 
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Actualizar
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold">Mi Tarjeta</h2>
+        <p className="text-muted-foreground">
+          Tu progreso en el programa de lealtad
+        </p>
       </div>
 
       {/* Punch Card */}
