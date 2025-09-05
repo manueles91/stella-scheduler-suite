@@ -18,7 +18,6 @@ export interface CustomerLoyaltyProgress {
   id: string;
   customer_id: string;
   total_visits: number;
-  qr_code_token: string;
   customer?: {
     id: string;
     full_name: string;
@@ -124,8 +123,7 @@ export const useLoyalty = () => {
             .from('customer_loyalty_progress')
             .insert({
               customer_id: user.id,
-              total_visits: 0,
-              qr_code_token: '' // Will be replaced by trigger
+              total_visits: 0
             })
             .select(`
               *,
@@ -153,62 +151,76 @@ export const useLoyalty = () => {
     }
   };
 
-  // Add visit to customer
-  const addVisitToCustomer = async (customerId: string, notes?: string) => {
-    if (!user?.id) {
-      toast.error('Debes estar autenticado');
-      return false;
-    }
-
+  // Add visit to customer (automated when booking is completed)
+  const addVisitToCustomer = async (customerId: string, notes?: string, adminId?: string) => {
     try {
-      setLoading(true);
-
-      // First find the customer progress
+      // First find or create the customer progress
       const { data: customerProgress, error: findError } = await supabase
         .from('customer_loyalty_progress')
         .select('customer_id, total_visits')
         .eq('customer_id', customerId)
         .single();
 
-      if (findError || !customerProgress) {
-        toast.error('Cliente no encontrado en el programa de lealtad');
+      if (findError && findError.code !== 'PGRST116') {
+        console.error('Error finding customer progress:', findError);
         return false;
+      }
+
+      // If no progress exists, create it
+      let progress = customerProgress;
+      if (!progress) {
+        const { data: newProgress, error: createError } = await supabase
+          .from('customer_loyalty_progress')
+          .insert({
+            customer_id: customerId,
+            total_visits: 0
+          })
+          .select('customer_id, total_visits')
+          .single();
+
+        if (createError) {
+          console.error('Error creating customer progress:', createError);
+          return false;
+        }
+        progress = newProgress;
       }
 
       // Add the visit
       const { error: visitError } = await supabase
         .from('loyalty_visits')
         .insert({
-          customer_id: customerProgress.customer_id,
-          added_by_admin_id: user.id,
-          notes
+          customer_id: progress.customer_id,
+          added_by_admin_id: adminId || user?.id || null,
+          notes: notes || 'Visita automática por reserva completada'
         });
 
-      if (visitError) throw visitError;
+      if (visitError) {
+        console.error('Error adding visit:', visitError);
+        return false;
+      }
 
       // Update total visits count
       const { error: updateError } = await supabase
         .from('customer_loyalty_progress')
         .update({
-          total_visits: customerProgress.total_visits + 1
+          total_visits: progress.total_visits + 1
         })
-        .eq('customer_id', customerProgress.customer_id);
+        .eq('customer_id', progress.customer_id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating visit count:', updateError);
+        return false;
+      }
 
-      toast.success('¡Visita agregada exitosamente!');
       return true;
     } catch (error) {
       console.error('Error adding visit:', error);
-      toast.error('Error agregando visita');
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
   // Find customer by ID for verification
-  const findCustomerByQR = async (customerId: string) => {
+  const findCustomerById = async (customerId: string) => {
     try {
       const { data, error } = await supabase
         .from('customer_loyalty_progress')
@@ -258,7 +270,7 @@ export const useLoyalty = () => {
     programConfig,
     fetchCustomerProgress,
     addVisitToCustomer,
-    findCustomerByQR,
+    findCustomerById,
     getAvailableRewards,
     getNextReward,
     refetchProgress: () => fetchCustomerProgress()

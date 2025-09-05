@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { QrCode, Award, Gift, Sparkles, RefreshCw } from 'lucide-react';
-import QRCode from 'qrcode';
+import { Award, Gift, Sparkles, RefreshCw } from 'lucide-react';
 import { useLoyalty } from '@/hooks/useLoyalty';
 import { cn } from '@/lib/utils';
 
@@ -18,23 +17,6 @@ export const CustomerLoyaltyCard = () => {
     refetchProgress
   } = useLoyalty();
 
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-
-  // Generate QR code using customer ID instead of token for simplicity
-  useEffect(() => {
-    if (loyaltyProgress?.customer_id) {
-      QRCode.toDataURL(loyaltyProgress.customer_id, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#ffffff'
-        }
-      })
-        .then(setQrCodeDataUrl)
-        .catch(console.error);
-    }
-  }, [loyaltyProgress?.customer_id]);
 
   if (loading) {
     return (
@@ -50,7 +32,7 @@ export const CustomerLoyaltyCard = () => {
   if (!loyaltyProgress) {
     return (
       <div className="text-center p-8 space-y-4">
-        <QrCode className="h-12 w-12 mx-auto text-muted-foreground" />
+        <Award className="h-12 w-12 mx-auto text-muted-foreground" />
         <div>
           <h3 className="text-lg font-medium">Tu Tarjeta de Lealtad</h3>
           <p className="text-muted-foreground">
@@ -134,23 +116,16 @@ export const CustomerLoyaltyCard = () => {
             )}
           </div>
 
-          {/* Always visible QR Code */}
+          {/* Visit tracking info */}
           <div className="text-center space-y-3">
-            <div className="flex justify-center">
-              <div className="p-4 bg-white rounded-lg shadow-sm border-2 border-amber-200">
-                {qrCodeDataUrl ? (
-                  <img 
-                    src={qrCodeDataUrl} 
-                    alt="QR Code" 
-                    className="w-40 h-40"
-                  />
-                ) : (
-                  <QrCode className="w-40 h-40 text-amber-300" />
-                )}
-              </div>
+            <div className="p-4 bg-white rounded-lg shadow-sm border-2 border-amber-200">
+              <Award className="w-16 h-16 text-amber-400 mx-auto mb-2" />
+              <p className="text-sm font-medium text-amber-800">
+                Visitas se registran automáticamente
+              </p>
             </div>
             <p className="text-xs text-amber-700 max-w-xs mx-auto font-medium">
-              Muestra este código QR al personal del salón para registrar tu visita
+              Tus visitas se marcan automáticamente cuando completas una cita
             </p>
           </div>
         </CardContent>

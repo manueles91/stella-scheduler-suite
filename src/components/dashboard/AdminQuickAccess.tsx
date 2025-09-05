@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
+import { trackLoyaltyVisit, trackGuestLoyaltyVisit } from "@/lib/loyaltyTracking";
 
 interface AdminQuickAccessProps {
   effectiveProfile: any;
@@ -390,6 +391,19 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
           .single();
 
         if (error) throw error;
+      }
+
+      // Track loyalty visit for completed sale
+      if (selectedCustomer.id) {
+        const serviceName = saleData.isCombo 
+          ? combos.find(c => c.id === saleData.serviceId)?.name || 'Combo'
+          : services.find(s => s.id === saleData.serviceId)?.name || 'Servicio';
+        
+        await trackLoyaltyVisit(
+          selectedCustomer.id, 
+          effectiveProfile?.id, 
+          `Venta registrada: ${serviceName}`
+        );
       }
 
       toast({

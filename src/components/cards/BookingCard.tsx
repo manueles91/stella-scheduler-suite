@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatCRC } from "@/lib/currency";
+import { trackLoyaltyVisit } from "@/lib/loyaltyTracking";
 
 export interface BookingCardProps {
   id: string;
@@ -160,6 +161,11 @@ export const BookingCard = ({
         .eq('id', id);
 
       if (error) throw error;
+
+      // Track loyalty visit if status is completed
+      if (newStatus === 'completed' && clientId) {
+        await trackLoyaltyVisit(clientId, undefined, `Reserva completada: ${serviceName}`);
+      }
 
       setCurrentStatus(newStatus);
       toast({

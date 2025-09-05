@@ -10,6 +10,7 @@ import { CalendarIcon, Search, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { trackLoyaltyVisit, trackGuestLoyaltyVisit } from "@/lib/loyaltyTracking";
 interface Reservation {
   id: string;
   appointment_date: string;
@@ -185,6 +186,11 @@ const { toast } = useToast();
         variant: "destructive"
       });
     } else {
+      // Track loyalty visit if status is completed
+      if (status === 'completed' && res.client_id) {
+        await trackLoyaltyVisit(res.client_id, undefined, `Reserva completada: ${res.services.name}`);
+      }
+      
       toast({
         title: "Éxito",
         description: "Reserva actualizada"
@@ -206,6 +212,11 @@ const { toast } = useToast();
     if (error) {
       toast({ title: "Error", description: error.message || 'No se pudo completar', variant: "destructive" });
     } else {
+      // Track loyalty visit for completed reservation
+      if (res.client_id) {
+        await trackLoyaltyVisit(res.client_id, undefined, `Reserva completada: ${res.services.name}`);
+      }
+      
       toast({ title: "Éxito", description: 'Reserva completada' });
       fetchReservations();
     }
