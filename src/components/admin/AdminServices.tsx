@@ -118,6 +118,9 @@ const DURATION_OPTIONS = [{
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (effectively no limit)
 const ALLOWED_FILE_TYPES = ['image/*']; // Accept all image types
 export const AdminServices = () => {
+  const { profile } = useAuth();
+  const isReadOnly = profile?.role === 'employee';
+  
   // Services state
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -1151,14 +1154,15 @@ export const AdminServices = () => {
         <TabsContent value="services" className="space-y-6">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="text-3xl font-serif font-bold">Servicios</h2>
-            <div className="flex gap-2">
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={resetForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nuevo Servicio
-                  </Button>
-                </DialogTrigger>
+            {!isReadOnly && (
+              <div className="flex gap-2">
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={resetForm}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nuevo Servicio
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
@@ -1363,7 +1367,8 @@ export const AdminServices = () => {
                   </form>
                 </DialogContent>
               </Dialog>
-            </div>
+              </div>
+            )}
           </div>
 
       {/* Category Filter Row */}
@@ -1382,13 +1387,15 @@ export const AdminServices = () => {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowCategoryManager(true)}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
+        {!isReadOnly && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCategoryManager(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
 
@@ -1459,30 +1466,32 @@ export const AdminServices = () => {
                   </>
                 }
                 adminButtons={
-                  <>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(service);
-                      }}
-                      className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-                    >
-                      <Pencil className="h-3 w-3 text-gray-700" />
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(service.id);
-                      }}
-                      className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
-                    >
-                      <Trash2 className="h-3 w-3 text-white" />
-                    </Button>
-                  </>
+                  !isReadOnly ? (
+                    <>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(service);
+                        }}
+                        className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                      >
+                        <Pencil className="h-3 w-3 text-gray-700" />
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(service.id);
+                        }}
+                        className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                      >
+                        <Trash2 className="h-3 w-3 text-white" />
+                      </Button>
+                    </>
+                  ) : undefined
                 }
               />
             </div>
@@ -1491,11 +1500,13 @@ export const AdminServices = () => {
       </div>
 
       {/* Category Manager Modal */}
-      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <AdminCategories />
-        </DialogContent>
-      </Dialog>
+      {!isReadOnly && (
+        <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <AdminCategories />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {filteredServices.length === 0 && services.length > 0 && <Card>
           <CardContent className="p-8 text-center">
@@ -1540,16 +1551,17 @@ export const AdminServices = () => {
             <TabsContent value="discounts" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-lg">Descuentos</h3>
-                <Dialog open={dialogOpenDiscount} onOpenChange={open => {
-                  setDialogOpenDiscount(open);
-                  if (!open) resetDiscountForm();
-                }}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nuevo Descuento
-                    </Button>
-                  </DialogTrigger>
+                {!isReadOnly && (
+                  <Dialog open={dialogOpenDiscount} onOpenChange={open => {
+                    setDialogOpenDiscount(open);
+                    if (!open) resetDiscountForm();
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nuevo Descuento
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
@@ -1665,6 +1677,7 @@ export const AdminServices = () => {
                     </form>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               <div className="grid gap-4">
@@ -1721,30 +1734,32 @@ export const AdminServices = () => {
                               </>
                             }
                             adminButtons={
-                              <>
-                                <Button 
-                                  variant="secondary" 
-                                  size="sm" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditDiscount(discount);
-                                  }}
-                                  className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-                                >
-                                  <Pencil className="h-3 w-3 text-gray-700" />
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteDiscount(discount.id);
-                                  }}
-                                  className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
-                                >
-                                  <Trash2 className="h-3 w-3 text-white" />
-                                </Button>
-                              </>
+                              !isReadOnly ? (
+                                <>
+                                  <Button 
+                                    variant="secondary" 
+                                    size="sm" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditDiscount(discount);
+                                    }}
+                                    className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                                  >
+                                    <Pencil className="h-3 w-3 text-gray-700" />
+                                  </Button>
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteDiscount(discount.id);
+                                    }}
+                                    className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                                  >
+                                    <Trash2 className="h-3 w-3 text-white" />
+                                  </Button>
+                                </>
+                              ) : undefined
                             }
                           />
                         </div>
@@ -1758,16 +1773,17 @@ export const AdminServices = () => {
             <TabsContent value="combos" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-lg">Combos</h3>
-                <Dialog open={comboDialogOpen} onOpenChange={open => {
-                  setComboDialogOpen(open);
-                  if (!open) resetComboForm();
-                }}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nuevo Combo
-                    </Button>
-                  </DialogTrigger>
+                {!isReadOnly && (
+                  <Dialog open={comboDialogOpen} onOpenChange={open => {
+                    setComboDialogOpen(open);
+                    if (!open) resetComboForm();
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nuevo Combo
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
@@ -1983,6 +1999,7 @@ export const AdminServices = () => {
                     </form>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               <div className="grid gap-4">
@@ -2039,30 +2056,32 @@ export const AdminServices = () => {
                               </>
                             }
                             adminButtons={
-                              <>
-                                <Button 
-                                  variant="secondary" 
-                                  size="sm" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditCombo(combo);
-                                  }}
-                                  className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
-                                >
-                                  <Pencil className="h-3 w-3 text-gray-700" />
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteCombo(combo.id);
-                                  }}
-                                  className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
-                                >
-                                  <Trash2 className="h-3 w-3 text-white" />
-                                </Button>
-                              </>
+                              !isReadOnly ? (
+                                <>
+                                  <Button 
+                                    variant="secondary" 
+                                    size="sm" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditCombo(combo);
+                                    }}
+                                    className="h-8 w-8 p-0 bg-white shadow-lg hover:bg-gray-50 border border-gray-200"
+                                  >
+                                    <Pencil className="h-3 w-3 text-gray-700" />
+                                  </Button>
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCombo(combo.id);
+                                    }}
+                                    className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-lg border border-red-500"
+                                  >
+                                    <Trash2 className="h-3 w-3 text-white" />
+                                  </Button>
+                                </>
+                              ) : undefined
                             }
                           />
                         </div>

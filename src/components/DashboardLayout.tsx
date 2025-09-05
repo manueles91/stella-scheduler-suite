@@ -83,10 +83,12 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
       { id: 'time-tracking', label: 'Mi agenda', icon: Users },
     ] : []),
+    ...(effectiveProfile?.role === 'employee' || effectiveProfile?.role === 'admin' ? [
+      { id: 'admin-services', label: 'Servicios', icon: Scissors },
+    ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
       { id: 'admin-costs', label: 'Costos', icon: Receipt },
-      { id: 'admin-services', label: 'Servicios', icon: Scissors },
       { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
       { id: 'loyalty-scanner', label: 'Marcar Visitas', icon: Calendar },
     ] : []),
