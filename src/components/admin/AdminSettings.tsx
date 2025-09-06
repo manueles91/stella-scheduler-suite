@@ -200,10 +200,10 @@ export const AdminSettings = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-serif font-bold">Configuración del Salón</h2>
+        <h2 className="text-2xl font-serif font-bold">Configuración</h2>
         <Button onClick={saveBusinessInfo} disabled={saving} size="lg">
           <Save className="h-4 w-4 mr-2" />
-          {saving ? "Guardando..." : "Guardar Configuración"}
+          {saving ? "Guardando..." : "Guardar"}
         </Button>
       </div>
 

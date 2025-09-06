@@ -30,23 +30,23 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-hero opacity-85"></div>
       
       {/* Hero Content - Mobile First Design with Generous Spacing */}
-      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-10 sm:pt-20 md:pt-36 lg:pt-44 xl:pt-52">
+      <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 lg:pt-10 xl:pt-12 pb-16 sm:pb-20 md:pb-24 lg:pb-32">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
-          <div className="space-y-10 sm:space-y-14 md:space-y-18 lg:space-y-24">
-            {/* Logo - Mobile Responsive, 80% bigger, no padding */}
-            {settings?.logo_url && (
-              <div className="flex justify-center">
-                <img
-                  src={settings.logo_url}
-                  alt="Logo del salón Stella Studio"
-                  className="w-auto object-contain drop-shadow"
-                  style={{
-                    height: 'clamp(288px, 20vw + 200px, 691px)', // Responsive: 80% bigger, grows from 288px to 691px
-                  }}
-                />
-              </div>
-            )}
-            
+          {/* Logo - Mobile Responsive, 80% bigger, no padding */}
+          {settings?.logo_url && (
+            <div className="flex justify-center -mt-2 sm:-mt-4 md:-mt-6">
+              <img
+                src={settings.logo_url}
+                alt="Logo del salón Stella Studio"
+                className="w-auto object-contain drop-shadow"
+                style={{
+                  height: 'clamp(288px, 20vw + 200px, 691px)', // Responsive: 80% bigger, grows from 288px to 691px
+                }}
+              />
+            </div>
+          )}
+          
+          <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 -mt-2 sm:-mt-4 md:-mt-6">
             {/* Main Heading - Dynamic from Site Settings */}
             {isLoading ? (
               <div className="px-8 sm:px-16 md:px-24 lg:px-32 mx-auto w-full max-w-3xl">
@@ -97,7 +97,7 @@ export const HeroSection = () => {
             </div>
 
             {/* Categories Section - Mobile Responsive with Adjusted Spacing */}
-            <div className="mt-12 sm:mt-20 md:mt-28 lg:mt-36 px-1 sm:px-2 md:px-4">
+            <div className="mt-12 sm:mt-20 md:mt-28 lg:mt-36 mb-8 sm:mb-12 md:mb-16 lg:mb-20 px-1 sm:px-2 md:px-4">
               <div className="text-center mb-4 sm:mb-6 md:mb-8">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-white mb-2 sm:mb-3">
                   ¿Qué buscas hoy?

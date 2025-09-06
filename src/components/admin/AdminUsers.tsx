@@ -413,14 +413,143 @@ const getStatusText = (status: string) => {
   return <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="flex items-center justify-between w-full sm:w-auto">
           <h2 className="text-2xl sm:text-3xl font-serif font-bold">Usuarios</h2>
-          
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-muted-foreground">
-            Total: {filteredUsers.length} usuarios
+          <div className="flex items-center gap-2 sm:hidden">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Nuevo Usuario</span>
+                <span className="sm:hidden">Nuevo</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {editingUser && editingUser.user_type !== 'invited' && (
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={editingUser.image_url || undefined} />
+                        <AvatarFallback>
+                          {editingUser.full_name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <label className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors" aria-label="Subir imagen de perfil">
+                        <Upload className="h-3 w-3" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && editingUser) {
+                              handleImageUpload(file, editingUser.id);
+                            }
+                          }}
+                          disabled={uploadingImage}
+                        />
+                      </label>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Actualiza la imagen del usuario
+                    </div>
+                  </div>
+                )}
+                {Object.keys(formErrors).length > 0 && <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Por favor corrige los errores en el formulario
+                    </AlertDescription>
+                  </Alert>}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" value={formData.email} onChange={e => {
+                  setFormData({
+                    ...formData,
+                    email: e.target.value.toLowerCase()
+                  });
+                  if (formErrors.email) {
+                    setFormErrors(prev => ({
+                      ...prev,
+                      email: ""
+                    }));
+                  }
+                }} placeholder="correo@ejemplo.com" className={formErrors.email ? "border-destructive" : ""} required />
+                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Nombre Completo</Label>
+                  <Input id="full_name" value={formData.full_name} onChange={e => {
+                  setFormData({
+                    ...formData,
+                    full_name: e.target.value
+                  });
+                  if (formErrors.full_name) {
+                    setFormErrors(prev => ({
+                      ...prev,
+                      full_name: ""
+                    }));
+                  }
+                }} placeholder="Nombre completo" className={formErrors.full_name ? "border-destructive" : ""} required />
+                  {formErrors.full_name && <p className="text-sm text-destructive">{formErrors.full_name}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono (opcional)</Label>
+                  <Input id="phone" value={formData.phone} onChange={e => {
+                  setFormData({
+                    ...formData,
+                    phone: e.target.value
+                  });
+                  if (formErrors.phone) {
+                    setFormErrors(prev => ({
+                      ...prev,
+                      phone: ""
+                    }));
+                  }
+                }} placeholder="Ej: +34 123 456 789" className={formErrors.phone ? "border-destructive" : ""} />
+                  {formErrors.phone && <p className="text-sm text-destructive">{formErrors.phone}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="role">Rol</Label>
+                  <Select value={formData.role} onValueChange={(value: "client" | "employee" | "admin") => setFormData({
+                  ...formData,
+                  role: value
+                })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="client">Cliente</SelectItem>
+                      <SelectItem value="employee">Empleado</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="flex-1" disabled={creatingUser}>
+                    {creatingUser ? 'Procesando...' : editingUser ? 'Actualizar' : 'Crear'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={creatingUser}>
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
           </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-2">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>

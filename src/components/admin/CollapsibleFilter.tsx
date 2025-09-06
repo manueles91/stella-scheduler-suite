@@ -32,9 +32,9 @@ export const CollapsibleFilter = ({
           />
         </div>
         <CollapsibleTrigger asChild>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-            {isOpen ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+          <Button variant="outline" className="px-3">
+            <Filter className="h-4 w-4 mr-1" />
+            {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </Button>
         </CollapsibleTrigger>
       </div>
