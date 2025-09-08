@@ -495,6 +495,19 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       return;
     }
 
+    // Validate phone number if provided
+    if (userData.phone && userData.phone.trim()) {
+      const phoneRegex = /^(\+506|00506|506)?[2-9]\d{7}$/;
+      if (!phoneRegex.test(userData.phone.replace(/\s+/g, ""))) {
+        toast({
+          title: "Error",
+          description: "Formato de teléfono inválido (ej: 88887777 o +506 88887777)",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     try {
       // Check if email already exists
       const { data: existingUser, error: checkError } = await supabase
@@ -949,7 +962,7 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
                     type="tel"
                     value={userData.phone}
                     onChange={(e) => setUserData({...userData, phone: e.target.value})}
-                    placeholder="+34 600 000 000"
+                    placeholder="88887777 o +506 88887777"
                   />
                 </div>
                 <div>

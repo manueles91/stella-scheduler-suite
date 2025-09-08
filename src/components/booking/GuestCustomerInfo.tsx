@@ -205,7 +205,7 @@ export const GuestCustomerInfo = ({
                 type="tel"
                 value={customerPhone || ''}
                 onChange={(e) => onCustomerPhoneChange?.(e.target.value)}
-                placeholder="+34 600 000 000"
+                placeholder="88887777 o +506 88887777"
                 className="pl-10"
                 required
               />

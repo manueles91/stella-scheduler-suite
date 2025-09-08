@@ -87,8 +87,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
       { id: 'admin-services', label: 'Servicios', icon: Scissors },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-bookings', label: 'Ingresos', icon: DollarSign },
-      { id: 'admin-costs', label: 'Costos', icon: Receipt },
+      { id: 'admin-bookings', label: 'Finanzas', icon: DollarSign },
       { id: 'admin-users', label: 'Usuarios', icon: UsersIcon },
     ] : []),
     ...(effectiveProfile?.role === 'admin' ? [

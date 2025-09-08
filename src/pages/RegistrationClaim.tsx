@@ -270,7 +270,7 @@ export const RegistrationClaimPage = () => {
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="pl-10"
-                    placeholder="+34 600 000 000"
+                    placeholder="88887777 o +506 88887777"
                   />
                 </div>
               </div>

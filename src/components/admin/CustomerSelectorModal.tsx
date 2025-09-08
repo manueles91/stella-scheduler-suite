@@ -146,9 +146,9 @@ export const CustomerSelectorModal = ({
     }
     
     if (newCustomer.phone && newCustomer.phone.trim()) {
-      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      const phoneRegex = /^(\+506|00506|506)?[2-9]\d{7}$/;
       if (!phoneRegex.test(newCustomer.phone.replace(/\s+/g, ""))) {
-        errors.phone = "Formato de teléfono inválido";
+        errors.phone = "Formato de teléfono inválido (ej: 88887777 o +506 88887777)";
       }
     }
     
@@ -385,7 +385,7 @@ export const CustomerSelectorModal = ({
                       setValidationErrors(prev => ({ ...prev, phone: "" }));
                     }
                   }}
-                  placeholder="Ej: +34 123 456 789"
+                  placeholder="Ej: 88887777 o +506 88887777"
                   className={validationErrors.phone ? "border-destructive" : ""}
                 />
                 {validationErrors.phone && (

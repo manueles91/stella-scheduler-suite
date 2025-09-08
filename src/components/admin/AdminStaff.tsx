@@ -100,9 +100,9 @@ export const AdminStaff = () => {
       return;
     }
     if (formData.phone && formData.phone.trim()) {
-      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      const phoneRegex = /^(\+506|00506|506)?[2-9]\d{7}$/;
       if (!phoneRegex.test(formData.phone.replace(/\s+/g, ""))) {
-        toast({ title: "Error", description: "Formato de teléfono inválido (ej: +34 123 456 789)", variant: "destructive" });
+        toast({ title: "Error", description: "Formato de teléfono inválido (ej: 88887777 o +506 88887777)", variant: "destructive" });
         return;
       }
     }
@@ -298,7 +298,7 @@ export const AdminStaff = () => {
                 <Input id="phone" value={formData.phone} onChange={e => setFormData({
                 ...formData,
                 phone: e.target.value
-              })} placeholder="+1234567890" />
+              })} placeholder="88887777 o +506 88887777" />
               </div>
 
               <div>

@@ -196,9 +196,9 @@ const fetchUsers = async () => {
       }
     }
     if (formData.phone && formData.phone.trim()) {
-      const phoneRegex = /^(\+34|0034|34)?[6-9]\d{8}$/;
+      const phoneRegex = /^(\+506|00506|506)?[2-9]\d{7}$/;
       if (!phoneRegex.test(formData.phone.replace(/\s+/g, ""))) {
-        errors.phone = "Formato de teléfono inválido (ej: +34 123 456 789)";
+        errors.phone = "Formato de teléfono inválido (ej: 88887777 o +506 88887777)";
       }
     }
     setFormErrors(errors);
@@ -515,7 +515,7 @@ const getStatusText = (status: string) => {
                       phone: ""
                     }));
                   }
-                }} placeholder="Ej: +34 123 456 789" className={formErrors.phone ? "border-destructive" : ""} />
+                }} placeholder="Ej: 88887777 o +506 88887777" className={formErrors.phone ? "border-destructive" : ""} />
                   {formErrors.phone && <p className="text-sm text-destructive">{formErrors.phone}</p>}
                 </div>
                 
@@ -649,7 +649,7 @@ const getStatusText = (status: string) => {
                       phone: ""
                     }));
                   }
-                }} placeholder="Ej: +34 123 456 789" className={formErrors.phone ? "border-destructive" : ""} />
+                }} placeholder="Ej: 88887777 o +506 88887777" className={formErrors.phone ? "border-destructive" : ""} />
                   {formErrors.phone && <p className="text-sm text-destructive">{formErrors.phone}</p>}
                 </div>
                 
