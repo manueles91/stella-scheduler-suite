@@ -74,7 +74,8 @@ export const AdminUsers = () => {
   const {
     createInvitedUser,
     loading: creatingUser,
-    checkEmailExists
+    checkEmailExists,
+    regenerateInviteToken
   } = useInvitedUsers();
   useEffect(() => {
     fetchData();
@@ -797,7 +798,7 @@ const getStatusText = (status: string) => {
                               <>
                                 <DropdownMenuItem
                                   onClick={async () => {
-                                    const link = user.invite_token ? `${window.location.origin}/invite?token=${user.invite_token}` : '';
+                                    const link = user.invite_token ? `${window.location.origin}/invite?token=${encodeURIComponent(user.invite_token)}` : '';
                                     if (!link) return;
                                     try {
                                       await navigator.clipboard.writeText(link);
@@ -809,6 +810,17 @@ const getStatusText = (status: string) => {
                                 >
                                   <Copy className="h-4 w-4 mr-2" />
                                   Copiar enlace de invitación
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    const success = await regenerateInviteToken(user.id);
+                                    if (success) {
+                                      fetchUsers(); // Refresh to get the new token
+                                    }
+                                  }}
+                                >
+                                  <AlertCircle className="h-4 w-4 mr-2" />
+                                  Generar nuevo enlace
                                 </DropdownMenuItem>
                               </>
                             ) : (

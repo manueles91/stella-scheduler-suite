@@ -211,10 +211,54 @@ export const useInvitedUsers = () => {
     }
   };
 
+  const regenerateInviteToken = async (invitedUserId: string): Promise<boolean> => {
+    try {
+      // Generate a new token by updating the invited user record
+      const { data, error } = await supabase
+        .from('invited_users')
+        .update({
+          invite_token: null // This will trigger the default function to generate a new token
+        })
+        .eq('id', invitedUserId)
+        .select('invite_token, email')
+        .single();
+
+      if (error) throw error;
+
+      if (data?.invite_token) {
+        const link = `${window.location.origin}/invite?token=${encodeURIComponent(data.invite_token)}`;
+        
+        try {
+          await navigator.clipboard.writeText(link);
+          toast({
+            title: "Nuevo enlace generado",
+            description: "Se generó y copió un nuevo enlace de invitación.",
+          });
+        } catch {
+          toast({
+            title: "Nuevo enlace generado",
+            description: `Enlace: ${link}`,
+          });
+        }
+      }
+
+      return true;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      toast({
+        title: "Error",
+        description: `No se pudo regenerar el enlace: ${errorMessage}`,
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     loading,
     createInvitedUser,
     createGuestCustomerForBooking,
-    checkEmailExists
+    checkEmailExists,
+    regenerateInviteToken
   };
 };
