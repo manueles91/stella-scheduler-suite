@@ -86,7 +86,7 @@ export const useInvitedUsers = () => {
         .maybeSingle();
 
       const token = inviteRow?.invite_token;
-      const link = token ? `${window.location.origin}/invite?token=${token}` : undefined;
+      const link = token ? `${window.location.origin}/invite?token=${encodeURIComponent(token)}` : undefined;
 
       // Try to copy to clipboard for convenience
       if (link && navigator?.clipboard?.writeText) {
