@@ -143,7 +143,7 @@ export const AdminIngresos = () => {
     // Identify customers' earliest completed booking
     const earliestCompletedByCustomer = new Map<string, string>();
 
-    const identifierFor = (r: ReservationLite) => r.client_id || r.client_email || r.id;
+    const identifierFor = (r: ReservationLite) => r.client_id || r.customer_email || r.id;
 
     // Consider all completed and confirmed reservations for retention analysis
     const allCompletedSorted = [...reservations]

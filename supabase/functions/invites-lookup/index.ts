@@ -16,7 +16,13 @@ export const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { token } = (await req.json()) as InviteLookupRequest;
+    console.log("Invites-lookup function called, method:", req.method);
+    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
+    
+    const requestBody = await req.json();
+    console.log("Request body:", requestBody);
+    
+    const { token } = requestBody as InviteLookupRequest;
     if (!token || typeof token !== "string") {
       return new Response(JSON.stringify({ error: "Missing token" }), {
         status: 400,
