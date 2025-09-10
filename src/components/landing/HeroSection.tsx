@@ -32,7 +32,7 @@ export const HeroSection = () => {
       {/* Hero Content - Mobile First Design with Generous Spacing */}
       <div className="relative z-10 flex-1 flex flex-col justify-start px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 lg:pt-10 xl:pt-12 pb-16 sm:pb-20 md:pb-24 lg:pb-32">
         <div className="text-center text-white max-w-6xl mx-auto w-full">
-          {/* Logo - Mobile Responsive, 50% smaller on desktop/tablet */}
+          {/* Logo - Mobile Responsive with desktop max height */}
           {settings?.logo_url && (
             <div className="flex justify-center -mt-2 sm:-mt-4 md:-mt-6">
               <img
@@ -40,7 +40,8 @@ export const HeroSection = () => {
                 alt="Logo del salón Stella Studio"
                 className="w-auto object-contain drop-shadow 
                           h-[clamp(288px,20vw+200px,691px)] 
-                          md:h-[clamp(144px,10vw+100px,345px)]"
+                          md:h-[clamp(144px,8vw+80px,220px)]
+                          max-h-[220px]"
               />
             </div>
           )}
