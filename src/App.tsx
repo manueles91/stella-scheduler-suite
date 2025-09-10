@@ -29,12 +29,12 @@ const GlobalLoadingFallback = () => (
 
 const App = () => (
   <QueryProvider>
-    <AuthProvider>
-      <BookingProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <BookingProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <Suspense fallback={<GlobalLoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -47,10 +47,10 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </BookingProvider>
-    </AuthProvider>
+          </TooltipProvider>
+        </BookingProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryProvider>
 );
 
