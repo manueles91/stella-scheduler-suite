@@ -354,10 +354,29 @@ export const useBookingHandlers = ({
     }
   }, [state, updateState, resetForm, toast, navigate]);
 
+  const handleSignInAndBook = useCallback(() => {
+    // Save the current booking state to localStorage
+    if (!state.selectedService || !state.selectedDate || !state.selectedSlot) return;
+    
+    const bookingData = {
+      service: state.selectedService,
+      date: state.selectedDate.toISOString(),
+      slot: state.selectedSlot,
+      employee: state.selectedEmployee,
+      notes: state.notes
+    };
+    
+    localStorage.setItem('pendingGuestBooking', JSON.stringify(bookingData));
+    
+    // Redirect to auth page
+    navigate('/auth');
+  }, [state, navigate]);
+
   return {
     handleProceedToAuth,
     handleFinalBooking,
     handleBooking,
     handleGuestBooking,
+    handleSignInAndBook,
   };
 };

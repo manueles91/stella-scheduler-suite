@@ -66,6 +66,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
     handleFinalBooking,
     handleBooking,
     handleGuestBooking,
+    handleSignInAndBook,
   } = useBookingHandlers({
     user,
     config,
@@ -415,6 +416,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
               onNotesChange={handleNotesChange}
               onBack={() => updateState({ currentStep: 3 })}
               onConfirm={handleGuestBooking}
+              onSignInAndBook={handleSignInAndBook}
               submitting={state.submitting}
             />
           );

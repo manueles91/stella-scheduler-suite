@@ -5,8 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { CalendarAddButton } from "@/components/ui/calendar-add-button";
+import { createBookingCalendarEvent } from "@/lib/utils/calendar";
 import { BookableItem, Employee, TimeSlot } from "@/types/booking";
-import { Calendar, Clock, User, Mail, MessageSquare, Phone, Sparkles, Package, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, User, Mail, MessageSquare, Phone, Sparkles, Package, ArrowLeft, LogIn } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatTime12Hour } from "@/lib/utils";
@@ -27,6 +30,7 @@ interface GuestCustomerInfoProps {
   onNotesChange: (notes: string) => void;
   onBack: () => void;
   onConfirm: () => void;
+  onSignInAndBook?: () => void;
   submitting: boolean;
 }
 
@@ -46,9 +50,20 @@ export const GuestCustomerInfo = ({
   onNotesChange,
   onBack,
   onConfirm,
+  onSignInAndBook,
   submitting
 }: GuestCustomerInfoProps) => {
   const canConfirm = customerName.trim() && customerEmail.trim() && customerEmail.includes('@') && customerPhone?.trim();
+
+  // Create calendar event for the booking
+  const calendarEvent = selectedService && selectedDate && selectedSlot 
+    ? createBookingCalendarEvent(
+        selectedService,
+        selectedDate,
+        selectedSlot,
+        selectedEmployee?.full_name || selectedSlot.employee_name
+      )
+    : null;
 
   return (
     <div className="space-y-6">
@@ -151,9 +166,52 @@ export const GuestCustomerInfo = ({
                 </CardContent>
               </Card>
             )}
+
+            {/* Calendar Add Button */}
+            {calendarEvent && (
+              <div className="flex justify-center">
+                <CalendarAddButton event={calendarEvent} />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
+      {/* Sign In Option */}
+      {onSignInAndBook && (
+        <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20">
+          <CardContent className="p-4">
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <LogIn className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-700 dark:text-blue-300">
+                  ¿Ya tienes cuenta?
+                </h3>
+              </div>
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                Inicia sesión para confirmar tu reserva automáticamente y gestionar tus citas
+              </p>
+              <Button
+                onClick={onSignInAndBook}
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                disabled={submitting}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Iniciar sesión y confirmar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="text-center">
+        <div className="flex items-center gap-4 mb-4">
+          <Separator className="flex-1" />
+          <span className="text-sm text-muted-foreground">o continúa como invitado</span>
+          <Separator className="flex-1" />
+        </div>
+      </div>
 
       {/* Customer Information */}
       <Card>
