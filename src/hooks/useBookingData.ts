@@ -42,36 +42,26 @@ export const useBookingData = () => {
 
   // Filter bookable items by category
   const filteredBookableItems = useMemo(() => {
-    console.log('Filtering with selectedCategory:', selectedCategory);
-    console.log('All bookableItems:', bookableItems);
-    
     if (!selectedCategory) return bookableItems;
     
     const filtered = bookableItems.filter(item => {
-      console.log('Checking item:', item.name, 'category_id:', item.category_id, 'type:', item.type);
-      
       // Handle "promociones" category - show items with discounts or combos
       if (selectedCategory === 'promociones') {
         return item.type === 'combo' || (item.type === 'service' && item.appliedDiscount);
       }
       
       if (item.type === 'service') {
-        const matches = item.category_id === selectedCategory;
-        console.log('Service matches:', matches);
-        return matches;
+        return item.category_id === selectedCategory;
       } else if (item.type === 'combo' && item.combo_services) {
         // For combos, check if any service in the combo belongs to the selected category
         const serviceIds = item.combo_services.map(cs => cs.service_id);
-        const matches = services.some(service => 
+        return services.some(service => 
           serviceIds.includes(service.id) && service.category_id === selectedCategory
         );
-        console.log('Combo matches:', matches);
-        return matches;
       }
       return false;
     });
     
-    console.log('Filtered result:', filtered);
     return filtered;
   }, [bookableItems, selectedCategory, services]);
 
