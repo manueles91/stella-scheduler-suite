@@ -40,13 +40,13 @@ export const HeroSection = () => {
                 alt="Logo del salón Stella Studio"
                 className="w-auto object-contain drop-shadow 
                           h-[clamp(288px,20vw+200px,691px)] 
-                          md:h-[clamp(86px,5vw+48px,132px)]
-                          max-h-[132px] max-w-[132px]"
+                          md:h-[clamp(144px,8vw+80px,220px)]
+                          max-h-[220px]"
               />
             </div>
           )}
           
-          <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 mt-2 sm:mt-0 md:mt-2">
+          <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 -mt-2 sm:-mt-4 md:-mt-6">
             {/* Main Heading - Dynamic from Site Settings */}
             {isLoading ? (
               <div className="px-8 sm:px-16 md:px-24 lg:px-32 mx-auto w-full max-w-3xl">
