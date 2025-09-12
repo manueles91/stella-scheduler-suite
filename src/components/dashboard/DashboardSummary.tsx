@@ -22,6 +22,8 @@ export const DashboardSummary = ({
   const [activePromotions, setActivePromotions] = useState<any[]>([]);
   const [activeCombos, setActiveCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [upcomingDisplayCount, setUpcomingDisplayCount] = useState(5);
+  const [pastDisplayCount, setPastDisplayCount] = useState(5);
 
   useEffect(() => {
     fetchAppointments();
@@ -207,6 +209,14 @@ export const DashboardSummary = ({
     return effectiveProfile?.role === 'admin';
   };
 
+  const handleShowMoreUpcoming = () => {
+    setUpcomingDisplayCount(prev => prev + 5);
+  };
+
+  const handleShowMorePast = () => {
+    setPastDisplayCount(prev => prev + 5);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -244,7 +254,7 @@ export const DashboardSummary = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingAppointments.slice(0, 5).map((appointment) => (
+              {upcomingAppointments.slice(0, upcomingDisplayCount).map((appointment) => (
                 <BookingCard
                   key={appointment.id}
                   id={appointment.id}
@@ -267,10 +277,16 @@ export const DashboardSummary = ({
                   variant="upcoming"
                 />
               ))}
-              {upcomingAppointments.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Y {upcomingAppointments.length - 5} citas más...
-                </p>
+              {upcomingAppointments.length > upcomingDisplayCount && (
+                <div className="text-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShowMoreUpcoming}
+                    className="text-sm"
+                  >
+                    Mostrar más ({upcomingAppointments.length - upcomingDisplayCount} citas restantes)
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -357,7 +373,7 @@ export const DashboardSummary = ({
             <p className="text-muted-foreground text-center py-4">No hay citas anteriores</p>
           ) : (
             <div className="space-y-4">
-              {pastAppointments.slice(0, 5).map((appointment) => (
+              {pastAppointments.slice(0, pastDisplayCount).map((appointment) => (
                 <BookingCard
                   key={appointment.id}
                   id={appointment.id}
@@ -380,10 +396,16 @@ export const DashboardSummary = ({
                   variant="past"
                 />
               ))}
-              {pastAppointments.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Y {pastAppointments.length - 5} citas más en el historial...
-                </p>
+              {pastAppointments.length > pastDisplayCount && (
+                <div className="text-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShowMorePast}
+                    className="text-sm"
+                  >
+                    Mostrar más ({pastAppointments.length - pastDisplayCount} citas restantes)
+                  </Button>
+                </div>
               )}
             </div>
           )}
