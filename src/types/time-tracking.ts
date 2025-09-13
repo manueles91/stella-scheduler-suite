@@ -2,7 +2,7 @@ import { Appointment } from './appointment';
 import { Service, Profile } from './booking';
 
 // Re-export types for convenience
-export { Appointment, Service };
+export type { Appointment, Service };
 
 // Customer interface that matches both profiles and invited_users
 export interface Customer {

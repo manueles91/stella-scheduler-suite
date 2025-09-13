@@ -45,16 +45,32 @@ export const useTimeTracking = (employeeId?: string) => {
           .order('full_name'),
         supabase
           .from('invited_users')
-          .select('id, full_name, email, phone, role, account_status, invited_at as created_at')
+          .select('id, full_name, email, phone, role, account_status, invited_at')
           .order('full_name')
       ]);
 
       if (profilesResult.error) throw profilesResult.error;
       if (invitedUsersResult.error) throw invitedUsersResult.error;
 
-      const allClients = [
-        ...(profilesResult.data || []),
-        ...(invitedUsersResult.data || [])
+      const allClients: Customer[] = [
+        ...(profilesResult.data || []).map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name,
+          email: profile.email,
+          phone: profile.phone || undefined,
+          role: profile.role as 'client' | 'employee' | 'admin',
+          account_status: profile.account_status,
+          created_at: profile.created_at
+        })),
+        ...(invitedUsersResult.data || []).map(user => ({
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone || undefined,
+          role: user.role as 'client' | 'employee' | 'admin',
+          account_status: user.account_status,
+          created_at: user.invited_at
+        }))
       ];
       
       setClients(allClients);
@@ -73,7 +89,10 @@ export const useTimeTracking = (employeeId?: string) => {
         .eq('account_status', 'active')
         .order('full_name');
       if (error) throw error;
-      setEmployees(data || []);
+      const employeeData: Employee[] = (data || []).filter(profile => 
+        profile.role === 'employee' || profile.role === 'admin'
+      ) as Employee[];
+      setEmployees(employeeData);
     } catch (error) {
       console.error('Error fetching employees:', error);
     }
