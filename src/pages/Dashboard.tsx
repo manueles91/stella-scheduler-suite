@@ -160,7 +160,7 @@ const Dashboard = () => {
       case 'admin-services':
         return (
           <Suspense fallback={<AdminLoadingFallback />}>
-            <AdminServices effectiveProfile={effectiveProfile} />
+            <AdminServices />
           </Suspense>
         );
       case 'admin-users':
