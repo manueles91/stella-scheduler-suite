@@ -1,0 +1,468 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { AppointmentFormData, BlockedTime, BlockedTimeFormData, Customer, Employee, Service } from "@/types/time-tracking";
+import { Appointment } from "@/types/appointment";
+import { convertTo24Hour, formatTimeForDatabase, calculateEndTime } from "@/lib/utils/timeTrackingUtils";
+import { format, startOfDay, endOfDay, parseISO } from "date-fns";
+
+export const useTimeTracking = (employeeId?: string) => {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [clients, setClients] = useState<Customer[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const effectiveEmployeeId = employeeId || profile?.id;
+
+  // Fetch services
+  const fetchServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
+  // Fetch clients (both profiles and invited users)
+  const fetchClients = async () => {
+    try {
+      const [profilesResult, invitedUsersResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email, phone, role, account_status, created_at')
+          .eq('role', 'client')
+          .order('full_name'),
+        supabase
+          .from('invited_users')
+          .select('id, full_name, email, phone, role, account_status, invited_at as created_at')
+          .order('full_name')
+      ]);
+
+      if (profilesResult.error) throw profilesResult.error;
+      if (invitedUsersResult.error) throw invitedUsersResult.error;
+
+      const allClients = [
+        ...(profilesResult.data || []),
+        ...(invitedUsersResult.data || [])
+      ];
+      
+      setClients(allClients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  // Fetch employees
+  const fetchEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('role', ['employee', 'admin'])
+        .eq('account_status', 'active')
+        .order('full_name');
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  // Fetch appointments for a specific date
+  const fetchAppointments = async (selectedDate: Date) => {
+    if (!effectiveEmployeeId) return;
+    setLoading(true);
+    
+    try {
+      let query = supabase
+        .from('reservations')
+        .select(`
+          id,
+          appointment_date,
+          start_time,
+          end_time,
+          status,
+          notes,
+          client_id,
+          employee_id,
+          service_id,
+          final_price_cents,
+          customer_name,
+          customer_email,
+          services(
+            id,
+            name,
+            description,
+            duration_minutes,
+            price_cents
+          )
+        `);
+
+      if (profile?.role !== 'admin') {
+        query = query.eq('employee_id', effectiveEmployeeId);
+      }
+
+      const { data, error } = await query
+        .gte('appointment_date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
+        .lte('appointment_date', format(endOfDay(selectedDate), 'yyyy-MM-dd'))
+        .neq('status', 'cancelled')
+        .order('appointment_date')
+        .order('start_time');
+
+      if (error) throw error;
+      
+      // Get unique client and employee IDs
+      const clientIds = [...new Set(data?.map(a => a.client_id).filter(Boolean) || [])];
+      const employeeIds = [...new Set(data?.map(a => a.employee_id).filter(Boolean) || [])];
+      
+      // Fetch profiles and invited users in parallel
+      const [profilesResult, invitedUsersResult, employeesResult] = await Promise.all([
+        clientIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        clientIds.length > 0 ? supabase
+          .from('invited_users')
+          .select('id, full_name, email')
+          .in('id', clientIds) : Promise.resolve({ data: [] }),
+        employeeIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', employeeIds) : Promise.resolve({ data: [] })
+      ]);
+      
+      const clientsMap = new Map<string, any>();
+      const employeesMap = new Map<string, any>();
+      
+      // Add profiles to clients map
+      profilesResult.data?.forEach(c => clientsMap.set(c.id, c));
+      // Add invited users to clients map
+      invitedUsersResult.data?.forEach(c => clientsMap.set(c.id, c));
+      // Add employees to employees map
+      employeesResult.data?.forEach(e => employeesMap.set(e.id, e));
+      
+      const formattedAppointments = data?.map(appointment => {
+        const client = clientsMap.get(appointment.client_id);
+        const employee = employeesMap.get(appointment.employee_id);
+        
+        return {
+          id: appointment.id,
+          appointment_date: appointment.appointment_date,
+          start_time: appointment.start_time,
+          end_time: appointment.end_time,
+          status: appointment.status,
+          notes: appointment.notes,
+          client_id: appointment.client_id,
+          employee_id: appointment.employee_id,
+          services: [{
+            id: appointment.service_id,
+            name: appointment.services?.name || 'Servicio',
+            description: appointment.services?.description || 'Sin descripción',
+            duration_minutes: appointment.services?.duration_minutes || 0,
+            price_cents: appointment.services?.price_cents || 0
+          }],
+          client_profile: {
+            full_name: appointment.customer_name || (client as any)?.full_name || 'Cliente'
+          },
+          employee_profile: employee ? {
+            full_name: (employee as any).full_name
+          } : undefined,
+          isCombo: false,
+          comboId: null,
+          comboName: null
+        };
+      }) || [];
+      
+      setAppointments(formattedAppointments);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las citas",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch blocked times for a specific date
+  const fetchBlockedTimes = async (selectedDate: Date) => {
+    if (!effectiveEmployeeId) return;
+    
+    try {
+      let query = supabase
+        .from('blocked_times')
+        .select('*')
+        .gte('date', format(startOfDay(selectedDate), 'yyyy-MM-dd'))
+        .lte('date', format(endOfDay(selectedDate), 'yyyy-MM-dd'));
+
+      if (profile?.role !== 'admin') {
+        query = query.eq('employee_id', effectiveEmployeeId);
+      }
+      
+      const { data, error } = await query.order('date').order('start_time');
+      
+      if (error) {
+        console.error('Blocked times fetch error:', error);
+        setBlockedTimes([]);
+        return;
+      }
+      
+      setBlockedTimes(data || []);
+    } catch (error) {
+      console.error('Error fetching blocked times:', error);
+      setBlockedTimes([]);
+    }
+  };
+
+  // Create appointment
+  const createAppointment = async (appointmentForm: AppointmentFormData) => {
+    if (!effectiveEmployeeId || !appointmentForm.client_id || !appointmentForm.service_id) return;
+    
+    try {
+      const selectedService = services.find(s => s.id === appointmentForm.service_id);
+      if (!selectedService) return;
+      
+      const startTime = convertTo24Hour(appointmentForm.start_time);
+      const endTime = calculateEndTime(appointmentForm.start_time, selectedService.duration_minutes);
+      
+      const { error } = await supabase
+        .from('reservations')
+        .insert({
+          client_id: appointmentForm.client_id,
+          service_id: appointmentForm.service_id,
+          employee_id: effectiveEmployeeId,
+          appointment_date: appointmentForm.date,
+          start_time: startTime,
+          end_time: endTime,
+          notes: appointmentForm.notes || null,
+          status: 'confirmed'
+        });
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Éxito",
+        description: "Cita creada correctamente"
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al crear la cita",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Update appointment
+  const updateAppointment = async (appointment: Appointment, appointmentForm: AppointmentFormData) => {
+    if (!appointment.client_id || !appointment.services?.[0]?.id) return;
+    
+    try {
+      const startTime = formatTimeForDatabase(appointmentForm.start_time);
+      const endTime = formatTimeForDatabase(appointmentForm.end_time);
+      
+      const { error } = await supabase
+        .from('reservations')
+        .update({
+          client_id: appointment.client_id,
+          service_id: appointment.services[0].id,
+          employee_id: appointment.employee_id || null,
+          appointment_date: appointment.appointment_date,
+          start_time: startTime,
+          end_time: endTime,
+          status: appointment.status,
+          notes: appointment.notes || null,
+        })
+        .eq('id', appointment.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Éxito",
+        description: "Cita actualizada correctamente"
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast({
+        title: "Error",
+        description: "Error al actualizar la cita",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Create blocked time
+  const createBlockedTime = async (blockedTimeForm: BlockedTimeFormData) => {
+    if (!effectiveEmployeeId) return;
+
+    const startTime24 = convertTo24Hour(blockedTimeForm.start_time);
+    const endTime24 = convertTo24Hour(blockedTimeForm.end_time);
+    
+    if (startTime24 >= endTime24) {
+      toast({
+        title: "Error",
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('blocked_times')
+        .insert({
+          employee_id: effectiveEmployeeId,
+          date: blockedTimeForm.date,
+          start_time: startTime24,
+          end_time: endTime24,
+          reason: blockedTimeForm.reason || 'Tiempo bloqueado',
+          is_recurring: blockedTimeForm.is_recurring
+        });
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Éxito",
+        description: "Tiempo bloqueado correctamente"
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Blocked time creation error:', error);
+      let errorMessage = "Error al bloquear el tiempo";
+      if (error.message?.includes('blocked_times')) {
+        errorMessage = "Error en la base de datos. Contacte al administrador.";
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Update blocked time
+  const updateBlockedTime = async (blockedTime: BlockedTime, blockedTimeForm: BlockedTimeFormData) => {
+    const startTime24 = convertTo24Hour(blockedTimeForm.start_time);
+    const endTime24 = convertTo24Hour(blockedTimeForm.end_time);
+    
+    if (startTime24 >= endTime24) {
+      toast({
+        title: "Error",
+        description: "La hora de inicio debe ser anterior a la hora de fin",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('blocked_times')
+        .update({
+          date: blockedTimeForm.date,
+          start_time: startTime24,
+          end_time: endTime24,
+          reason: blockedTimeForm.reason || 'Tiempo bloqueado',
+          is_recurring: blockedTimeForm.is_recurring
+        })
+        .eq('id', blockedTime.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Éxito",
+        description: "Tiempo bloqueado actualizado correctamente"
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al actualizar el tiempo bloqueado",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Delete blocked time
+  const deleteBlockedTime = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('blocked_times')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Éxito",
+        description: "Tiempo desbloqueado correctamente"
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al desbloquear el tiempo",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Load all data
+  const loadData = async (selectedDate: Date) => {
+    await Promise.all([
+      fetchServices(),
+      fetchClients(),
+      fetchEmployees(),
+      fetchAppointments(selectedDate),
+      fetchBlockedTimes(selectedDate)
+    ]);
+  };
+
+  return {
+    // State
+    appointments,
+    blockedTimes,
+    services,
+    clients,
+    employees,
+    loading,
+    
+    // Actions
+    loadData,
+    fetchAppointments,
+    fetchBlockedTimes,
+    createAppointment,
+    updateAppointment,
+    createBlockedTime,
+    updateBlockedTime,
+    deleteBlockedTime,
+    
+    // Utils
+    effectiveEmployeeId
+  };
+};
