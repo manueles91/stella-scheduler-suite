@@ -26,7 +26,7 @@ interface Customer {
   full_name: string;
   email: string;
   phone?: string;
-  role: string;
+  role: 'client' | 'employee' | 'admin';
   account_status: string;
   created_at: string;
 }

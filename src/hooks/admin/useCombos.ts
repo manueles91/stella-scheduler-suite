@@ -28,7 +28,9 @@ export const useCombos = () => {
               description,
               duration_minutes,
               price_cents,
-              image_url
+              image_url,
+              is_active,
+              created_at
             )
           )
         `)

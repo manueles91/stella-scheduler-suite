@@ -52,6 +52,9 @@ export interface Customer {
   email: string;
   full_name: string;
   phone?: string;
+  role: 'client' | 'employee' | 'admin';
+  account_status: string;
+  created_at: string;
 }
 
 export interface AppointmentData {
