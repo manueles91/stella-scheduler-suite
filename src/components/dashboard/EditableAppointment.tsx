@@ -92,15 +92,13 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone, role, account_status, created_at')
-        .in('role', ['client', 'employee', 'admin'])
-        .eq('account_status', 'active')
-        .order('full_name');
+         .in('role', ['client', 'employee', 'admin'])
+         .order('full_name');
 
       // Fetch from invited_users table
       const { data: invitedData, error: invitedError } = await supabase
         .from('invited_users')
         .select('id, full_name, email, phone, role, account_status, invited_at')
-        .eq('account_status', 'active')
         .order('full_name');
 
       const allClients = [
@@ -157,7 +155,12 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
 
   const handleSubmit = async () => {
     const selectedClient = clients.find(c => c.id === formData.client_id);
-    if (!selectedClient && formData.client_id !== 'temp-client-id') {
+    // Determine actual client id (allow ids not present in local list and temp placeholder)
+    const actualClientId = formData.client_id === 'temp-client-id'
+      ? appointment.client_id
+      : (selectedClient?.id || formData.client_id);
+
+    if (!actualClientId) {
       toast({
         title: "Error",
         description: "Por favor selecciona un cliente",
@@ -165,9 +168,6 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
       });
       return;
     }
-    
-    // Use original client_id from appointment if we're using temp client_id
-    const actualClientId = formData.client_id === 'temp-client-id' ? appointment.client_id : selectedClient?.id;
     
     try {
       // Determine if this is a combo or individual service
