@@ -196,9 +196,9 @@ export const AppointmentDialog = ({
         <Input
           type="number"
           step="1"
-          value={appointmentForm.final_price_cents ? Math.round(appointmentForm.final_price_cents / 100) : ''}
+          value={appointmentForm.final_price_cents !== null && appointmentForm.final_price_cents !== undefined ? Math.round(appointmentForm.final_price_cents / 100) : ''}
           onChange={(e) => {
-            const value = parseInt(e.target.value) || 0;
+            const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
             handleFormChange('final_price_cents', value * 100);
           }}
           placeholder={defaultPrice ? Math.round(defaultPrice / 100).toString() : "0"}

@@ -157,7 +157,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
 
   const handleSubmit = async () => {
     const selectedClient = clients.find(c => c.id === formData.client_id);
-    if (!selectedClient) {
+    if (!selectedClient && formData.client_id !== 'temp-client-id') {
       toast({
         title: "Error",
         description: "Por favor selecciona un cliente",
@@ -165,6 +165,9 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
       });
       return;
     }
+    
+    // Use original client_id from appointment if we're using temp client_id
+    const actualClientId = formData.client_id === 'temp-client-id' ? appointment.client_id : selectedClient?.id;
     
     try {
       // Determine if this is a combo or individual service
@@ -180,7 +183,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
             end_time: formData.end_time,
             status: appointment.status, // Keep existing status
             notes: formData.notes || null,
-            client_id: selectedClient.id,
+            client_id: actualClientId,
             primary_employee_id: formData.employee_id || null,
             final_price_cents: formData.final_price_cents || null,
           })
@@ -197,7 +200,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
             end_time: formData.end_time,
             status: appointment.status, // Keep existing status
             notes: formData.notes || null,
-            client_id: selectedClient.id,
+            client_id: actualClientId,
             employee_id: formData.employee_id || null,
             final_price_cents: formData.final_price_cents || null,
           })

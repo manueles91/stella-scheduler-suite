@@ -316,7 +316,7 @@ export const BookingCard = ({
                 end_time: endTime || '',
                 status: currentStatus,
                 notes,
-                client_id: clientId || '',
+                client_id: clientId || 'temp-client-id',
                 employee_id: employeeId,
                 final_price_cents: finalPriceCents,
                 services: [{ id: serviceId || 'temp-id', name: serviceName, description: '', duration_minutes: 0, price_cents: priceCents || 0 }],
