@@ -1132,6 +1132,7 @@ export type Database = {
           is_guest_booking: boolean | null
           notes: string | null
           service_duration: number | null
+          service_id: string | null
           service_name: string | null
           service_price_cents: number | null
           start_time: string | null

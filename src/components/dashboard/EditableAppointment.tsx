@@ -8,6 +8,7 @@ import { Profile } from "@/types/booking";
 import { AppointmentDialog } from "@/components/employee/time-tracking/AppointmentDialog";
 import { AppointmentFormData, Customer, Employee } from "@/types/time-tracking";
 import { format } from "date-fns";
+import { formatTimeForSelect } from "@/lib/utils/timeTrackingUtils";
 
 interface EditableAppointmentProps {
   appointment: Appointment;
@@ -21,8 +22,8 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     client_id: appointment.client_id,
     service_id: appointment.services?.[0]?.id || '',
     date: appointment.appointment_date,
-    start_time: appointment.start_time,
-    end_time: appointment.end_time,
+    start_time: formatTimeForSelect(appointment.start_time),
+    end_time: formatTimeForSelect(appointment.end_time || ""),
     notes: appointment.notes || "",
     employee_id: appointment.employee_id || "",
     final_price_cents: appointment.final_price_cents || 0,
@@ -50,8 +51,8 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
       client_id: appointment.client_id,
       service_id: appointment.services?.[0]?.id || '',
       date: appointment.appointment_date,
-      start_time: appointment.start_time,
-      end_time: appointment.end_time,
+      start_time: formatTimeForSelect(appointment.start_time),
+      end_time: formatTimeForSelect(appointment.end_time || ""),
       notes: appointment.notes || "",
       employee_id: appointment.employee_id || "",
       final_price_cents: appointment.final_price_cents || 0,

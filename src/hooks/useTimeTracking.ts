@@ -105,29 +105,9 @@ export const useTimeTracking = (employeeId?: string) => {
     
     try {
       // Use admin_reservations_view to get both individual and combo reservations
-      let query = supabase
+      let query: any = supabase
         .from('admin_reservations_view')
-        .select(`
-          id,
-          appointment_date,
-          start_time,
-          end_time,
-          status,
-          notes,
-          client_id,
-          employee_id,
-          service_id,
-          final_price_cents,
-          client_full_name,
-          employee_full_name,
-          service_name,
-          service_price_cents,
-          service_duration,
-          category_name,
-          booking_type,
-          combo_id,
-          combo_name
-        `);
+        .select('*');
 
       if (profile?.role !== 'admin') {
         query = query.eq('employee_id', effectiveEmployeeId);
@@ -142,7 +122,7 @@ export const useTimeTracking = (employeeId?: string) => {
 
       if (error) throw error;
       
-      const formattedAppointments = data?.map(appointment => {
+      const formattedAppointments = (data as any[])?.map((appointment: any) => {
         return {
           id: appointment.id,
           appointment_date: appointment.appointment_date,
