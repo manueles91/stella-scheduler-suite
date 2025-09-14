@@ -21,4 +21,6 @@ export interface Appointment {
   isCombo?: boolean;
   comboId?: string | null;
   comboName?: string | null;
+  // Price field
+  final_price_cents?: number;
 }

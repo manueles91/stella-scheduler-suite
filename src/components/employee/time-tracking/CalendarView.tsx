@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, isToday, startOfWeek, addDays, subDays, isSameDay } from "date-fns";
+import { format, isToday, startOfWeek, addDays, subDays, isSameDay, parseISO } from "date-fns";
 import { CalendarViewProps } from "@/types/time-tracking";
 import { Appointment } from "@/types/appointment";
 import { BlockedTime } from "@/types/time-tracking";
@@ -63,25 +63,69 @@ export const CalendarView = ({
   };
 
   const renderCalendarAppointments = () => {
-    return appointments.map(appointment => (
-      <div
-        key={appointment.id}
-        className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors`}
-        style={calculateEventStyle(appointment.start_time, appointment.end_time)}
-        onClick={() => onAppointmentClick(appointment)}
-      >
-        <div className="text-sm font-medium truncate flex items-center gap-1">
-          {appointment.isCombo && (
-            <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
+    // Group appointments by overlapping time slots
+    const groupedAppointments: Appointment[][] = [];
+    const processedAppointments = new Set<string>();
+
+    appointments.forEach(appointment => {
+      if (processedAppointments.has(appointment.id)) return;
+
+      const overlappingAppointments = [appointment];
+      processedAppointments.add(appointment.id);
+
+      // Find all appointments that overlap with this one
+      appointments.forEach(otherAppointment => {
+        if (processedAppointments.has(otherAppointment.id)) return;
+        
+        // Check if appointments overlap in time
+        const start1 = parseISO(`2000-01-01T${appointment.start_time}`);
+        const end1 = parseISO(`2000-01-01T${appointment.end_time}`);
+        const start2 = parseISO(`2000-01-01T${otherAppointment.start_time}`);
+        const end2 = parseISO(`2000-01-01T${otherAppointment.end_time}`);
+        
+        // Check for overlap: one starts before the other ends and vice versa
+        if (start1 < end2 && start2 < end1) {
+          overlappingAppointments.push(otherAppointment);
+          processedAppointments.add(otherAppointment.id);
+        }
+      });
+
+      groupedAppointments.push(overlappingAppointments);
+    });
+
+    return groupedAppointments.map(group =>
+      group.map((appointment, index) => (
+        <div
+          key={appointment.id}
+          className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors ${
+            group.length > 1 ? 'border border-white/20' : ''
+          }`}
+          style={calculateEventStyle(appointment.start_time, appointment.end_time, index, group.length)}
+          onClick={() => onAppointmentClick(appointment)}
+        >
+          <div className="text-sm font-medium truncate flex items-center gap-1">
+            {appointment.isCombo && (
+              <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
+            )}
+            {group.length > 1 && (
+              <span className="text-xs bg-white/30 px-1 rounded font-bold">
+                {index + 1}/{group.length}
+              </span>
+            )}
+            {appointment.client_profile?.full_name}
+          </div>
+          <div className="text-xs opacity-90 truncate">
+            {appointment.isCombo ? `${appointment.comboName} (Combo)` : appointment.services?.[0]?.name}
+          </div>
+          <div className="text-xs opacity-75">{convertTo12Hour(appointment.start_time)} - {convertTo12Hour(appointment.end_time)}</div>
+          {group.length > 1 && (
+            <div className="text-xs opacity-60 mt-1">
+              {appointment.employee_profile?.full_name || 'Sin asignar'}
+            </div>
           )}
-          {appointment.client_profile?.full_name}
         </div>
-        <div className="text-xs opacity-90 truncate">
-          {appointment.isCombo ? `${appointment.comboName} (Combo)` : appointment.services?.[0]?.name}
-        </div>
-        <div className="text-xs opacity-75">{convertTo12Hour(appointment.start_time)} - {convertTo12Hour(appointment.end_time)}</div>
-      </div>
-    ));
+      ))
+    ).flat();
   };
 
   const renderCalendarBlockedTimes = () => {

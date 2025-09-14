@@ -44,6 +44,9 @@ export interface AppointmentFormData {
   start_time: string;
   end_time: string;
   notes: string;
+  final_price_cents?: number;
+  isCombo?: boolean;
+  employee_id?: string;
 }
 
 export interface BlockedTimeFormData {
@@ -91,8 +94,12 @@ export interface AppointmentDialogProps {
   services: Service[];
   clients: Customer[];
   employees: Employee[];
+  combos?: any[]; // Add combos support
   onSubmit: () => void;
   onCancel: () => void;
+  // Optional props for different contexts
+  effectiveProfile?: any;
+  showPriceField?: boolean; // Whether to show the price field
 }
 
 export interface BlockedTimeDialogProps {

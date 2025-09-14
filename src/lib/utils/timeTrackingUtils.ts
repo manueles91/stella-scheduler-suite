@@ -49,7 +49,7 @@ export const convertTo24Hour = (time12: string): string => {
 export const TIME_SLOTS_12H = TIME_SLOTS.map(time => convertTo12Hour(time));
 
 // Calculate event style for calendar positioning
-export const calculateEventStyle = (startTime: string, endTime: string) => {
+export const calculateEventStyle = (startTime: string, endTime: string, index: number = 0, total: number = 1) => {
   const start = parseISO(`2000-01-01T${startTime}`);
   const end = parseISO(`2000-01-01T${endTime}`);
   const duration = differenceInMinutes(end, start);
@@ -58,12 +58,18 @@ export const calculateEventStyle = (startTime: string, endTime: string) => {
   const top = (startHour - 6) * HOUR_HEIGHT + startMinute * MINUTE_HEIGHT;
   const height = duration * MINUTE_HEIGHT;
   
+  // Calculate width and position for multiple appointments
+  const widthPercentage = 100 / total;
+  const leftPercentage = (index * widthPercentage);
+  const rightPercentage = ((total - index - 1) * widthPercentage);
+  
   return {
     position: 'absolute' as const,
     top: `${top}px`,
     height: `${height}px`,
-    left: '0px',
-    right: '8px',
+    left: `${leftPercentage}%`,
+    right: `${rightPercentage}%`,
+    width: `${widthPercentage}%`,
     zIndex: 10
   };
 };

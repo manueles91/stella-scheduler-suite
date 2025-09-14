@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { EmployeeSchedule } from "./EmployeeSchedule";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   AppointmentDialog, 
   BlockedTimeDialog, 
@@ -40,7 +41,9 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     date: format(new Date(), 'yyyy-MM-dd'),
     start_time: '9:00 AM',
     end_time: '10:00 AM',
-    notes: ''
+    notes: '',
+    final_price_cents: 0,
+    isCombo: false
   });
   
   const [blockedTimeForm, setBlockedTimeForm] = useState<BlockedTimeFormData>({
@@ -66,6 +69,35 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     updateBlockedTime,
     effectiveEmployeeId
   } = useTimeTracking(employeeId);
+
+  // Add combos state and fetching
+  const [combos, setCombos] = useState<any[]>([]);
+
+  const fetchCombos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('combos')
+        .select(`
+          *,
+          combo_services(
+            service_id,
+            quantity,
+            services(id, name, description, duration_minutes, price_cents, image_url)
+          )
+        `)
+        .eq('is_active', true)
+        .order('name');
+
+      if (!error && data) setCombos(data);
+    } catch (error) {
+      console.error('Error fetching combos:', error);
+    }
+  };
+
+  // Fetch combos when component mounts
+  useEffect(() => {
+    fetchCombos();
+  }, []);
 
   // Load data when component mounts or date changes
   useEffect(() => {
@@ -93,7 +125,10 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         date: format(selectedDate, 'yyyy-MM-dd'),
         start_time: timeSlot ? convertTo12Hour(timeSlot) : '9:00 AM',
         end_time: '10:00 AM',
-        notes: ''
+        notes: '',
+        final_price_cents: 0,
+        isCombo: false,
+        employee_id: ''
       });
     } else {
       setBlockedTimeForm({
@@ -119,7 +154,10 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       date: appointment.appointment_date,
       start_time: formatTimeForSelect(appointment.start_time),
       end_time: formatTimeForSelect(appointment.end_time || ''),
-      notes: appointment.notes || ''
+      notes: appointment.notes || '',
+      final_price_cents: appointment.final_price_cents || 0,
+      isCombo: appointment.isCombo || false,
+      employee_id: appointment.employee_id || ''
     };
     
     setAppointmentForm(formData);
@@ -250,8 +288,11 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         services={services}
         clients={clients}
         employees={employees}
+        combos={combos}
         onSubmit={handleAppointmentSubmit}
         onCancel={handleDialogCancel}
+        effectiveProfile={profile}
+        showPriceField={true}
       />
 
       {/* Blocked Time Dialog */}

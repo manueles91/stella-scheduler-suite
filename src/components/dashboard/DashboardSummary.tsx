@@ -92,6 +92,7 @@ export const DashboardSummary = ({
           notes,
           client_id,
           employee_id,
+          service_id,
           service_name,
           service_price_cents,
           service_duration,
@@ -100,7 +101,8 @@ export const DashboardSummary = ({
           employee_full_name,
           booking_type,
           combo_id,
-          combo_name
+          combo_name,
+          final_price_cents
         `);
 
       // Apply filters based on user role
@@ -132,8 +134,9 @@ export const DashboardSummary = ({
         notes: appt.notes,
         client_id: appt.client_id,
         employee_id: appt.employee_id,
+        final_price_cents: appt.final_price_cents,
         services: [{
-          id: 'temp-id',
+          id: appt.service_id || '',
           name: appt.service_name || 'Servicio no especificado',
           description: '',
           duration_minutes: appt.service_duration || 0,
@@ -259,6 +262,7 @@ export const DashboardSummary = ({
                   key={appointment.id}
                   id={appointment.id}
                   serviceName={appointment.services?.[0]?.name || 'Servicio no especificado'}
+                  serviceId={appointment.services?.[0]?.id}
                   appointmentDate={appointment.appointment_date}
                   startTime={appointment.start_time}
                   endTime={appointment.end_time}
@@ -268,6 +272,7 @@ export const DashboardSummary = ({
                   clientId={appointment.client_id}
                   employeeName={appointment.employee_profile?.full_name}
                   employeeId={appointment.employee_id}
+                  finalPriceCents={appointment.final_price_cents}
                   isCombo={appointment.isCombo}
                   comboName={appointment.comboName}
                   comboId={appointment.comboId}
@@ -378,6 +383,7 @@ export const DashboardSummary = ({
                   key={appointment.id}
                   id={appointment.id}
                   serviceName={appointment.services?.[0]?.name || 'Servicio no especificado'}
+                  serviceId={appointment.services?.[0]?.id}
                   appointmentDate={appointment.appointment_date}
                   startTime={appointment.start_time}
                   endTime={appointment.end_time}
@@ -387,6 +393,7 @@ export const DashboardSummary = ({
                   clientId={appointment.client_id}
                   employeeName={appointment.employee_profile?.full_name}
                   employeeId={appointment.employee_id}
+                  finalPriceCents={appointment.final_price_cents}
                   isCombo={appointment.isCombo}
                   comboName={appointment.comboName}
                   comboId={appointment.comboId}

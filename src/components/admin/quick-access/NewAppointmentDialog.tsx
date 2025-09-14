@@ -1,45 +1,106 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
 import { useServices } from "@/hooks/admin/useServices";
 import { useCombos } from "@/hooks/admin/useCombos";
 import { useEmployees } from "@/hooks/admin/useEmployees";
-import { AppointmentData, QuickAccessDialogProps, Customer } from "./types";
+import { AppointmentDialog } from "@/components/employee/time-tracking/AppointmentDialog";
+import { AppointmentFormData, Customer, Employee } from "@/types/time-tracking";
+import { QuickAccessDialogProps } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProps) => {
   const { toast } = useToast();
   const [showDialog, setShowDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [appointmentData, setAppointmentData] = useState<AppointmentData>({
-    serviceId: "",
-    employeeId: "",
-    date: "",
-    time: "",
+  const [appointmentForm, setAppointmentForm] = useState<AppointmentFormData>({
+    client_id: "",
+    service_id: "",
+    date: format(new Date(), 'yyyy-MM-dd'),
+    start_time: "",
+    end_time: "",
     notes: "",
+    final_price_cents: 0,
     isCombo: false
   });
 
   const { services, fetchServices } = useServices();
   const { combos, fetchCombos } = useCombos();
-  const { employees, fetchEmployees } = useEmployees();
+  const { employees: adminEmployees, fetchEmployees } = useEmployees();
+  const [clients, setClients] = useState<Customer[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   const handleOpenDialog = () => {
     fetchServices();
     fetchCombos();
     fetchEmployees();
+    fetchClients();
+    fetchEmployeesForDialog();
     setShowDialog(true);
   };
 
+  const fetchEmployeesForDialog = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role, created_at')
+        .in('role', ['employee', 'admin'])
+        .eq('account_status', 'active')
+        .order('full_name');
+
+      if (!error && data) {
+        const convertedEmployees = data.map(emp => ({
+          id: emp.id,
+          full_name: emp.full_name,
+          email: emp.email,
+          role: emp.role as 'employee' | 'admin'
+        }));
+        setEmployees(convertedEmployees);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      // Fetch from profiles table
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone, role, account_status, created_at')
+        .in('role', ['client', 'employee', 'admin'])
+        .eq('account_status', 'active')
+        .order('full_name');
+
+      // Fetch from invited_users table
+      const { data: invitedData, error: invitedError } = await supabase
+        .from('invited_users')
+        .select('id, full_name, email, phone, role, account_status, invited_at')
+        .eq('account_status', 'active')
+        .order('full_name');
+
+      const allClients = [
+        ...(profilesData || []).map(p => ({
+          ...p,
+          created_at: p.created_at || new Date().toISOString()
+        })),
+        ...(invitedData || []).map(i => ({
+          ...i,
+          created_at: i.invited_at
+        }))
+      ];
+
+      setClients(allClients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
   const createNewAppointment = async () => {
-    if (!selectedCustomer || !appointmentData.serviceId || !appointmentData.date || !appointmentData.time) {
+    if (!appointmentForm.client_id || !appointmentForm.service_id || !appointmentForm.date || !appointmentForm.start_time) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos requeridos",
@@ -48,10 +109,20 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
       return;
     }
 
+    const customer = clients.find(c => c.id === appointmentForm.client_id);
+    if (!customer) {
+      toast({
+        title: "Error",
+        description: "Cliente no encontrado",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      if (appointmentData.isCombo) {
+      if (appointmentForm.isCombo) {
         // Handle combo appointment - create single combo reservation
-        const selectedCombo = combos.find(c => c.id === appointmentData.serviceId);
+        const selectedCombo = combos.find(c => c.id === appointmentForm.service_id);
         if (!selectedCombo) {
           toast({
             title: "Error",
@@ -62,7 +133,7 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
         }
 
         // Use the combo's primary employee if no specific employee is selected
-        const employeeId = appointmentData.employeeId || selectedCombo.primary_employee_id;
+        const employeeId = appointmentForm.employee_id || selectedCombo.primary_employee_id;
         if (!employeeId) {
           toast({
             title: "Error",
@@ -79,27 +150,27 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
         }, 0);
 
         // Calculate end time
-        const startTime = new Date(`2000-01-01T${appointmentData.time}`);
+        const startTime = new Date(`2000-01-01T${appointmentForm.start_time}`);
         const endTime = new Date(startTime.getTime() + totalDuration * 60000);
         const endTimeStr = endTime.toTimeString().slice(0, 5);
 
         const { data, error } = await supabase
           .from('combo_reservations')
           .insert({
-            client_id: selectedCustomer.id,
+            client_id: customer.id,
             combo_id: selectedCombo.id,
             primary_employee_id: employeeId,
-            appointment_date: appointmentData.date,
-            start_time: appointmentData.time,
+            appointment_date: appointmentForm.date,
+            start_time: appointmentForm.start_time,
             end_time: endTimeStr,
-            notes: appointmentData.notes,
+            notes: appointmentForm.notes,
             status: 'confirmed',
-            final_price_cents: selectedCombo.total_price_cents,
+            final_price_cents: appointmentForm.final_price_cents || selectedCombo.total_price_cents,
             original_price_cents: selectedCombo.original_price_cents,
-            savings_cents: selectedCombo.original_price_cents - selectedCombo.total_price_cents,
+            savings_cents: selectedCombo.original_price_cents - (appointmentForm.final_price_cents || selectedCombo.total_price_cents),
             is_guest_booking: false,
-            customer_email: selectedCustomer.email,
-            customer_name: selectedCustomer.full_name,
+            customer_email: customer.email,
+            customer_name: customer.full_name,
             created_by_admin: effectiveProfile?.id
           })
           .select()
@@ -108,7 +179,7 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
         if (error) throw error;
       } else {
         // Handle individual service appointment
-        const selectedService = services.find(s => s.id === appointmentData.serviceId);
+        const selectedService = services.find(s => s.id === appointmentForm.service_id);
         if (!selectedService) {
           toast({
             title: "Error",
@@ -119,24 +190,24 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
         }
 
         // Calculate end time
-        const startTime = new Date(`2000-01-01T${appointmentData.time}`);
+        const startTime = new Date(`2000-01-01T${appointmentForm.start_time}`);
         const endTime = new Date(startTime.getTime() + selectedService.duration_minutes * 60000);
         const endTimeStr = endTime.toTimeString().slice(0, 5);
 
         const { data, error } = await supabase
           .from('reservations')
           .insert({
-            client_id: selectedCustomer.id,
-            service_id: appointmentData.serviceId,
-            employee_id: appointmentData.employeeId || null,
-            appointment_date: appointmentData.date,
-            start_time: appointmentData.time,
+            client_id: customer.id,
+            service_id: appointmentForm.service_id,
+            employee_id: appointmentForm.employee_id || null,
+            appointment_date: appointmentForm.date,
+            start_time: appointmentForm.start_time,
             end_time: endTimeStr,
-            notes: appointmentData.notes,
+            notes: appointmentForm.notes,
             status: 'confirmed',
-            customer_email: selectedCustomer.email,
-            customer_name: selectedCustomer.full_name,
-            final_price_cents: selectedService.price_cents,
+            customer_email: customer.email,
+            customer_name: customer.full_name,
+            final_price_cents: appointmentForm.final_price_cents || selectedService.price_cents,
             created_by_admin: effectiveProfile?.id
           })
           .select()
@@ -151,13 +222,14 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
       });
 
       setShowDialog(false);
-      setSelectedCustomer(null);
-      setAppointmentData({
-        serviceId: "",
-        employeeId: "",
-        date: "",
-        time: "",
+      setAppointmentForm({
+        client_id: "",
+        service_id: "",
+        date: format(new Date(), 'yyyy-MM-dd'),
+        start_time: "",
+        end_time: "",
         notes: "",
+        final_price_cents: 0,
         isCombo: false
       });
     } catch (error) {
@@ -170,122 +242,42 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
     }
   };
 
+  const handleFormChange = (form: AppointmentFormData) => {
+    setAppointmentForm(form);
+  };
+
   return (
-    <Dialog open={showDialog} onOpenChange={setShowDialog}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="h-20 flex flex-col gap-2"
-          onClick={handleOpenDialog}
-        >
-          <CalendarIcon className="h-5 w-5" />
-          <span className="text-sm">Nueva Cita</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="appointment-description">
-        <DialogHeader>
-          <DialogTitle>Nueva Cita</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4" id="appointment-description">
-          <div>
-            <Label>Cliente</Label>
-            <CustomerSelectorModal
-              value={selectedCustomer}
-              onValueChange={setSelectedCustomer}
-            />
-          </div>
-          <div>
-            <Label>Tipo de Servicio</Label>
-            <Select 
-              value={appointmentData.isCombo ? "combo" : "service"} 
-              onValueChange={(value) => setAppointmentData({
-                ...appointmentData, 
-                isCombo: value === "combo",
-                serviceId: ""
-              })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="service">Servicio Individual</SelectItem>
-                <SelectItem value="combo">Combo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{appointmentData.isCombo ? "Combo" : "Servicio"}</Label>
-            <Select value={appointmentData.serviceId} onValueChange={(value) => setAppointmentData({...appointmentData, serviceId: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder={appointmentData.isCombo ? "Seleccionar combo" : "Seleccionar servicio"} />
-              </SelectTrigger>
-              <SelectContent>
-                {appointmentData.isCombo ? (
-                  combos.map((combo) => (
-                    <SelectItem key={combo.id} value={combo.id}>
-                      {combo.name} - ₡{Math.round(combo.total_price_cents / 100)}
-                    </SelectItem>
-                  ))
-                ) : (
-                  services.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.name} - ₡{Math.round(service.price_cents / 100)}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Empleado (opcional)</Label>
-            <Select value={appointmentData.employeeId || 'unassigned'} onValueChange={(value) => setAppointmentData({...appointmentData, employeeId: value === 'unassigned' ? '' : value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar empleado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Sin asignar</SelectItem>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {appointmentData.isCombo && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Si no seleccionas un empleado, se usará el empleado principal del combo
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>Fecha</Label>
-            <Input
-              type="date"
-              value={appointmentData.date}
-              onChange={(e) => setAppointmentData({...appointmentData, date: e.target.value})}
-            />
-          </div>
-          <div>
-            <Label>Hora</Label>
-            <Input
-              type="time"
-              value={appointmentData.time}
-              onChange={(e) => setAppointmentData({...appointmentData, time: e.target.value})}
-            />
-          </div>
-          <div>
-            <Label>Notas (opcional)</Label>
-            <Textarea
-              value={appointmentData.notes}
-              onChange={(e) => setAppointmentData({...appointmentData, notes: e.target.value})}
-              placeholder="Notas adicionales..."
-            />
-          </div>
-          <Button onClick={createNewAppointment} className="w-full">
-            Crear Cita
+    <>
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="h-20 flex flex-col gap-2"
+            onClick={handleOpenDialog}
+          >
+            <CalendarIcon className="h-5 w-5" />
+            <span className="text-sm">Nueva Cita</span>
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+      </Dialog>
+
+      <AppointmentDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+        editMode={false}
+        editingAppointment={null}
+        appointmentForm={appointmentForm}
+        onAppointmentFormChange={handleFormChange}
+        onEditingAppointmentChange={() => {}}
+        services={services}
+        clients={clients}
+        employees={employees}
+        combos={combos}
+        onSubmit={createNewAppointment}
+        onCancel={() => setShowDialog(false)}
+        effectiveProfile={effectiveProfile}
+        showPriceField={true}
+      />
+    </>
   );
 };

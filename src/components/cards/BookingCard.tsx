@@ -15,11 +15,13 @@ import { trackLoyaltyVisit } from "@/lib/loyaltyTracking";
 export interface BookingCardProps {
   id: string;
   serviceName: string;
+  serviceId?: string; // Add service ID field
   appointmentDate: string;
   startTime: string;
   endTime?: string;
   status: string;
   priceCents?: number;
+  finalPriceCents?: number; // Add final_price_cents field
   categoryName?: string;
   clientName?: string;
   clientEmail?: string;
@@ -51,11 +53,13 @@ export interface BookingCardProps {
 export const BookingCard = ({
   id,
   serviceName,
+  serviceId,
   appointmentDate,
   startTime,
   endTime,
   status,
   priceCents,
+  finalPriceCents,
   categoryName,
   clientName,
   clientEmail,
@@ -314,7 +318,8 @@ export const BookingCard = ({
                 notes,
                 client_id: clientId || '',
                 employee_id: employeeId,
-                services: [{ id: '', name: serviceName, description: '', duration_minutes: 0, price_cents: priceCents || 0 }],
+                final_price_cents: finalPriceCents,
+                services: [{ id: serviceId || 'temp-id', name: serviceName, description: '', duration_minutes: 0, price_cents: priceCents || 0 }],
                 client_profile: { full_name: clientName || '' },
                 employee_profile: employeeName ? { full_name: employeeName } : undefined,
                 isCombo,

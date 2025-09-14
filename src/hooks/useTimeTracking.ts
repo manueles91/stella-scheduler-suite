@@ -104,8 +104,9 @@ export const useTimeTracking = (employeeId?: string) => {
     setLoading(true);
     
     try {
+      // Use admin_reservations_view to get both individual and combo reservations
       let query = supabase
-        .from('reservations')
+        .from('admin_reservations_view')
         .select(`
           id,
           appointment_date,
@@ -117,15 +118,15 @@ export const useTimeTracking = (employeeId?: string) => {
           employee_id,
           service_id,
           final_price_cents,
-          customer_name,
-          customer_email,
-          services(
-            id,
-            name,
-            description,
-            duration_minutes,
-            price_cents
-          )
+          client_full_name,
+          employee_full_name,
+          service_name,
+          service_price_cents,
+          service_duration,
+          category_name,
+          booking_type,
+          combo_id,
+          combo_name
         `);
 
       if (profile?.role !== 'admin') {
@@ -141,40 +142,7 @@ export const useTimeTracking = (employeeId?: string) => {
 
       if (error) throw error;
       
-      // Get unique client and employee IDs
-      const clientIds = [...new Set(data?.map(a => a.client_id).filter(Boolean) || [])];
-      const employeeIds = [...new Set(data?.map(a => a.employee_id).filter(Boolean) || [])];
-      
-      // Fetch profiles and invited users in parallel
-      const [profilesResult, invitedUsersResult, employeesResult] = await Promise.all([
-        clientIds.length > 0 ? supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', clientIds) : Promise.resolve({ data: [] }),
-        clientIds.length > 0 ? supabase
-          .from('invited_users')
-          .select('id, full_name, email')
-          .in('id', clientIds) : Promise.resolve({ data: [] }),
-        employeeIds.length > 0 ? supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', employeeIds) : Promise.resolve({ data: [] })
-      ]);
-      
-      const clientsMap = new Map<string, any>();
-      const employeesMap = new Map<string, any>();
-      
-      // Add profiles to clients map
-      profilesResult.data?.forEach(c => clientsMap.set(c.id, c));
-      // Add invited users to clients map
-      invitedUsersResult.data?.forEach(c => clientsMap.set(c.id, c));
-      // Add employees to employees map
-      employeesResult.data?.forEach(e => employeesMap.set(e.id, e));
-      
       const formattedAppointments = data?.map(appointment => {
-        const client = clientsMap.get(appointment.client_id);
-        const employee = employeesMap.get(appointment.employee_id);
-        
         return {
           id: appointment.id,
           appointment_date: appointment.appointment_date,
@@ -184,22 +152,23 @@ export const useTimeTracking = (employeeId?: string) => {
           notes: appointment.notes,
           client_id: appointment.client_id,
           employee_id: appointment.employee_id,
+          final_price_cents: appointment.final_price_cents,
           services: [{
-            id: appointment.service_id,
-            name: appointment.services?.name || 'Servicio',
-            description: appointment.services?.description || 'Sin descripción',
-            duration_minutes: appointment.services?.duration_minutes || 0,
-            price_cents: appointment.services?.price_cents || 0
+            id: appointment.service_id || '',
+            name: appointment.service_name || 'Servicio',
+            description: '',
+            duration_minutes: appointment.service_duration || 0,
+            price_cents: appointment.service_price_cents || 0
           }],
           client_profile: {
-            full_name: appointment.customer_name || (client as any)?.full_name || 'Cliente'
+            full_name: appointment.client_full_name || 'Cliente'
           },
-          employee_profile: employee ? {
-            full_name: (employee as any).full_name
+          employee_profile: appointment.employee_full_name ? {
+            full_name: appointment.employee_full_name
           } : undefined,
-          isCombo: false,
-          comboId: null,
-          comboName: null
+          isCombo: appointment.booking_type === 'combo',
+          comboId: appointment.combo_id,
+          comboName: appointment.combo_name
         };
       }) || [];
       
@@ -262,12 +231,13 @@ export const useTimeTracking = (employeeId?: string) => {
         .insert({
           client_id: appointmentForm.client_id,
           service_id: appointmentForm.service_id,
-          employee_id: effectiveEmployeeId,
+          employee_id: appointmentForm.employee_id || effectiveEmployeeId,
           appointment_date: appointmentForm.date,
           start_time: startTime,
           end_time: endTime,
           notes: appointmentForm.notes || null,
-          status: 'confirmed'
+          status: 'confirmed',
+          final_price_cents: appointmentForm.final_price_cents || null
         });
         
       if (error) throw error;
@@ -290,7 +260,7 @@ export const useTimeTracking = (employeeId?: string) => {
 
   // Update appointment
   const updateAppointment = async (appointment: Appointment, appointmentForm: AppointmentFormData) => {
-    if (!appointment.client_id || !appointment.services?.[0]?.id) return;
+    if (!appointmentForm.client_id || !appointmentForm.service_id) return;
     
     try {
       const startTime = formatTimeForDatabase(appointmentForm.start_time);
@@ -299,14 +269,15 @@ export const useTimeTracking = (employeeId?: string) => {
       const { error } = await supabase
         .from('reservations')
         .update({
-          client_id: appointment.client_id,
-          service_id: appointment.services[0].id,
-          employee_id: appointment.employee_id || null,
-          appointment_date: appointment.appointment_date,
+          client_id: appointmentForm.client_id,
+          service_id: appointmentForm.service_id,
+          employee_id: appointmentForm.employee_id || null,
+          appointment_date: appointmentForm.date,
           start_time: startTime,
           end_time: endTime,
-          status: appointment.status,
-          notes: appointment.notes || null,
+          status: appointment.status, // Keep existing status
+          notes: appointmentForm.notes || null,
+          final_price_cents: appointmentForm.final_price_cents || null,
         })
         .eq('id', appointment.id);
       

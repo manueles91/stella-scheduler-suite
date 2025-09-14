@@ -1,19 +1,13 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Pencil } from "lucide-react";
-import { format } from "date-fns";
+import { Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Appointment } from "@/types/appointment";
 import { Profile } from "@/types/booking";
-import { CustomerSelectorModal } from "@/components/admin/CustomerSelectorModal";
+import { AppointmentDialog } from "@/components/employee/time-tracking/AppointmentDialog";
+import { AppointmentFormData, Customer, Employee } from "@/types/time-tracking";
+import { format } from "date-fns";
 
 interface EditableAppointmentProps {
   appointment: Appointment;
@@ -21,55 +15,49 @@ interface EditableAppointmentProps {
   canEdit: boolean;
 }
 
-interface Customer {
-  id: string;
-  full_name: string;
-  email: string;
-  phone?: string;
-  role: 'client' | 'employee' | 'admin';
-  account_status: string;
-  created_at: string;
-}
-
 export const EditableAppointment = ({ appointment, onUpdate, canEdit }: EditableAppointmentProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    appointment_date: new Date(appointment.appointment_date),
+  const [formData, setFormData] = useState<AppointmentFormData>({
+    client_id: appointment.client_id,
+    service_id: appointment.services?.[0]?.id || '',
+    date: appointment.appointment_date,
     start_time: appointment.start_time,
     end_time: appointment.end_time,
-    status: appointment.status,
     notes: appointment.notes || "",
-    client_id: appointment.client_id,
-    employee_id: appointment.employee_id || "unassigned",
+    employee_id: appointment.employee_id || "",
+    final_price_cents: appointment.final_price_cents || 0,
+    isCombo: appointment.isCombo || false
   });
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [employees, setEmployees] = useState<Profile[]>([]);
+  const [clients, setClients] = useState<Customer[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  // Initialize selectedCustomer with appointment data on component mount
-  useEffect(() => {
-    if (appointment.client_id && appointment.client_profile?.full_name) {
-      setSelectedCustomer({
-        id: appointment.client_id,
-        full_name: appointment.client_profile.full_name,
-        email: "",
-        role: "client",
-        account_status: "active",
-        created_at: new Date().toISOString()
-      });
-    }
-  }, [appointment.client_id, appointment.client_profile?.full_name]);
 
   useEffect(() => {
     if (isOpen) {
       fetchEmployees();
-      // Fetch and set the selected customer based on the appointment's client_id
-      if (appointment.client_id) {
-        fetchCustomerData(appointment.client_id);
-      }
+      fetchClients();
+      fetchServices();
+      fetchCombos();
     }
-  }, [isOpen, appointment.client_id]);
+  }, [isOpen]);
+
+  // Update form data when appointment changes
+  useEffect(() => {
+    setFormData({
+      client_id: appointment.client_id,
+      service_id: appointment.services?.[0]?.id || '',
+      date: appointment.appointment_date,
+      start_time: appointment.start_time,
+      end_time: appointment.end_time,
+      notes: appointment.notes || "",
+      employee_id: appointment.employee_id || "",
+      final_price_cents: appointment.final_price_cents || 0,
+      isCombo: appointment.isCombo || false
+    });
+  }, [appointment]);
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -81,7 +69,15 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
         .eq('account_status', 'active')
         .order('full_name');
 
-      if (!employeesError && employeesData) setEmployees(employeesData);
+      if (!employeesError && employeesData) {
+        const convertedEmployees = employeesData.map(emp => ({
+          id: emp.id,
+          full_name: emp.full_name,
+          email: emp.email,
+          role: emp.role as 'employee' | 'admin'
+        }));
+        setEmployees(convertedEmployees);
+      }
     } catch (error) {
       console.error('Error fetching employees:', error);
     } finally {
@@ -89,76 +85,78 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     }
   };
 
-  const fetchCustomerData = async (clientId: string) => {
+  const fetchClients = async () => {
     try {
-      // First try to find in profiles table (including admins and employees)
-      const { data: profileData, error: profileError } = await supabase
+      // Fetch from profiles table
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone, role, account_status, created_at')
-        .eq('id', clientId)
         .in('role', ['client', 'employee', 'admin'])
-        .single();
+        .eq('account_status', 'active')
+        .order('full_name');
 
-      if (profileData && !profileError) {
-        setSelectedCustomer({
-          id: profileData.id,
-          full_name: profileData.full_name,
-          email: profileData.email,
-          phone: profileData.phone,
-          role: profileData.role,
-          account_status: profileData.account_status || 'active',
-          created_at: profileData.created_at || new Date().toISOString()
-        });
-        return;
-      }
-
-      // If not found in profiles, try invited_users table
+      // Fetch from invited_users table
       const { data: invitedData, error: invitedError } = await supabase
         .from('invited_users')
         .select('id, full_name, email, phone, role, account_status, invited_at')
-        .eq('id', clientId)
-        .single();
+        .eq('account_status', 'active')
+        .order('full_name');
 
-      if (invitedData && !invitedError) {
-        setSelectedCustomer({
-          id: invitedData.id,
-          full_name: invitedData.full_name,
-          email: invitedData.email,
-          phone: invitedData.phone,
-          role: invitedData.role,
-          account_status: invitedData.account_status,
-          created_at: invitedData.invited_at
-        });
-        return;
-      }
+      const allClients = [
+        ...(profilesData || []).map(p => ({
+          ...p,
+          created_at: p.created_at || new Date().toISOString()
+        })),
+        ...(invitedData || []).map(i => ({
+          ...i,
+          created_at: i.invited_at
+        }))
+      ];
 
-      // If customer not found in either table, create a fallback object
-      setSelectedCustomer({
-        id: clientId,
-        full_name: appointment.client_profile?.full_name || "Cliente no encontrado",
-        email: "",
-        role: "client",
-        account_status: "unknown",
-        created_at: new Date().toISOString()
-      });
+      setClients(allClients);
     } catch (error) {
-      console.error('Error fetching customer data:', error);
-      // Set fallback customer data
-      setSelectedCustomer({
-        id: clientId,
-        full_name: appointment.client_profile?.full_name || "Cliente no encontrado",
-        email: "",
-        role: "client",
-        account_status: "unknown",
-        created_at: new Date().toISOString()
-      });
+      console.error('Error fetching clients:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedCustomer) {
+  const fetchServices = async () => {
+    try {
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (!servicesError && servicesData) setServices(servicesData);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
+  const fetchCombos = async () => {
+    try {
+      const { data: combosData, error: combosError } = await supabase
+        .from('combos')
+        .select(`
+          *,
+          combo_services(
+            service_id,
+            quantity,
+            services(id, name, description, duration_minutes, price_cents, image_url)
+          )
+        `)
+        .eq('is_active', true)
+        .order('name');
+
+      if (!combosError && combosData) setCombos(combosData);
+    } catch (error) {
+      console.error('Error fetching combos:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const selectedClient = clients.find(c => c.id === formData.client_id);
+    if (!selectedClient) {
       toast({
         title: "Error",
         description: "Por favor selecciona un cliente",
@@ -168,20 +166,44 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     }
     
     try {
-      const { error } = await supabase
-        .from('reservations')
-        .update({
-          appointment_date: format(formData.appointment_date, 'yyyy-MM-dd'),
-          start_time: formData.start_time,
-          end_time: formData.end_time,
-          status: formData.status,
-          notes: formData.notes || null,
-          client_id: selectedCustomer.id,
-          employee_id: formData.employee_id === "unassigned" ? null : formData.employee_id || null,
-        })
-        .eq('id', appointment.id);
+      // Determine if this is a combo or individual service
+      const isCombo = formData.isCombo || appointment.isCombo;
+      
+      if (isCombo) {
+        // Update combo reservation
+        const { error } = await supabase
+          .from('combo_reservations')
+          .update({
+            appointment_date: formData.date,
+            start_time: formData.start_time,
+            end_time: formData.end_time,
+            status: appointment.status, // Keep existing status
+            notes: formData.notes || null,
+            client_id: selectedClient.id,
+            primary_employee_id: formData.employee_id || null,
+            final_price_cents: formData.final_price_cents || null,
+          })
+          .eq('id', appointment.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Update individual service reservation
+        const { error } = await supabase
+          .from('reservations')
+          .update({
+            appointment_date: formData.date,
+            start_time: formData.start_time,
+            end_time: formData.end_time,
+            status: appointment.status, // Keep existing status
+            notes: formData.notes || null,
+            client_id: selectedClient.id,
+            employee_id: formData.employee_id || null,
+            final_price_cents: formData.final_price_cents || null,
+          })
+          .eq('id', appointment.id);
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Éxito",
@@ -200,14 +222,12 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'Confirmada';
-      case 'pending': return 'Pendiente';
-      case 'cancelled': return 'Cancelada';
-      case 'completed': return 'Completada';
-      default: return status;
-    }
+  const handleFormChange = (form: AppointmentFormData) => {
+    setFormData(form);
+  };
+
+  const handleEditingAppointmentChange = (updatedAppointment: Appointment | null) => {
+    // This is not used in edit mode, but required by the interface
   };
 
   if (!canEdit) {
@@ -215,7 +235,7 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <>
       <Button
         variant="ghost"
         size="sm"
@@ -225,122 +245,22 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
         <Pencil className="h-3 w-3" />
       </Button>
       
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Cita</DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Fecha</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(formData.appointment_date, "PPP")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.appointment_date}
-                  onSelect={(date) => date && setFormData({ ...formData, appointment_date: date })}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="start_time">Hora Inicio</Label>
-              <Input
-                id="start_time"
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end_time">Hora Fin</Label>
-              <Input
-                id="end_time"
-                type="time"
-                value={formData.end_time}
-                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Cliente</Label>
-            <CustomerSelectorModal
-              value={selectedCustomer}
-              onValueChange={setSelectedCustomer}
-            />
-          </div>
-
-          <div>
-            <Label>Estilista</Label>
-            <Select 
-              value={formData.employee_id} 
-              onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
-              disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar estilista">
-                  {formData.employee_id === "unassigned" 
-                    ? "Sin estilista asignado" 
-                    : employees.find(emp => emp.id === formData.employee_id)?.full_name || "Seleccionar estilista"
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Sin estilista asignado</SelectItem>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Estado</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="confirmed">Confirmada</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="cancelled">Cancelada</SelectItem>
-                <SelectItem value="completed">Completada</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Notas adicionales"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              Actualizar
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <AppointmentDialog
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        editMode={true}
+        editingAppointment={appointment}
+        appointmentForm={formData}
+        onAppointmentFormChange={handleFormChange}
+        onEditingAppointmentChange={handleEditingAppointmentChange}
+        services={services}
+        clients={clients}
+        employees={employees}
+        combos={combos}
+        onSubmit={handleSubmit}
+        onCancel={() => setIsOpen(false)}
+        showPriceField={true}
+      />
+    </>
   );
 };
