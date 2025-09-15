@@ -41,7 +41,7 @@ export const AdminSettings = lazy(() =>
 );
 
 export const AdminFeedback = lazy(() => 
-  import("../admin/AdminFeedback").then(module => ({ default: module.AdminFeedback }))
+  import("../Feedback").then(module => ({ default: module.Feedback }))
 );
 
 // Optimized loading fallback component

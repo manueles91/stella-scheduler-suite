@@ -93,9 +93,7 @@ export const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardL
     ...(effectiveProfile?.role === 'admin' ? [
       { id: 'admin-settings', label: 'Configuración', icon: Settings },
     ] : []),
-    ...(effectiveProfile?.role === 'admin' ? [
-      { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
-    ] : []),
+    { id: 'admin-feedback', label: 'Feedback', icon: MessageSquare },
   ];
 
   return (

@@ -18,7 +18,7 @@ interface FeedbackForm {
   priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
-export const AdminFeedback = () => {
+export const Feedback = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,14 +141,14 @@ export const AdminFeedback = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <MessageSquare className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Feedback del Sistema</h1>
+        <h1 className="text-2xl font-bold">Enviar Feedback</h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Enviar Comentario</CardTitle>
+          <CardTitle>Enviar Comentario o Sugerencia</CardTitle>
           <p className="text-muted-foreground">
-            Comparte bugs, solicitudes de funcionalidades o sugerencias de mejora para el sistema
+            Comparte cualquier problema que encuentres, solicitudes de nuevas funcionalidades o sugerencias de mejora
           </p>
         </CardHeader>
         <CardContent>
