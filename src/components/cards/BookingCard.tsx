@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, User, Sparkles, Calendar, DollarSign, Package, ListTree } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, User, Sparkles, Calendar, DollarSign, Package, ListTree, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BaseBookingCard } from "./BaseBookingCard";
 import { EditableAppointment } from "@/components/dashboard/EditableAppointment";
@@ -11,6 +12,17 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatCRC } from "@/lib/currency";
 import { trackLoyaltyVisit } from "@/lib/loyaltyTracking";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle,
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 
 export interface BookingCardProps {
   id: string;
@@ -191,6 +203,30 @@ export const BookingCard = ({
     }
   };
 
+  const handleDeleteBooking = async () => {
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Cita eliminada",
+        description: "La cita se ha eliminado correctamente",
+      });
+      onUpdate?.();
+    } catch (error: any) {
+      console.error('Error deleting appointment:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar la cita",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderServiceInfo = () => {
     return (
       <div className="flex items-center gap-1 min-w-0">
@@ -306,8 +342,8 @@ export const BookingCard = ({
             {getStatusText(currentStatus)}
           </Badge>
         )}
-        {canEdit && (
-          <div onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          {canEdit && (
             <EditableAppointment 
               appointment={{
                 id,
@@ -329,8 +365,39 @@ export const BookingCard = ({
               onUpdate={onUpdate || (() => {})}
               canEdit={canEdit}
             />
-          </div>
-        )}
+          )}
+          {effectiveProfile?.role === 'admin' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar cita?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará permanentemente la cita "{serviceName}" del {format(parseISO(appointmentDate), 'dd/MM/yyyy', { locale: es })}. 
+                    Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteBooking}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
     );
   };

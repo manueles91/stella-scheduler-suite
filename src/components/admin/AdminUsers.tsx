@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Search, User, Mail, Phone, Calendar, Edit, Ban, CheckCircle, Plus, Users, UserCheck, Filter, MoreVertical, Trash2, AlertCircle, Copy, Upload } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -308,6 +309,35 @@ const fetchUsers = async () => {
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado del usuario",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteUser = async (userId: string, userType: 'authenticated' | 'invited') => {
+    try {
+      if (userType === 'invited') {
+        const { error } = await supabase.from('invited_users').delete().eq('id', userId);
+        if (error) throw error;
+      } else {
+        // For authenticated users, we'll deactivate them instead of deleting
+        // since they may have associated data like reservations
+        const { error } = await supabase.from('profiles').update({
+          account_status: 'inactive'
+        }).eq('id', userId);
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Éxito",
+        description: userType === 'invited' ? "Usuario invitado eliminado" : "Usuario desactivado"
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el usuario",
         variant: "destructive"
       });
     }
@@ -835,19 +865,44 @@ const getStatusText = (status: string) => {
                                     Servicios
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem onClick={() => updateUserStatus(user.id, user.account_status === 'active' ? 'inactive' : 'active')}>
-                                  {user.account_status === 'active' ? (
-                                    <>
-                                      <Ban className="h-4 w-4 mr-2" />
-                                      Desactivar
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                      Activar
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => updateUserStatus(user.id, user.account_status === 'active' ? 'inactive' : 'active')}>
+                                   {user.account_status === 'active' ? (
+                                     <>
+                                       <Ban className="h-4 w-4 mr-2" />
+                                       Desactivar
+                                     </>
+                                   ) : (
+                                     <>
+                                       <CheckCircle className="h-4 w-4 mr-2" />
+                                       Activar
+                                     </>
+                                   )}
+                                 </DropdownMenuItem>
+                                 <AlertDialog>
+                                   <AlertDialogTrigger asChild>
+                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                       <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                       <span className="text-destructive">Eliminar</span>
+                                     </DropdownMenuItem>
+                                   </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                       <AlertDialogDescription>
+                                         Esta acción eliminará permanentemente al usuario "{user.full_name}" ({user.email}). Esta acción no se puede deshacer.
+                                         </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                         <AlertDialogAction
+                                           onClick={() => deleteUser(user.id, 'authenticated')}
+                                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                         >
+                                           Eliminar
+                                         </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                 </AlertDialog>
                               </>
                             )}
                           </DropdownMenuContent>
