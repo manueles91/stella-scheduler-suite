@@ -54,6 +54,7 @@ export interface BookingCardProps {
   // Interaction props
   onUpdate?: () => void;
   canEdit?: boolean;
+  canUpdateStatus?: boolean; // Separate prop for status updates
   effectiveProfile?: any;
   
   // Display options
@@ -86,6 +87,7 @@ export const BookingCard = ({
   bookingType,
   onUpdate,
   canEdit = false,
+  canUpdateStatus = false,
   effectiveProfile,
   variant = 'upcoming',
   showExpandable = true,
@@ -321,7 +323,7 @@ export const BookingCard = ({
     return (
       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <span className="text-sm font-medium text-muted-foreground">Estado</span>
-        {canEdit ? (
+        {canUpdateStatus ? (
           <Select 
             value={currentStatus} 
             onValueChange={handleStatusChange}

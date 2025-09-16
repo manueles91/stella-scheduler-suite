@@ -204,6 +204,13 @@ export const DashboardSummary = ({
   const canEditAppointment = (appt: Appointment) => {
     if (effectiveProfile?.role === 'admin') return true;
     if (effectiveProfile?.role === 'employee' && appt.employee_id === effectiveProfile.id) return true;
+    // Remove edit permission for clients - they can only update status via dropdown
+    return false;
+  };
+
+  const canUpdateAppointmentStatus = (appt: Appointment) => {
+    if (effectiveProfile?.role === 'admin') return true;
+    if (effectiveProfile?.role === 'employee' && appt.employee_id === effectiveProfile.id) return true;
     if (effectiveProfile?.role === 'client' && appt.client_id === effectiveProfile.id) return true;
     return false;
   };
@@ -250,7 +257,7 @@ export const DashboardSummary = ({
               </div>
               <p className="text-muted-foreground mb-4">No hay citas próximas</p>
               {effectiveProfile?.role === 'client' && (
-                <Button onClick={() => window.location.href = '#bookings'} className="bg-primary hover:bg-primary/90">
+                <Button onClick={() => navigate('/book')} className="bg-primary hover:bg-primary/90">
                   Reservar una cita
                 </Button>
               )}
@@ -278,6 +285,7 @@ export const DashboardSummary = ({
                   comboId={appointment.comboId}
                   onUpdate={fetchAppointments}
                   canEdit={canEditAppointment(appointment)}
+                  canUpdateStatus={canUpdateAppointmentStatus(appointment)}
                   effectiveProfile={effectiveProfile}
                   variant="upcoming"
                 />
@@ -399,6 +407,7 @@ export const DashboardSummary = ({
                   comboId={appointment.comboId}
                   onUpdate={fetchAppointments}
                   canEdit={canEditAppointment(appointment)}
+                  canUpdateStatus={canUpdateAppointmentStatus(appointment)}
                   effectiveProfile={effectiveProfile}
                   variant="past"
                 />

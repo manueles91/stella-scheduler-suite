@@ -76,6 +76,7 @@ const processBookableItems = (
       final_price_cents: finalPrice,
       category_id: service.category_id,
       image_url: service.image_url,
+      variable_price: service.variable_price,
       type: 'service',
       appliedDiscount: bestDiscount,
       savings_cents: savings,

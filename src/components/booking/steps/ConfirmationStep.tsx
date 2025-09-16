@@ -87,9 +87,15 @@ export const ConfirmationStep = ({
               <div>
                 <span className="font-medium">Precio:</span>{" "}
                 <span className="font-bold text-primary">
-                  {formatPrice(selectedService.final_price_cents)}
+                  {selectedService.variable_price ? (
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                      Precio variable
+                    </Badge>
+                  ) : (
+                    formatPrice(selectedService.final_price_cents)
+                  )}
                 </span>
-                {selectedService.savings_cents > 0 && (
+                {!selectedService.variable_price && selectedService.savings_cents > 0 && (
                   <span className="ml-2 text-sm text-muted-foreground line-through">
                     {formatPrice(selectedService.original_price_cents)}
                   </span>

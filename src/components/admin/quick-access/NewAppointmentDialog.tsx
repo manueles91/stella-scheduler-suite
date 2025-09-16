@@ -165,7 +165,7 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
             end_time: endTimeStr,
             notes: appointmentForm.notes,
             status: 'confirmed',
-            final_price_cents: appointmentForm.final_price_cents || selectedCombo.total_price_cents,
+            final_price_cents: appointmentForm.final_price_cents || (selectedCombo.variable_price ? null : selectedCombo.total_price_cents),
             original_price_cents: selectedCombo.original_price_cents,
             savings_cents: selectedCombo.original_price_cents - (appointmentForm.final_price_cents || selectedCombo.total_price_cents),
             is_guest_booking: false,
@@ -207,7 +207,7 @@ export const NewAppointmentDialog = ({ effectiveProfile }: QuickAccessDialogProp
             status: 'confirmed',
             customer_email: customer.email,
             customer_name: customer.full_name,
-            final_price_cents: appointmentForm.final_price_cents || selectedService.price_cents,
+            final_price_cents: appointmentForm.final_price_cents || (selectedService.variable_price ? null : selectedService.price_cents),
             created_by_admin: effectiveProfile?.id
           })
           .select()

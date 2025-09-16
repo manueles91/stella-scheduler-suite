@@ -19,6 +19,7 @@ export interface Combo {
   start_date: string;
   end_date: string;
   primary_employee_id?: string;
+  variable_price?: boolean;
   combo_services: {
     service_id: string;
     quantity: number;

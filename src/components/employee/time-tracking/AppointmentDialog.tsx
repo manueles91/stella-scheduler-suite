@@ -54,6 +54,9 @@ export const AppointmentDialog = ({
     const selectedService = getSelectedService();
     if (!selectedService) return 0;
     
+    // For variable price services, return 0 to indicate no default price
+    if (selectedService.variable_price) return 0;
+    
     if (appointmentForm.isCombo) {
       return selectedService.total_price_cents || 0;
     }
@@ -189,6 +192,7 @@ export const AppointmentDialog = ({
 
     const selectedService = getSelectedService();
     const defaultPrice = selectedService ? getServicePrice() : 0;
+    const isVariablePrice = selectedService?.variable_price;
 
     return (
       <div>
@@ -198,14 +202,19 @@ export const AppointmentDialog = ({
           step="1"
           value={appointmentForm.final_price_cents !== null && appointmentForm.final_price_cents !== undefined ? Math.round(appointmentForm.final_price_cents / 100) : ''}
           onChange={(e) => {
-            const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-            handleFormChange('final_price_cents', value * 100);
+            const value = e.target.value === '' ? null : (parseInt(e.target.value) || 0) * 100;
+            handleFormChange('final_price_cents', value);
           }}
-          placeholder={defaultPrice ? Math.round(defaultPrice / 100).toString() : "0"}
+          placeholder={isVariablePrice ? "Precio variable - establecer después" : (defaultPrice ? Math.round(defaultPrice / 100).toString() : "0")}
         />
-        {selectedService && (
+        {selectedService && !isVariablePrice && (
           <p className="text-sm text-muted-foreground mt-1">
             Precio sugerido: ₡{Math.round(defaultPrice / 100)}
+          </p>
+        )}
+        {selectedService && isVariablePrice && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Este servicio tiene precio variable - establece el precio después de la cita
           </p>
         )}
       </div>

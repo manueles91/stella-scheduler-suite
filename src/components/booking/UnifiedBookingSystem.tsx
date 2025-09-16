@@ -378,6 +378,7 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
           <DateSelectionStep
             selectedService={state.selectedService}
             selectedDate={state.selectedDate}
+            selectedEmployee={state.selectedEmployee}
             onDateSelect={handleDateSelect}
             onBack={() => updateState({ currentStep: 1 })}
           />
