@@ -71,7 +71,7 @@ export const DateSelectionStep = ({
           mode="single"
           selected={selectedDate}
           onSelect={onDateSelect}
-          onNavigationChange={(month) => handleMonthChange(month)}
+          onMonthChange={handleMonthChange}
           disabled={(date) => {
             const today = startOfDay(new Date());
             const selectedDate = startOfDay(date);

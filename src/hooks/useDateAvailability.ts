@@ -23,7 +23,7 @@ export const useDateAvailability = ({ selectedService, selectedEmployee }: UseDa
 
     try {
       // Get employees who can perform this service/combo
-      let availableEmployees: Employee[] = [];
+      let availableEmployees: { id: string; full_name: string }[] = [];
       
       if (selectedService.type === 'combo') {
         // For combos, get employees who can perform all services in the combo
