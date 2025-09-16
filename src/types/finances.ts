@@ -14,6 +14,7 @@ export interface ReservationLite {
   client_full_name: string | null;
   service_name: string;
   service_price_cents: number;
+  final_price_cents: number | null;
   category_name: string | null;
   booking_type?: 'service' | 'combo';
   combo_id?: string | null;

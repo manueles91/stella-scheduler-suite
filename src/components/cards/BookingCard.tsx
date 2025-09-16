@@ -173,8 +173,11 @@ export const BookingCard = ({
     
     setIsUpdatingStatus(true);
     try {
+      // Determine which table to update based on booking type
+      const tableName = isCombo ? 'combo_reservations' : 'reservations';
+      
       const { error } = await supabase
-        .from('reservations')
+        .from(tableName)
         .update({ status: newStatus })
         .eq('id', id);
 
@@ -182,7 +185,7 @@ export const BookingCard = ({
 
       // Track loyalty visit if status is completed
       if (newStatus === 'completed' && clientId) {
-        await trackLoyaltyVisit(clientId, undefined, `Reserva completada: ${serviceName}`);
+        await trackLoyaltyVisit(clientId, undefined, `${isCombo ? 'Combo' : 'Reserva'} completada: ${serviceName}`);
       }
 
       setCurrentStatus(newStatus);
@@ -302,11 +305,13 @@ export const BookingCard = ({
   };
 
   const renderPriceInfo = () => {
-    if (!priceCents) return null;
+    // Use final price if available (for completed bookings), otherwise use base price
+    const displayPrice = finalPriceCents || priceCents;
+    if (!displayPrice) return null;
     
     return (
       <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
-        <span>{formatCRC(priceCents)}</span>
+        <span>{formatCRC(displayPrice)}</span>
       </div>
     );
   };
@@ -416,9 +421,9 @@ export const BookingCard = ({
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {renderTimeInfo()}
         {renderDateInfo()}
-        {variant === 'revenue' && priceCents ? (
+        {variant === 'revenue' && (finalPriceCents || priceCents) ? (
           <div className="ml-auto flex items-center gap-1 text-green-700 font-semibold">
-            <span>{formatCRC(priceCents)}</span>
+            <span>{formatCRC(finalPriceCents || priceCents)}</span>
           </div>
         ) : null}
       </div>

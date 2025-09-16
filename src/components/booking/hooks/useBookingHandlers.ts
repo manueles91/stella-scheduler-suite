@@ -205,6 +205,10 @@ export const useBookingHandlers = ({
       }
 
       resetForm();
+      // Redirect signed-in users to dashboard after successful booking
+      if (!config.isGuest) {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Booking error:', error);
       toast({
