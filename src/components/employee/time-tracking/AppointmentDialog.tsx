@@ -337,14 +337,15 @@ export const AppointmentDialog = ({
             <div>
               <Label>Estilista</Label>
               <Select 
-                value={editMode ? (editingAppointment?.employee_id || 'unassigned') : (appointmentForm.employee_id || 'unassigned')} 
+                value={appointmentForm.employee_id || 'unassigned'} 
                 onValueChange={value => {
                   const employeeId = value === 'unassigned' ? undefined : value;
-                  // Always keep both states in sync so updates persist
+                  // Update form state first for immediate UI feedback
+                  handleFormChange('employee_id', (employeeId || '') as any);
+                  // Then update editing appointment state if in edit mode
                   if (editMode) {
                     handleEditingAppointmentChange('employee_id', employeeId);
                   }
-                  handleFormChange('employee_id', (employeeId || '') as any);
                 }}
               >
                 <SelectTrigger>
