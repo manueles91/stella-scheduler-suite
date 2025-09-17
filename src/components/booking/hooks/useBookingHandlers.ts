@@ -4,7 +4,7 @@ import { format, addMinutes, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BookingState, BookingConfig } from "@/types/booking";
-
+import { checkEmployeeAvailability } from "@/lib/utils/availability";
 interface UseBookingHandlersProps {
   user: any;
   config: BookingConfig;
@@ -59,6 +59,21 @@ export const useBookingHandlers = ({
     );
 
     try {
+      const availability = await checkEmployeeAvailability(
+        format(bookingDate, 'yyyy-MM-dd'),
+        startTime,
+        endTime,
+        slot.employee_id
+      );
+      if (!availability.available) {
+        toast({
+          title: "No disponible",
+          description: availability.reason || "El empleado ya tiene una cita en ese horario.",
+          variant: "destructive",
+        });
+        updateState({ submitting: false });
+        return;
+      }
       if (service.type === 'combo') {
         // Handle combo booking - create single combo reservation
         const { data: comboReservation, error } = await supabase
@@ -147,6 +162,21 @@ export const useBookingHandlers = ({
     const clientId = selectedCustomer?.id || user.id;
 
     try {
+      const availability = await checkEmployeeAvailability(
+        format(state.selectedDate, 'yyyy-MM-dd'),
+        startTime,
+        endTime,
+        state.selectedSlot.employee_id
+      );
+      if (!availability.available) {
+        toast({
+          title: "No disponible",
+          description: availability.reason || "El empleado ya tiene una cita en ese horario.",
+          variant: "destructive",
+        });
+        updateState({ submitting: false });
+        return;
+      }
       if (state.selectedService.type === 'combo') {
         // Handle combo booking - create single combo reservation
         const { data: comboReservation, error } = await supabase

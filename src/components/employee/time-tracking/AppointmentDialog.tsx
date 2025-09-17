@@ -324,11 +324,11 @@ export const AppointmentDialog = ({
                 value={editMode ? (editingAppointment?.employee_id || 'unassigned') : (appointmentForm.employee_id || 'unassigned')} 
                 onValueChange={value => {
                   const employeeId = value === 'unassigned' ? undefined : value;
+                  // Always keep both states in sync so updates persist
                   if (editMode) {
                     handleEditingAppointmentChange('employee_id', employeeId);
-                  } else {
-                    handleFormChange('employee_id', employeeId || '');
                   }
+                  handleFormChange('employee_id', (employeeId || '') as any);
                 }}
               >
                 <SelectTrigger>
