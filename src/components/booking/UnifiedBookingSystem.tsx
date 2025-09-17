@@ -205,12 +205,18 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             const slotStartMinutes = hour * 60 + minute;
             const slotEndMinutes = slotStartMinutes + serviceDuration;
 
+            // Helper function to parse time strings more robustly
+            const parseTimeToMinutes = (timeStr: string) => {
+              const parts = timeStr.split(':');
+              return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            };
+
             // Check if this slot conflicts with existing reservations
             const hasReservationConflict = reservations?.some(reservation => {
               if (reservation.employee_id !== schedule.employee_id) return false;
               
-              const resStart = parseInt(reservation.start_time.split(':')[0]) * 60 + parseInt(reservation.start_time.split(':')[1]);
-              const resEnd = parseInt(reservation.end_time.split(':')[0]) * 60 + parseInt(reservation.end_time.split(':')[1]);
+              const resStart = parseTimeToMinutes(reservation.start_time);
+              const resEnd = parseTimeToMinutes(reservation.end_time);
               
               return (slotStartMinutes < resEnd && slotEndMinutes > resStart);
             }) || false;
@@ -219,8 +225,8 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             const hasComboConflict = comboReservations?.some(comboRes => {
               if (comboRes.primary_employee_id !== schedule.employee_id) return false;
               
-              const comboStart = parseInt(comboRes.start_time.split(':')[0]) * 60 + parseInt(comboRes.start_time.split(':')[1]);
-              const comboEnd = parseInt(comboRes.end_time.split(':')[0]) * 60 + parseInt(comboRes.end_time.split(':')[1]);
+              const comboStart = parseTimeToMinutes(comboRes.start_time);
+              const comboEnd = parseTimeToMinutes(comboRes.end_time);
               
               return (slotStartMinutes < comboEnd && slotEndMinutes > comboStart);
             }) || false;
@@ -229,8 +235,8 @@ export const UnifiedBookingSystem = ({ config, selectedCustomer }: UnifiedBookin
             const isBlocked = blockedTimes?.some(blocked => {
               if (blocked.employee_id !== schedule.employee_id) return false;
               
-              const blockStart = parseInt(blocked.start_time.split(':')[0]) * 60 + parseInt(blocked.start_time.split(':')[1]);
-              const blockEnd = parseInt(blocked.end_time.split(':')[0]) * 60 + parseInt(blocked.end_time.split(':')[1]);
+              const blockStart = parseTimeToMinutes(blocked.start_time);
+              const blockEnd = parseTimeToMinutes(blocked.end_time);
               
               return (slotStartMinutes < blockEnd && slotEndMinutes > blockStart);
             }) || false;

@@ -118,6 +118,25 @@ export const useOptimizedBookingData = () => {
         .eq('appointment_date', dateStr)
         .neq('status', 'cancelled');
 
+      // Get existing combo reservations for the date
+      const { data: comboReservations } = await supabase
+        .from('combo_reservations')
+        .select('start_time, end_time, primary_employee_id')
+        .eq('appointment_date', dateStr)
+        .neq('status', 'cancelled');
+
+      // Get blocked times for the date
+      const { data: blockedTimes } = await supabase
+        .from('blocked_times')
+        .select('start_time, end_time, employee_id')
+        .eq('date', dateStr);
+
+      // Helper function to parse time strings more robustly
+      const parseTimeToMinutes = (timeStr: string) => {
+        const parts = timeStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      };
+
       // Business hours: 9 AM to 6 PM
       const startHour = 9;
       const endHour = 18;
@@ -143,18 +162,40 @@ export const useOptimizedBookingData = () => {
             const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             const slotStart = parseISO(`${dateStr}T${slotTime}`);
             const slotEnd = addMinutes(slotStart, service.duration_minutes);
+            const slotStartMinutes = hour * 60 + minute;
+            const slotEndMinutes = slotStartMinutes + service.duration_minutes;
 
             // Check if slot conflicts with existing reservations
-            const hasConflict = reservations?.some(reservation => {
+            const hasReservationConflict = reservations?.some(reservation => {
               if (reservation.employee_id !== employee.id) return false;
               
-              const resStart = parseISO(`${dateStr}T${reservation.start_time}`);
-              const resEnd = parseISO(`${dateStr}T${reservation.end_time}`);
+              const resStart = parseTimeToMinutes(reservation.start_time);
+              const resEnd = parseTimeToMinutes(reservation.end_time);
               
-              return (slotStart < resEnd && slotEnd > resStart);
+              return (slotStartMinutes < resEnd && slotEndMinutes > resStart);
             });
 
-            if (!hasConflict && slotEnd <= parseISO(`${dateStr}T${endHour}:00`)) {
+            // Check if slot conflicts with existing combo reservations
+            const hasComboConflict = comboReservations?.some(comboRes => {
+              if (comboRes.primary_employee_id !== employee.id) return false;
+              
+              const comboStart = parseTimeToMinutes(comboRes.start_time);
+              const comboEnd = parseTimeToMinutes(comboRes.end_time);
+              
+              return (slotStartMinutes < comboEnd && slotEndMinutes > comboStart);
+            });
+
+            // Check if slot conflicts with blocked times
+            const isBlocked = blockedTimes?.some(blocked => {
+              if (blocked.employee_id !== employee.id) return false;
+              
+              const blockStart = parseTimeToMinutes(blocked.start_time);
+              const blockEnd = parseTimeToMinutes(blocked.end_time);
+              
+              return (slotStartMinutes < blockEnd && slotEndMinutes > blockStart);
+            });
+
+            if (!hasReservationConflict && !hasComboConflict && !isBlocked && slotEnd <= parseISO(`${dateStr}T${endHour}:00`)) {
               slots.push({
                 start_time: slotTime,
                 employee_id: employee.id,
