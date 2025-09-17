@@ -246,22 +246,43 @@ export const useTimeTracking = (employeeId?: string) => {
       const startTime = formatTimeForDatabase(appointmentForm.start_time);
       const endTime = formatTimeForDatabase(appointmentForm.end_time);
       
-      const { error } = await supabase
-        .from('reservations')
-        .update({
-          client_id: appointmentForm.client_id,
-          service_id: appointmentForm.service_id,
-          employee_id: appointmentForm.employee_id || null,
-          appointment_date: appointmentForm.date,
-          start_time: startTime,
-          end_time: endTime,
-          status: appointment.status, // Keep existing status
-          notes: appointmentForm.notes || null,
-          final_price_cents: appointmentForm.final_price_cents || null,
-        })
-        .eq('id', appointment.id);
-      
-      if (error) throw error;
+      // Check if this is a combo reservation or individual reservation
+      if (appointment.isCombo) {
+        // Update combo reservation
+        const { error } = await supabase
+          .from('combo_reservations')
+          .update({
+            client_id: appointmentForm.client_id,
+            primary_employee_id: appointmentForm.employee_id || null,
+            appointment_date: appointmentForm.date,
+            start_time: startTime,
+            end_time: endTime,
+            status: appointment.status, // Keep existing status
+            notes: appointmentForm.notes || null,
+            final_price_cents: appointmentForm.final_price_cents || null,
+          })
+          .eq('id', appointment.id);
+        
+        if (error) throw error;
+      } else {
+        // Update individual service reservation
+        const { error } = await supabase
+          .from('reservations')
+          .update({
+            client_id: appointmentForm.client_id,
+            service_id: appointmentForm.service_id,
+            employee_id: appointmentForm.employee_id || null,
+            appointment_date: appointmentForm.date,
+            start_time: startTime,
+            end_time: endTime,
+            status: appointment.status, // Keep existing status
+            notes: appointmentForm.notes || null,
+            final_price_cents: appointmentForm.final_price_cents || null,
+          })
+          .eq('id', appointment.id);
+        
+        if (error) throw error;
+      }
       
       toast({
         title: "Éxito",
