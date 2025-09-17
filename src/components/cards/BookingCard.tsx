@@ -176,9 +176,32 @@ export const BookingCard = ({
       // Determine which table to update based on booking type
       const tableName = isCombo ? 'combo_reservations' : 'reservations';
       
+      let updateData: any = { status: newStatus };
+      
+      // For variable price services being marked as completed, ensure final_price_cents is set
+      if (newStatus === 'completed' && !finalPriceCents && priceCents) {
+        // Check if this is a variable price service by querying the service
+        if (serviceId || (!isCombo && serviceName)) {
+          try {
+            const { data: serviceData } = await supabase
+              .from('services')
+              .select('variable_price')
+              .eq('id', serviceId)
+              .single();
+              
+            if (serviceData?.variable_price) {
+              // For variable price services, set final_price_cents to the service price if not already set
+              updateData.final_price_cents = priceCents;
+            }
+          } catch (serviceError) {
+            console.warn('Could not check service variable_price:', serviceError);
+          }
+        }
+      }
+      
       const { error } = await supabase
         .from(tableName)
-        .update({ status: newStatus })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
