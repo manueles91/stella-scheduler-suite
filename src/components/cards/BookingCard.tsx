@@ -179,19 +179,22 @@ export const BookingCard = ({
       let updateData: any = { status: newStatus };
       
       // For variable price services being marked as completed, ensure final_price_cents is set
-      if (newStatus === 'completed' && !finalPriceCents && priceCents) {
+      if (newStatus === 'completed' && !finalPriceCents) {
         // Check if this is a variable price service by querying the service
         if (serviceId || (!isCombo && serviceName)) {
           try {
             const { data: serviceData } = await supabase
               .from('services')
-              .select('variable_price')
+              .select('variable_price, price_cents')
               .eq('id', serviceId)
               .single();
               
             if (serviceData?.variable_price) {
-              // For variable price services, set final_price_cents to the service price if not already set
-              updateData.final_price_cents = priceCents;
+              // For variable price services, use the service's referential price as final if not already provided
+              const resolvedFinal = priceCents ?? serviceData?.price_cents;
+              if (resolvedFinal != null) {
+                updateData.final_price_cents = resolvedFinal;
+              }
             }
           } catch (serviceError) {
             console.warn('Could not check service variable_price:', serviceError);
