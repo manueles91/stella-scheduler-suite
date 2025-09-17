@@ -72,9 +72,11 @@ export const AppointmentDialog = ({
   };
 
   const handleServiceChange = (serviceId: string) => {
-    handleFormChange('service_id', serviceId);
+    // Find the selected service using the new serviceId directly
+    const selectedService = appointmentForm.isCombo 
+      ? combos.find(c => c.id === serviceId)
+      : services.find(s => s.id === serviceId);
     
-    const selectedService = getSelectedService();
     if (selectedService) {
       let duration = 0;
       let price = 0;
@@ -90,16 +92,21 @@ export const AppointmentDialog = ({
         price = selectedService.price_cents || 0;
       }
 
-      // Auto-calculate end time if start time is set
+      // Calculate end time if start time is set
+      let endTime = appointmentForm.end_time;
       if (appointmentForm.start_time) {
-        const endTime = calculateEndTime(appointmentForm.start_time, duration);
-        handleFormChange('end_time', endTime);
+        endTime = calculateEndTime(appointmentForm.start_time, duration);
       }
 
-      // Set default price if not already set
-      if (!appointmentForm.final_price_cents) {
-        handleFormChange('final_price_cents', price);
-      }
+      // Update all form fields at once to prevent state sync issues
+      const updatedForm = {
+        ...appointmentForm,
+        service_id: serviceId,
+        end_time: endTime,
+        final_price_cents: appointmentForm.final_price_cents || price
+      };
+      
+      onAppointmentFormChange(updatedForm);
 
       // Update editing appointment if in edit mode
       if (editMode && editingAppointment) {
@@ -115,9 +122,12 @@ export const AppointmentDialog = ({
   };
 
   const handleStartTimeChange = (startTime: string) => {
-    handleFormChange('start_time', startTime);
+    // Find the selected service using current form state
+    const selectedService = appointmentForm.isCombo 
+      ? combos.find(c => c.id === appointmentForm.service_id)
+      : services.find(s => s.id === appointmentForm.service_id);
     
-    const selectedService = getSelectedService();
+    let endTime = appointmentForm.end_time;
     if (selectedService && startTime) {
       let duration = 0;
       
@@ -130,9 +140,15 @@ export const AppointmentDialog = ({
         duration = selectedService.duration_minutes || 0;
       }
 
-      const endTime = calculateEndTime(startTime, duration);
-      handleFormChange('end_time', endTime);
+      endTime = calculateEndTime(startTime, duration);
     }
+    
+    // Update both start and end time together
+    onAppointmentFormChange({
+      ...appointmentForm,
+      start_time: startTime,
+      end_time: endTime
+    });
   };
 
   const renderServiceTypeSelector = () => (
