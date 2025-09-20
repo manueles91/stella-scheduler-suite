@@ -19,6 +19,7 @@ import { useInvitedUsers } from "./hooks/useInvitedUsers";
 import { InvitedUserData } from "@/lib/validation/userSchemas";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { uploadToExactPath } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 interface User {
   id: string;
   full_name: string;
@@ -48,6 +49,7 @@ interface EmployeeService {
   };
 }
 export const AdminUsers = () => {
+  const { profile } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -202,6 +204,10 @@ const fetchUsers = async () => {
       if (!phoneRegex.test(formData.phone.replace(/\s+/g, ""))) {
         errors.phone = "Formato de teléfono inválido (ej: 88887777 o +506 88887777)";
       }
+    }
+    // Only admins can set admin role
+    if (formData.role === 'admin' && profile?.role !== 'admin') {
+      errors.role = "Solo los administradores pueden asignar el rol de administrador";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -559,11 +565,13 @@ const getStatusText = (status: string) => {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client">Cliente</SelectItem>
-                      <SelectItem value="employee">Empleado</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
+                     <SelectContent>
+                       <SelectItem value="client">Cliente</SelectItem>
+                       <SelectItem value="employee">Empleado</SelectItem>
+                       {profile?.role === 'admin' && (
+                         <SelectItem value="admin">Administrador</SelectItem>
+                       )}
+                     </SelectContent>
                   </Select>
                 </div>
                 
@@ -693,11 +701,13 @@ const getStatusText = (status: string) => {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client">Cliente</SelectItem>
-                      <SelectItem value="employee">Empleado</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
+                     <SelectContent>
+                       <SelectItem value="client">Cliente</SelectItem>
+                       <SelectItem value="employee">Empleado</SelectItem>
+                       {profile?.role === 'admin' && (
+                         <SelectItem value="admin">Administrador</SelectItem>
+                       )}
+                     </SelectContent>
                   </Select>
                 </div>
                 

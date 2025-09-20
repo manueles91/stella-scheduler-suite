@@ -203,7 +203,7 @@ export const DashboardSummary = ({
 
   const canEditAppointment = (appt: Appointment) => {
     if (effectiveProfile?.role === 'admin') return true;
-    if (effectiveProfile?.role === 'employee' && appt.employee_id === effectiveProfile.id) return true;
+    if (effectiveProfile?.role === 'employee') return true; // Allow all employees to edit appointments
     // Remove edit permission for clients - they can only update status via dropdown
     return false;
   };
@@ -241,7 +241,7 @@ export const DashboardSummary = ({
 
   return (
     <div className="space-y-6">
-      {/* Admin Quick Access - Only for admins */}
+      {/* Quick Access - Available for admins and employees */}
       <AdminQuickAccess effectiveProfile={effectiveProfile} />
       
       {/* Próximas Citas */}

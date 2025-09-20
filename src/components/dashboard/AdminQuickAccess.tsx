@@ -13,10 +13,12 @@ interface AdminQuickAccessProps {
 
 export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) => {
 
-  // Only show for admins
-  if (effectiveProfile?.role !== 'admin') {
+  // Show for admins and employees, but with different options
+  if (effectiveProfile?.role !== 'admin' && effectiveProfile?.role !== 'employee') {
     return null;
   }
+
+  const isAdmin = effectiveProfile?.role === 'admin';
 
   return (
     <Card>
@@ -29,8 +31,8 @@ export const AdminQuickAccess = ({ effectiveProfile }: AdminQuickAccessProps) =>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <NewAppointmentDialog effectiveProfile={effectiveProfile} />
-          <NewSaleDialog effectiveProfile={effectiveProfile} />
-          <NewCostDialog effectiveProfile={effectiveProfile} />
+          {isAdmin && <NewSaleDialog effectiveProfile={effectiveProfile} />}
+          {isAdmin && <NewCostDialog effectiveProfile={effectiveProfile} />}
           <NewUserDialog effectiveProfile={effectiveProfile} />
         </div>
       </CardContent>
