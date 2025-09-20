@@ -370,7 +370,7 @@ const { toast } = useToast();
                     <p className="text-sm">
                       <strong>Precio:</strong>{' '}
                       {reservation.services.variable_price ? (
-                        reservation.final_price_cents != null
+                        reservation.final_price_cents !== 0
                           ? `${formatPrice(reservation.final_price_cents)} (final)`
                           : 'Precio variable'
                       ) : (
@@ -410,7 +410,7 @@ const { toast } = useToast();
                             type="number"
                             step="0.01"
                             min="0"
-                            value={finalPrices[reservation.id] ?? (reservation.final_price_cents != null ? (reservation.final_price_cents / 100).toFixed(2) : '')}
+                            value={finalPrices[reservation.id] ?? (reservation.final_price_cents !== 0 ? (reservation.final_price_cents / 100).toFixed(2) : '')}
                             onChange={(e) => setFinalPrices(prev => ({ ...prev, [reservation.id]: e.target.value }))}
                           />
                           <Button size="sm" onClick={() => completeReservationWithPrice(reservation)}>

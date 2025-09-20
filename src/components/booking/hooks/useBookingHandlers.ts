@@ -191,7 +191,7 @@ export const useBookingHandlers = ({
             notes: state.notes || null,
             customer_email: selectedCustomer?.email || user.email,
             customer_name: selectedCustomer?.full_name || user.full_name,
-            final_price_cents: state.selectedService.variable_price ? null : state.selectedService.final_price_cents,
+            final_price_cents: state.selectedService.variable_price ? 0 : state.selectedService.final_price_cents,
             original_price_cents: state.selectedService.original_price_cents,
             savings_cents: state.selectedService.variable_price ? 0 : (state.selectedService.savings_cents || 0),
             is_guest_booking: false,
@@ -220,7 +220,7 @@ export const useBookingHandlers = ({
             notes: state.notes || null,
             customer_email: selectedCustomer?.email || user.email,
             customer_name: selectedCustomer?.full_name || user.full_name,
-            final_price_cents: state.selectedService.variable_price ? null : state.selectedService.final_price_cents,
+            final_price_cents: state.selectedService.variable_price ? 0 : state.selectedService.final_price_cents,
             created_by_admin: isAdminBooking ? user.id : null
           })
           .select()
@@ -323,7 +323,7 @@ export const useBookingHandlers = ({
             customer_name: state.customerName,
             is_guest_booking: true,
             status: 'confirmed',
-            final_price_cents: state.selectedService.variable_price ? null : state.selectedService.final_price_cents,
+            final_price_cents: state.selectedService.variable_price ? 0 : state.selectedService.final_price_cents,
             original_price_cents: state.selectedService.original_price_cents,
             savings_cents: state.selectedService.variable_price ? 0 : (state.selectedService.savings_cents || 0)
           })

@@ -103,7 +103,9 @@ export const AppointmentDialog = ({
         ...appointmentForm,
         service_id: serviceId,
         end_time: endTime,
-        final_price_cents: appointmentForm.final_price_cents || price
+        // Only set default price if final_price_cents is truly unset (undefined), not if it's 0
+        // In edit mode, preserve the existing final_price_cents value
+        final_price_cents: editMode ? appointmentForm.final_price_cents : (appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : price)
       };
       
       onAppointmentFormChange(updatedForm);
@@ -216,9 +218,9 @@ export const AppointmentDialog = ({
         <Input
           type="number"
           step="1"
-          value={appointmentForm.final_price_cents !== null && appointmentForm.final_price_cents !== undefined ? Math.round(appointmentForm.final_price_cents / 100) : ''}
+          value={appointmentForm.final_price_cents !== undefined ? Math.round(appointmentForm.final_price_cents / 100) : ''}
           onChange={(e) => {
-            const value = e.target.value === '' ? null : (parseInt(e.target.value) || 0) * 100;
+            const value = e.target.value === '' ? 0 : (parseInt(e.target.value) || 0) * 100;
             handleFormChange('final_price_cents', value);
           }}
           placeholder={isVariablePrice ? "Precio variable - establecer después" : (defaultPrice ? Math.round(defaultPrice / 100).toString() : "0")}

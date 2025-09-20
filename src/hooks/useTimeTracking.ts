@@ -138,7 +138,8 @@ export const useTimeTracking = (employeeId?: string) => {
             name: appointment.service_name || 'Servicio',
             description: '',
             duration_minutes: appointment.service_duration || 0,
-            price_cents: appointment.service_price_cents || 0
+            price_cents: appointment.service_price_cents || 0,
+            variable_price: appointment.service_variable_price || false
           }],
           client_profile: {
             full_name: appointment.client_full_name || 'Cliente'
@@ -217,7 +218,7 @@ export const useTimeTracking = (employeeId?: string) => {
           end_time: endTime,
           notes: appointmentForm.notes || null,
           status: 'confirmed',
-          final_price_cents: appointmentForm.final_price_cents || null
+          final_price_cents: appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0
         });
         
       if (error) throw error;
@@ -240,15 +241,24 @@ export const useTimeTracking = (employeeId?: string) => {
 
   // Update appointment
   const updateAppointment = async (appointment: Appointment, appointmentForm: AppointmentFormData) => {
+    console.log('🔍 updateAppointment called with final_price_cents:', appointmentForm.final_price_cents);
     if (!appointmentForm.client_id || !appointmentForm.service_id) return;
     
     try {
       const startTime = formatTimeForDatabase(appointmentForm.start_time);
       const endTime = formatTimeForDatabase(appointmentForm.end_time);
       
+      // Get client information for customer_email and customer_name
+      const selectedClient = clients.find(c => c.id === appointmentForm.client_id);
+      const customerEmail = selectedClient?.email || null;
+      const customerName = selectedClient?.full_name || null;
+      
       // Check if this is a combo reservation or individual reservation
       if (appointment.isCombo) {
         // Update combo reservation
+        const finalPriceCents = appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0;
+        console.log('🔍 updateAppointment - Updating combo reservation with final_price_cents:', finalPriceCents);
+        
         const { error } = await supabase
           .from('combo_reservations')
           .update({
@@ -259,13 +269,18 @@ export const useTimeTracking = (employeeId?: string) => {
             end_time: endTime,
             status: appointment.status, // Keep existing status
             notes: appointmentForm.notes || null,
-            final_price_cents: appointmentForm.final_price_cents || null,
+            final_price_cents: finalPriceCents,
+            customer_email: customerEmail,
+            customer_name: customerName,
           })
           .eq('id', appointment.id);
         
         if (error) throw error;
       } else {
         // Update individual service reservation
+        const finalPriceCents = appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0;
+        console.log('🔍 updateAppointment - Updating individual reservation with final_price_cents:', finalPriceCents);
+        
         const { error } = await supabase
           .from('reservations')
           .update({
@@ -277,7 +292,9 @@ export const useTimeTracking = (employeeId?: string) => {
             end_time: endTime,
             status: appointment.status, // Keep existing status
             notes: appointmentForm.notes || null,
-            final_price_cents: appointmentForm.final_price_cents || null,
+            final_price_cents: finalPriceCents,
+            customer_email: customerEmail,
+            customer_name: customerName,
           })
           .eq('id', appointment.id);
         

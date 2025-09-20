@@ -384,6 +384,8 @@ export const AdminIngresos = () => {
                   startTime={reservation.start_time}
                   status={reservation.status}
                   priceCents={reservation.service_price_cents}
+                  finalPriceCents={reservation.final_price_cents}
+                  variablePrice={reservation.service_variable_price || false}
                   clientName={reservation.client_full_name || reservation.customer_email || "Cliente invitado"}
                   clientEmail={reservation.customer_email}
                   employeeName={reservation.employee_full_name || undefined}

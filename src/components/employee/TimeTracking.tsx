@@ -160,6 +160,7 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       employee_id: appointment.employee_id || ''
     };
     
+    
     setAppointmentForm(formData);
     setDialogOpen(true);
   };

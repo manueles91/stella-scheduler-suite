@@ -170,6 +170,10 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
     }
     
     try {
+      // Get client information for customer_email and customer_name
+      const customerEmail = selectedClient?.email || null;
+      const customerName = selectedClient?.full_name || null;
+      
       // Determine if this is a combo or individual service
       const isCombo = formData.isCombo || appointment.isCombo;
       
@@ -185,7 +189,9 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
             notes: formData.notes || null,
             client_id: actualClientId,
             primary_employee_id: formData.employee_id || null,
-            final_price_cents: formData.final_price_cents || null,
+            final_price_cents: formData.final_price_cents || 0,
+            customer_email: customerEmail,
+            customer_name: customerName,
           })
           .eq('id', appointment.id);
 
@@ -202,7 +208,9 @@ export const EditableAppointment = ({ appointment, onUpdate, canEdit }: Editable
             notes: formData.notes || null,
             client_id: actualClientId,
             employee_id: formData.employee_id || null,
-            final_price_cents: formData.final_price_cents || null,
+            final_price_cents: formData.final_price_cents || 0,
+            customer_email: customerEmail,
+            customer_name: customerName,
           })
           .eq('id', appointment.id);
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Clock, User, Sparkles, Calendar, DollarSign, Package, ListTree, Trash2 } from "lucide-react";
+import { Clock, User, Sparkles, Calendar, Package, ListTree, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BaseBookingCard } from "./BaseBookingCard";
 import { EditableAppointment } from "@/components/dashboard/EditableAppointment";
@@ -34,6 +34,7 @@ export interface BookingCardProps {
   status: string;
   priceCents?: number;
   finalPriceCents?: number; // Add final_price_cents field
+  variablePrice?: boolean; // Add variable pricing flag
   categoryName?: string;
   clientName?: string;
   clientEmail?: string;
@@ -73,6 +74,7 @@ export const BookingCard = ({
   status,
   priceCents,
   finalPriceCents,
+  variablePrice = false,
   categoryName,
   clientName,
   clientEmail,
@@ -332,12 +334,43 @@ export const BookingCard = ({
 
   const renderPriceInfo = () => {
     // Use final price if available (for completed bookings), otherwise use base price
-    const displayPrice = finalPriceCents || priceCents;
-    if (!displayPrice) return null;
+    const displayPrice = finalPriceCents !== undefined ? finalPriceCents : priceCents;
+    if (displayPrice === undefined) return null;
     
     return (
       <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
         <span>{formatCRC(displayPrice)}</span>
+      </div>
+    );
+  };
+
+  const renderFinalPriceInfo = () => {
+    // For variable price services, use final_price_cents if available, otherwise use default price
+    // For completed bookings with variable pricing, use the default price as final if no final price is set
+    const displayPrice = finalPriceCents !== undefined ? finalPriceCents : priceCents;
+    if (displayPrice === undefined) return null;
+    
+    // Determine if this is a variable price service that was completed with default pricing
+    const isVariablePriceCompleted = variablePrice && currentStatus === 'completed' && finalPriceCents === undefined;
+    const isVariablePriceWithCustomPrice = variablePrice && finalPriceCents !== undefined && finalPriceCents !== priceCents;
+    
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-semibold text-green-600">{formatCRC(displayPrice)}</span>
+        
+        {/* Show original price if there's a difference */}
+        {finalPriceCents !== undefined && priceCents && finalPriceCents !== priceCents && (
+          <span className="text-xs text-muted-foreground">
+            (Precio original: {formatCRC(priceCents)})
+          </span>
+        )}
+        
+        {/* Show variable pricing indicator */}
+        {variablePrice && (
+          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+            {isVariablePriceCompleted ? 'Precio variable (usado precio base)' : 'Precio variable'}
+          </span>
+        )}
       </div>
     );
   };
@@ -447,9 +480,9 @@ export const BookingCard = ({
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {renderTimeInfo()}
         {renderDateInfo()}
-        {variant === 'revenue' && (finalPriceCents || priceCents) ? (
+        {variant === 'revenue' && (finalPriceCents !== undefined || priceCents) ? (
           <div className="ml-auto flex items-center gap-1 text-green-700 font-semibold">
-            <span>{formatCRC(finalPriceCents || priceCents)}</span>
+            <span>{formatCRC(finalPriceCents !== undefined ? finalPriceCents : priceCents)}</span>
           </div>
         ) : null}
       </div>
@@ -513,11 +546,11 @@ export const BookingCard = ({
         )}
       </div>
 
-      {/* Price information for revenue variant */}
-      {variant === 'revenue' && (
+      {/* Final Price Information */}
+      {renderFinalPriceInfo() && (
         <div className="space-y-2">
-          <h5 className="font-medium text-sm text-muted-foreground">Precio</h5>
-          {renderPriceInfo()}
+          <h5 className="font-medium text-sm text-muted-foreground">Precio cobrado</h5>
+          {renderFinalPriceInfo()}
         </div>
       )}
 
