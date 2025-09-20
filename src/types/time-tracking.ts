@@ -47,6 +47,7 @@ export interface AppointmentFormData {
   final_price_cents?: number;
   isCombo?: boolean;
   employee_id?: string;
+  status?: string;
 }
 
 export interface BlockedTimeFormData {

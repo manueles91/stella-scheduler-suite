@@ -6,6 +6,7 @@ import { AppointmentFormData, BlockedTime, BlockedTimeFormData, Customer, Employ
 import { Appointment } from "@/types/appointment";
 import { convertTo24Hour, formatTimeForDatabase, calculateEndTime } from "@/lib/utils/timeTrackingUtils";
 import { format, startOfDay, endOfDay, parseISO } from "date-fns";
+import { useAppointmentManagement } from "./useAppointmentManagement";
 
 export const useTimeTracking = (employeeId?: string) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -17,6 +18,7 @@ export const useTimeTracking = (employeeId?: string) => {
 
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { updateAppointment: updateAppointmentShared } = useAppointmentManagement();
   const effectiveEmployeeId = employeeId || profile?.id;
 
   // Fetch services
@@ -241,81 +243,10 @@ export const useTimeTracking = (employeeId?: string) => {
 
   // Update appointment
   const updateAppointment = async (appointment: Appointment, appointmentForm: AppointmentFormData) => {
-    console.log('🔍 updateAppointment called with final_price_cents:', appointmentForm.final_price_cents);
     if (!appointmentForm.client_id || !appointmentForm.service_id) return;
     
-    try {
-      const startTime = formatTimeForDatabase(appointmentForm.start_time);
-      const endTime = formatTimeForDatabase(appointmentForm.end_time);
-      
-      // Get client information for customer_email and customer_name
-      const selectedClient = clients.find(c => c.id === appointmentForm.client_id);
-      const customerEmail = selectedClient?.email || null;
-      const customerName = selectedClient?.full_name || null;
-      
-      // Check if this is a combo reservation or individual reservation
-      if (appointment.isCombo) {
-        // Update combo reservation
-        const finalPriceCents = appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0;
-        console.log('🔍 updateAppointment - Updating combo reservation with final_price_cents:', finalPriceCents);
-        
-        const { error } = await supabase
-          .from('combo_reservations')
-          .update({
-            client_id: appointmentForm.client_id,
-            primary_employee_id: appointmentForm.employee_id || null,
-            appointment_date: appointmentForm.date,
-            start_time: startTime,
-            end_time: endTime,
-            status: appointment.status, // Keep existing status
-            notes: appointmentForm.notes || null,
-            final_price_cents: finalPriceCents,
-            customer_email: customerEmail,
-            customer_name: customerName,
-          })
-          .eq('id', appointment.id);
-        
-        if (error) throw error;
-      } else {
-        // Update individual service reservation
-        const finalPriceCents = appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0;
-        console.log('🔍 updateAppointment - Updating individual reservation with final_price_cents:', finalPriceCents);
-        
-        const { error } = await supabase
-          .from('reservations')
-          .update({
-            client_id: appointmentForm.client_id,
-            service_id: appointmentForm.service_id,
-            employee_id: appointmentForm.employee_id || null,
-            appointment_date: appointmentForm.date,
-            start_time: startTime,
-            end_time: endTime,
-            status: appointment.status, // Keep existing status
-            notes: appointmentForm.notes || null,
-            final_price_cents: finalPriceCents,
-            customer_email: customerEmail,
-            customer_name: customerName,
-          })
-          .eq('id', appointment.id);
-        
-        if (error) throw error;
-      }
-      
-      toast({
-        title: "Éxito",
-        description: "Cita actualizada correctamente"
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error updating appointment:', error);
-      toast({
-        title: "Error",
-        description: "Error al actualizar la cita",
-        variant: "destructive"
-      });
-      return false;
-    }
+    // Use the shared appointment management logic
+    return await updateAppointmentShared(appointment, appointmentForm, clients);
   };
 
   // Create blocked time

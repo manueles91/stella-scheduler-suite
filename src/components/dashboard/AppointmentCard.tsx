@@ -6,6 +6,8 @@ import { Appointment } from "@/types/appointment";
 import { EditableAppointment } from "./EditableAppointment";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { trackLoyaltyVisit } from "@/lib/loyaltyTracking";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -19,9 +21,10 @@ export const AppointmentCard = ({
   appointment, 
   onUpdate, 
   canEdit, 
-  effectiveProfile,
-  variant = 'default'
+  effectiveProfile, 
+  variant = 'default' 
 }: AppointmentCardProps) => {
+  const { profile } = useAuth();
   const [status, setStatus] = useState(appointment.status);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { toast } = useToast();
@@ -82,6 +85,16 @@ export const AppointmentCard = ({
         .eq('id', appointment.id);
 
       if (error) throw error;
+
+      // Track loyalty visit if status is completed
+      if (newStatus === 'completed' && appointment.client_id) {
+        const serviceName = appointment.services?.[0]?.name || 'Servicio';
+        await trackLoyaltyVisit(
+          appointment.client_id, 
+          profile?.id, 
+          `Reserva completada: ${serviceName}`
+        );
+      }
 
       setStatus(newStatus);
       toast({

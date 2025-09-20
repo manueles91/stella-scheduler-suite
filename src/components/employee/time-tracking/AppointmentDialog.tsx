@@ -375,8 +375,12 @@ export const AppointmentDialog = ({
             <div>
               <Label>Estado</Label>
               <Select 
-                value={editingAppointment?.status || 'pending'} 
-                onValueChange={value => handleEditingAppointmentChange('status', value)}
+                value={appointmentForm.status || editingAppointment?.status || 'pending'} 
+                onValueChange={value => {
+                  handleEditingAppointmentChange('status', value);
+                  // Also update the form state to keep everything in sync
+                  handleFormChange('status', value);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -12,6 +12,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatCRC } from "@/lib/currency";
 import { trackLoyaltyVisit } from "@/lib/loyaltyTracking";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -95,6 +96,7 @@ export const BookingCard = ({
   showExpandable = true,
   className = ""
 }: BookingCardProps) => {
+  const { profile } = useAuth();
   const [isExpanded, setIsExpanded] = useState(isCombo || false); // Auto-expand combo bookings
   const [currentStatus, setCurrentStatus] = useState(status);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -213,7 +215,11 @@ export const BookingCard = ({
 
       // Track loyalty visit if status is completed
       if (newStatus === 'completed' && clientId) {
-        await trackLoyaltyVisit(clientId, undefined, `${isCombo ? 'Combo' : 'Reserva'} completada: ${serviceName}`);
+        console.log('🎯 BookingCard: Tracking loyalty visit for clientId:', clientId, 'serviceName:', serviceName);
+        const success = await trackLoyaltyVisit(clientId, profile?.id, `${isCombo ? 'Combo' : 'Reserva'} completada: ${serviceName}`);
+        console.log('🎯 BookingCard: Loyalty tracking result:', success);
+      } else if (newStatus === 'completed' && !clientId) {
+        console.warn('🎯 BookingCard: Cannot track loyalty visit - no clientId provided');
       }
 
       setCurrentStatus(newStatus);

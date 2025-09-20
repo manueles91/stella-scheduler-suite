@@ -43,7 +43,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     end_time: '10:00 AM',
     notes: '',
     final_price_cents: 0,
-    isCombo: false
+    isCombo: false,
+    status: 'confirmed'
   });
   
   const [blockedTimeForm, setBlockedTimeForm] = useState<BlockedTimeFormData>({
@@ -128,7 +129,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
         notes: '',
         final_price_cents: 0,
         isCombo: false,
-        employee_id: ''
+        employee_id: '',
+        status: 'confirmed'
       });
     } else {
       setBlockedTimeForm({
@@ -157,7 +159,8 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
       notes: appointment.notes || '',
       final_price_cents: appointment.final_price_cents || 0,
       isCombo: appointment.isCombo || false,
-      employee_id: appointment.employee_id || ''
+      employee_id: appointment.employee_id || '',
+      status: appointment.status || 'confirmed'
     };
     
     
@@ -217,6 +220,38 @@ export const TimeTracking = ({ employeeId }: TimeTrackingProps = {}) => {
     setEditMode(false);
     setEditingAppointment(null);
     setEditingBlockedTime(null);
+    
+    // Reset form data to original state when canceling
+    if (editMode && editingAppointment) {
+      // Restore original appointment data
+      const originalFormData = {
+        client_id: editingAppointment.client_id || '',
+        service_id: editingAppointment.services?.[0]?.id || '',
+        date: editingAppointment.appointment_date,
+        start_time: formatTimeForSelect(editingAppointment.start_time),
+        end_time: formatTimeForSelect(editingAppointment.end_time || ''),
+        notes: editingAppointment.notes || '',
+        final_price_cents: editingAppointment.final_price_cents || 0,
+        isCombo: editingAppointment.isCombo || false,
+        employee_id: editingAppointment.employee_id || '',
+        status: editingAppointment.status || 'confirmed'
+      };
+      setAppointmentForm(originalFormData);
+    } else {
+      // Reset to default form data for new appointments
+      setAppointmentForm({
+        client_id: '',
+        service_id: '',
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        start_time: '9:00 AM',
+        end_time: '10:00 AM',
+        notes: '',
+        final_price_cents: 0,
+        isCombo: false,
+        employee_id: '',
+        status: 'confirmed'
+      });
+    }
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {

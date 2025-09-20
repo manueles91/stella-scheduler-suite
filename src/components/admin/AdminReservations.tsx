@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { trackLoyaltyVisit, trackGuestLoyaltyVisit } from "@/lib/loyaltyTracking";
+import { useAuth } from "@/contexts/AuthContext";
 interface Reservation {
   id: string;
   appointment_date: string;
@@ -41,6 +42,7 @@ interface Reservation {
   };
 }
 export const AdminReservations = () => {
+  const { profile } = useAuth();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -188,7 +190,7 @@ const { toast } = useToast();
     } else {
       // Track loyalty visit if status is completed
       if (status === 'completed' && res.client_id) {
-        await trackLoyaltyVisit(res.client_id, undefined, `Reserva completada: ${res.services.name}`);
+        await trackLoyaltyVisit(res.client_id, profile?.id, `Reserva completada: ${res.services.name}`);
       }
       
       toast({
@@ -214,7 +216,7 @@ const { toast } = useToast();
     } else {
       // Track loyalty visit for completed reservation
       if (res.client_id) {
-        await trackLoyaltyVisit(res.client_id, undefined, `Reserva completada: ${res.services.name}`);
+        await trackLoyaltyVisit(res.client_id, profile?.id, `Reserva completada: ${res.services.name}`);
       }
       
       toast({ title: "Éxito", description: 'Reserva completada' });

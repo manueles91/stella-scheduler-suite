@@ -17,6 +17,8 @@ export const trackLoyaltyVisit = async (
   notes?: string
 ): Promise<boolean> => {
   try {
+    console.log('🎯 trackLoyaltyVisit called with:', { customerId, adminId, notes });
+    
     // First find or create the customer progress
     const { data: customerProgress, error: findError } = await supabase
       .from('customer_loyalty_progress')
@@ -49,11 +51,19 @@ export const trackLoyaltyVisit = async (
     }
 
     // Add the visit
+    console.log('🎯 trackLoyaltyVisit: Adding visit for customer_id:', progress.customer_id);
+    
+    // Only insert if we have a valid adminId, otherwise skip the visit
+    if (!adminId) {
+      console.log('🎯 trackLoyaltyVisit: No adminId provided, skipping visit tracking');
+      return true; // Return true to not break the flow, but don't track the visit
+    }
+    
     const { error: visitError } = await supabase
       .from('loyalty_visits')
       .insert({
         customer_id: progress.customer_id,
-        added_by_admin_id: adminId || null,
+        added_by_admin_id: adminId,
         notes: notes || 'Visita automática por reserva completada'
       });
 
@@ -61,6 +71,7 @@ export const trackLoyaltyVisit = async (
       console.error('Error adding visit:', visitError);
       return false;
     }
+    console.log('🎯 trackLoyaltyVisit: Visit added successfully');
 
     // Update total visits count
     const { error: updateError } = await supabase
@@ -131,11 +142,17 @@ export const trackGuestLoyaltyVisit = async (
     }
 
     // Add the visit
+    // Only insert if we have a valid adminId, otherwise skip the visit
+    if (!adminId) {
+      console.log('🎯 trackGuestLoyaltyVisit: No adminId provided, skipping visit tracking');
+      return true; // Return true to not break the flow, but don't track the visit
+    }
+    
     const { error: visitError } = await supabase
       .from('loyalty_visits')
       .insert({
         customer_id: progress.customer_id,
-        added_by_admin_id: adminId || null,
+        added_by_admin_id: adminId,
         notes: notes || `Visita automática por reserva completada - ${customerName} (${customerEmail})`
       });
 
