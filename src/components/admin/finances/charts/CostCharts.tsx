@@ -57,7 +57,7 @@ export const CostCharts = ({
                     width={isMobile ? 64 : 80}
                     tick={{ fontSize: isMobile ? 12 : 11 }}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => [formatCRC(Number(value)), "Costos"]} />
+                  <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => [formatCRC(Number(value)), ""]} />
                   <Bar dataKey="costCents" fill="var(--color-costCents)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ChartContainer>
@@ -76,13 +76,31 @@ export const CostCharts = ({
           ) : (
             <ChartContainer config={costTypeConfig} className="h-[240px] sm:h-[280px]">
               <PieChart>
-                <ChartTooltip
-                  content={<ChartTooltipContent nameKey="name" />}
-                  formatter={(value, name) => [formatCRC(Number(value)), String(name)]}
+                <ChartTooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0];
+                      return (
+                        <div className="rounded-lg border bg-background p-2 shadow-md">
+                          <div className="grid gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium leading-none tracking-tight">
+                                {data.name}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatCRC(Number(data.value))}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Pie dataKey="value" data={costTypeData} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
-                  {costTypeData.map((entry) => (
-                    <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
+                  {costTypeData.map((entry, index) => (
+                    <Cell key={entry.name} fill={costTypeConfig[entry.name]?.color || `hsl(${(index * 137.5) % 360}, 70%, 50%)`} />
                   ))}
                 </Pie>
                 <ChartLegend content={<ChartLegendContent nameKey="name" />} />
@@ -102,13 +120,31 @@ export const CostCharts = ({
           ) : (
             <ChartContainer config={costCategoryConfig} className="h-[240px] sm:h-[280px]">
               <PieChart>
-                <ChartTooltip
-                  content={<ChartTooltipContent nameKey="name" />}
-                  formatter={(value, name) => [formatCRC(Number(value)), String(name)]}
+                <ChartTooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0];
+                      return (
+                        <div className="rounded-lg border bg-background p-2 shadow-md">
+                          <div className="grid gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium leading-none tracking-tight">
+                                {data.name}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatCRC(Number(data.value))}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Pie dataKey="value" data={costCategoryShareData.chart} nameKey="name" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 80 : 90} strokeWidth={2}>
-                  {costCategoryShareData.chart.map((entry) => (
-                    <Cell key={entry.name} fill={`var(--color-${entry.name})`} />
+                  {costCategoryShareData.chart.map((entry, index) => (
+                    <Cell key={entry.name} fill={costCategoryConfig[entry.name]?.color || `hsl(${(index * 137.5) % 360}, 70%, 50%)`} />
                   ))}
                 </Pie>
                 <ChartLegend content={<ChartLegendContent nameKey="name" />} />
