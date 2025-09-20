@@ -508,9 +508,6 @@ export const AdminServices = () => {
                                 <Badge variant={combo.is_active ? "default" : "secondary"} className={`text-xs font-medium shadow-lg ${combo.is_active ? 'bg-green-600 text-white border border-green-500' : 'bg-gray-600 text-white border border-gray-500'}`}>
                                   {combo.is_active ? "Activo" : "Inactivo"}
                                 </Badge>
-                                <Badge variant="secondary" className="text-xs font-medium shadow-lg bg-red-500 text-white border border-red-400">
-                                  {discountPercentage}% OFF
-                                </Badge>
                               </>} adminButtons={!isReadOnly ? <>
                                   <Button variant="secondary" size="sm" onClick={e => {
                         e.stopPropagation();
