@@ -254,11 +254,87 @@ export const useInvitedUsers = () => {
     }
   };
 
+  const updateInvitedUser = async (userId: string, userData: Partial<InvitedUserData>): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      // Validate data if provided
+      if (userData.email || userData.full_name || userData.phone || userData.role) {
+        const validatedData = invitedUserSchema.parse({
+          email: userData.email || '',
+          full_name: userData.full_name || '',
+          phone: userData.phone || '',
+          role: userData.role || 'client'
+        });
+        
+        // Use validated data for update
+        userData = {
+          email: validatedData.email,
+          full_name: validatedData.full_name,
+          phone: validatedData.phone,
+          role: validatedData.role
+        };
+      }
+
+      const { error } = await supabase
+        .from('invited_users')
+        .update(userData)
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Usuario invitado actualizado correctamente"
+      });
+
+      return true;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteInvitedUser = async (userId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('invited_users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Usuario invitado eliminado correctamente"
+      });
+
+      return true;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     loading,
     createInvitedUser,
     createGuestCustomerForBooking,
     checkEmailExists,
-    regenerateInviteToken
+    regenerateInviteToken,
+    updateInvitedUser,
+    deleteInvitedUser
   };
 };

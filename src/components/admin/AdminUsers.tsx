@@ -78,7 +78,9 @@ export const AdminUsers = () => {
     createInvitedUser,
     loading: creatingUser,
     checkEmailExists,
-    regenerateInviteToken
+    regenerateInviteToken,
+    updateInvitedUser,
+    deleteInvitedUser
   } = useInvitedUsers();
   useEffect(() => {
     fetchData();
@@ -220,20 +222,31 @@ const fetchUsers = async () => {
     }
     try {
       if (editingUser) {
-        // Update existing user
-        const {
-          error
-        } = await supabase.from('profiles').update({
-          email: formData.email.toLowerCase().trim(),
-          full_name: formData.full_name.trim(),
-          phone: formData.phone?.trim() || null,
-          role: formData.role
-        }).eq('id', editingUser.id);
-        if (error) throw error;
-        toast({
-          title: "Éxito",
-          description: "Usuario actualizado correctamente"
-        });
+        if (editingUser.user_type === 'invited') {
+          // Update invited user
+          const success = await updateInvitedUser(editingUser.id, {
+            email: formData.email,
+            full_name: formData.full_name,
+            phone: formData.phone,
+            role: formData.role
+          });
+          if (!success) return;
+        } else {
+          // Update existing user
+          const {
+            error
+          } = await supabase.from('profiles').update({
+            email: formData.email.toLowerCase().trim(),
+            full_name: formData.full_name.trim(),
+            phone: formData.phone?.trim() || null,
+            role: formData.role
+          }).eq('id', editingUser.id);
+          if (error) throw error;
+          toast({
+            title: "Éxito",
+            description: "Usuario actualizado correctamente"
+          });
+        }
       } else {
         // Create new invited user
         const success = await createInvitedUser({
@@ -834,8 +847,12 @@ const getStatusText = (status: string) => {
                           </Button>
                         </DropdownMenuTrigger>
 <DropdownMenuContent align="end">
-                            {user.user_type === 'invited' ? (
+                             {user.user_type === 'invited' ? (
                               <>
+                                <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={async () => {
                                     const link = user.invite_token ? `${window.location.origin}/invite?token=${encodeURIComponent(user.invite_token)}` : '';
@@ -862,6 +879,36 @@ const getStatusText = (status: string) => {
                                   <AlertCircle className="h-4 w-4 mr-2" />
                                   Generar nuevo enlace
                                 </DropdownMenuItem>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                      <span className="text-destructive">Eliminar</span>
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Eliminar usuario invitado?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción eliminará permanentemente la invitación para "{user.full_name}" ({user.email}). Esta acción no se puede deshacer.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={async () => {
+                                          const success = await deleteInvitedUser(user.id);
+                                          if (success) {
+                                            fetchUsers();
+                                          }
+                                        }}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </>
                             ) : (
                               <>
