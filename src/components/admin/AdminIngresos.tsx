@@ -18,23 +18,7 @@ import {
   YAxis,
   Cell,
 } from "recharts";
-
-interface ReservationLite {
-  id: string;
-  appointment_date: string;
-  start_time: string;
-  status: string;
-  client_id: string | null;
-  customer_email: string | null;
-  client_full_name: string | null;
-  service_name: string;
-  service_price_cents: number;
-  category_name: string | null;
-  booking_type?: 'service' | 'combo';
-  combo_id?: string | null;
-  combo_name?: string | null;
-  employee_full_name?: string | null;
-}
+import { ReservationLite } from "@/types/finances";
 
 const DAYS_WINDOW_DEFAULT = 30;
 

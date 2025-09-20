@@ -862,7 +862,7 @@ export type Database = {
           customer_name: string | null
           employee_id: string | null
           end_time: string
-          final_price_cents: number | null
+          final_price_cents: number
           id: string
           is_guest_booking: boolean | null
           notes: string | null
@@ -881,7 +881,7 @@ export type Database = {
           customer_name?: string | null
           employee_id?: string | null
           end_time: string
-          final_price_cents?: number | null
+          final_price_cents: number
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
@@ -900,7 +900,7 @@ export type Database = {
           customer_name?: string | null
           employee_id?: string | null
           end_time?: string
-          final_price_cents?: number | null
+          final_price_cents?: number
           id?: string
           is_guest_booking?: boolean | null
           notes?: string | null
