@@ -45,6 +45,7 @@ export const useFinances = () => {
         client_full_name,
         service_name,
         service_price_cents,
+        final_price_cents,
         category_name,
         employee_full_name,
         booking_type,
