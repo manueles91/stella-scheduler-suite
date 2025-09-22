@@ -160,17 +160,23 @@ export const useFinances = () => {
     const centsByDay = new Map<string, number>();
     timeframeDays.forEach((d) => centsByDay.set(d, 0));
 
-    for (const r of completedInWindow) {
+    // Only include completed bookings for revenue calculation
+    const completedOnly = reservations.filter((r) => {
+      if (r.status !== "completed") return false;
+      return r.appointment_date >= timeframeStartStr;
+    });
+
+    for (const r of completedOnly) {
       const key = r.appointment_date;
       const prev = centsByDay.get(key) || 0;
-      centsByDay.set(key, prev + (r.service_price_cents || 0));
+      centsByDay.set(key, prev + (r.final_price_cents !== null ? r.final_price_cents : r.service_price_cents || 0));
     }
 
     return timeframeDays.map((d) => ({
       date: format(parseISO(d), "dd/MM"),
       revenueCents: centsByDay.get(d) || 0,
     }));
-  }, [completedInWindow, timeframeDays]);
+  }, [reservations, timeframeDays, timeframeStartStr]);
 
   const retentionData = useMemo((): RetentionData => {
     const earliestCompletedByCustomer = new Map<string, string>();
