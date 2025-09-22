@@ -340,7 +340,7 @@ export const BookingCard = ({
 
   const renderPriceInfo = () => {
     // Use final price if available (for completed bookings), otherwise use base price
-    const displayPrice = finalPriceCents !== undefined ? finalPriceCents : priceCents;
+    const displayPrice = (finalPriceCents !== undefined && finalPriceCents !== null) ? finalPriceCents : priceCents;
     if (displayPrice === undefined) return null;
     
     return (
@@ -353,7 +353,7 @@ export const BookingCard = ({
   const renderFinalPriceInfo = () => {
     // For variable price services, use final_price_cents if available, otherwise use default price
     // For completed bookings with variable pricing, use the default price as final if no final price is set
-    const displayPrice = finalPriceCents !== undefined ? finalPriceCents : priceCents;
+    const displayPrice = (finalPriceCents !== undefined && finalPriceCents !== null) ? finalPriceCents : priceCents;
     if (displayPrice === undefined) return null;
     
     // Determine if this is a variable price service that was completed with default pricing
@@ -486,9 +486,9 @@ export const BookingCard = ({
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {renderTimeInfo()}
         {renderDateInfo()}
-        {variant === 'revenue' && (finalPriceCents !== undefined || priceCents) ? (
+        {variant === 'revenue' && ((finalPriceCents !== undefined && finalPriceCents !== null) || priceCents) ? (
           <div className="ml-auto flex items-center gap-1 text-green-700 font-semibold">
-            <span>{formatCRC(finalPriceCents !== undefined ? finalPriceCents : priceCents)}</span>
+            <span>{formatCRC((finalPriceCents !== undefined && finalPriceCents !== null) ? finalPriceCents : priceCents)}</span>
           </div>
         ) : null}
       </div>
