@@ -206,6 +206,9 @@ export const useTimeTracking = (employeeId?: string) => {
       const selectedService = services.find(s => s.id === appointmentForm.service_id);
       if (!selectedService) return;
       
+      // Find the selected client to get their email and name
+      const selectedClient = clients.find(c => c.id === appointmentForm.client_id);
+      
       const startTime = convertTo24Hour(appointmentForm.start_time);
       const endTime = calculateEndTime(appointmentForm.start_time, selectedService.duration_minutes);
       
@@ -220,6 +223,8 @@ export const useTimeTracking = (employeeId?: string) => {
           end_time: endTime,
           notes: appointmentForm.notes || null,
           status: 'confirmed',
+          customer_email: selectedClient?.email || null,
+          customer_name: selectedClient?.full_name || null,
           final_price_cents: appointmentForm.final_price_cents !== undefined ? appointmentForm.final_price_cents : 0
         });
         
