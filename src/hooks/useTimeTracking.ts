@@ -144,7 +144,7 @@ export const useTimeTracking = (employeeId?: string) => {
             variable_price: appointment.service_variable_price || false
           }],
           client_profile: {
-            full_name: appointment.client_full_name || 'Cliente'
+            full_name: appointment.client_full_name || 'Cliente no especificado'
           },
           employee_profile: appointment.employee_full_name ? {
             full_name: appointment.employee_full_name

@@ -94,37 +94,56 @@ export const CalendarView = ({
     });
 
     return groupedAppointments.map(group =>
-      group.map((appointment, index) => (
-        <div
-          key={appointment.id}
-          className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors ${
-            group.length > 1 ? 'border border-white/20' : ''
-          }`}
-          style={calculateEventStyle(appointment.start_time, appointment.end_time, index, group.length)}
-          onClick={() => onAppointmentClick(appointment)}
-        >
-          <div className="text-sm font-medium truncate flex items-center gap-1">
-            {appointment.isCombo && (
-              <span className="text-xs bg-white/20 px-1 rounded">COMBO</span>
-            )}
-            {group.length > 1 && (
-              <span className="text-xs bg-white/30 px-1 rounded font-bold">
-                {index + 1}/{group.length}
-              </span>
-            )}
-            {appointment.client_profile?.full_name}
-          </div>
-          <div className="text-xs opacity-90 truncate">
-            {appointment.isCombo ? `${appointment.comboName} (Combo)` : appointment.services?.[0]?.name}
-          </div>
-          <div className="text-xs opacity-75">{convertTo12Hour(appointment.start_time)} - {convertTo12Hour(appointment.end_time)}</div>
-          {group.length > 1 && (
-            <div className="text-xs opacity-60 mt-1">
-              {appointment.employee_profile?.full_name || 'Sin asignar'}
+      group.map((appointment, index) => {
+        // Calculate appointment duration for dynamic sizing
+        const startTime = parseISO(`2000-01-01T${appointment.start_time}`);
+        const endTime = parseISO(`2000-01-01T${appointment.end_time}`);
+        const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+        const isShortAppointment = durationMinutes <= 60;
+        const isMediumAppointment = durationMinutes > 60 && durationMinutes <= 120;
+        
+        const clientName = appointment.client_profile?.full_name || 'Cliente no especificado';
+        const employeeName = appointment.employee_profile?.full_name || 'Sin asignar';
+        
+        return (
+          <div
+            key={appointment.id}
+            className={`${appointment.isCombo ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-colors ${
+              group.length > 1 ? 'border border-white/20' : ''
+            } ${isShortAppointment ? 'p-1.5' : isMediumAppointment ? 'p-2' : 'p-3'}`}
+            style={calculateEventStyle(appointment.start_time, appointment.end_time, index, group.length)}
+            onClick={() => onAppointmentClick(appointment)}
+          >
+            <div className={`${isShortAppointment ? 'text-xs' : 'text-sm'} font-medium truncate flex items-center gap-1 leading-tight`}>
+              {appointment.isCombo && (
+                <span className={`${isShortAppointment ? 'text-[10px]' : 'text-xs'} bg-white/20 px-1 rounded flex-shrink-0`}>
+                  COMBO
+                </span>
+              )}
+              {group.length > 1 && (
+                <span className={`${isShortAppointment ? 'text-[10px]' : 'text-xs'} bg-white/30 px-1 rounded font-bold flex-shrink-0`}>
+                  {index + 1}/{group.length}
+                </span>
+              )}
+              <span className="truncate">{clientName}</span>
             </div>
-          )}
-        </div>
-      ))
+            
+            <div className={`${isShortAppointment ? 'text-[10px]' : 'text-xs'} opacity-90 truncate leading-tight ${isShortAppointment ? 'mt-0.5' : 'mt-1'}`}>
+              {appointment.isCombo ? `${appointment.comboName || 'Combo'} (Combo)` : appointment.services?.[0]?.name}
+            </div>
+            
+            {!isShortAppointment && (
+              <div className={`${isShortAppointment ? 'text-[10px]' : 'text-xs'} opacity-75 leading-tight mt-1`}>
+                {convertTo12Hour(appointment.start_time)} - {convertTo12Hour(appointment.end_time)}
+              </div>
+            )}
+            
+            <div className={`${isShortAppointment ? 'text-[10px]' : 'text-xs'} opacity-60 truncate leading-tight ${isShortAppointment ? 'mt-0.5' : 'mt-1'}`}>
+              {employeeName}
+            </div>
+          </div>
+        );
+      })
     ).flat();
   };
 

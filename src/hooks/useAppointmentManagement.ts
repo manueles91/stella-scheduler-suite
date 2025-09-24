@@ -15,25 +15,14 @@ export const useAppointmentManagement = () => {
     formData: AppointmentFormData,
     clients: Customer[]
   ): Promise<boolean> => {
-    console.log('DEBUG - updateAppointment called with:', {
-      appointmentId: appointment.id,
-      formData,
-      clientsCount: clients.length,
-      clientIds: clients.map(c => c.id)
-    });
-
     const selectedClient = clients.find(c => c.id === formData.client_id);
-    console.log('DEBUG - selectedClient:', selectedClient);
     
     // Determine actual client id (allow ids not present in local list and temp placeholder)
     const actualClientId = formData.client_id === 'temp-client-id'
       ? appointment.client_id
       : (selectedClient?.id || formData.client_id);
 
-    console.log('DEBUG - actualClientId:', actualClientId);
-
     if (!actualClientId) {
-      console.log('DEBUG - No actualClientId found, showing error');
       toast({
         title: "Error",
         description: "Por favor selecciona un cliente",
