@@ -339,17 +339,14 @@ const fetchUsers = async () => {
         const { error } = await supabase.from('invited_users').delete().eq('id', userId);
         if (error) throw error;
       } else {
-        // For authenticated users, we'll deactivate them instead of deleting
-        // since they may have associated data like reservations
-        const { error } = await supabase.from('profiles').update({
-          account_status: 'inactive'
-        }).eq('id', userId);
+        // Delete authenticated user completely
+        const { error } = await supabase.from('profiles').delete().eq('id', userId);
         if (error) throw error;
       }
       
       toast({
         title: "Éxito",
-        description: userType === 'invited' ? "Usuario invitado eliminado" : "Usuario desactivado"
+        description: "Usuario eliminado correctamente"
       });
       fetchUsers();
     } catch (error) {
